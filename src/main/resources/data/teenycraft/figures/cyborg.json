@@ -1,0 +1,12 @@
+{
+  "id": "cyborg",
+  "name": "Cyborg",
+  "description": "High defense, low luck.",
+  "attributes": {
+    "hp_scale": 3.0,
+    "power_scale": 2.0,
+    "dodge_scale": 0.5,
+    "luck_scale": 1.0
+  },
+  "abilities": ["battery_drain", "plasma_shot", "missile_barrage"]
+}

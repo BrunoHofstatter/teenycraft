@@ -1,0 +1,12 @@
+{
+  "id": "robin",
+  "name": "Robin",
+  "description": "It's the classic titan, the one we all love",
+  "attributes": {
+    "hp_scale": 1.75,
+    "power_scale": 1.6,
+    "dodge_scale": 1.5,
+    "luck_scale": 1.65
+  },
+  "abilities": ["heroic_pose", "birdarang", "staff_slam"]
+}
