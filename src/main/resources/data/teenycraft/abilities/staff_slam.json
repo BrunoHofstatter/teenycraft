@@ -1,0 +1,12 @@
+{
+  "id": "staff_slam",
+  "name": "Staff Slam",
+  "hit_type": "melee",
+  "damage_tier": 6,
+  "effects_on_opponent": [
+    { "id": "stun", "params": [1.0] }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["opponent:stun:1.2"]
+}

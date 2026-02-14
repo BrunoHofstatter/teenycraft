@@ -41,6 +41,37 @@ public class TeenyBalance {
     public static final int COST_3D = 92;
     public static final int COST_3E = 96;
 
+    public static int getManaCost(int slot, String tier) {
+        String t = tier.toLowerCase();
+        return switch (slot) {
+            case 1 -> switch (t) {
+                case "a" -> COST_1A;
+                case "b" -> COST_1B;
+                case "c" -> COST_1C;
+                case "d" -> COST_1D;
+                case "e" -> COST_1E;
+                default -> COST_1A;
+            };
+            case 2 -> switch (t) {
+                case "a" -> COST_2A;
+                case "b" -> COST_2B;
+                case "c" -> COST_2C;
+                case "d" -> COST_2D;
+                case "e" -> COST_2E;
+                default -> COST_2A;
+            };
+            case 3 -> switch (t) {
+                case "a" -> COST_3A;
+                case "b" -> COST_3B;
+                case "c" -> COST_3C;
+                case "d" -> COST_3D;
+                case "e" -> COST_3E;
+                default -> COST_3A;
+            };
+            default -> 0;
+        };
+    }
+
     // ==========================================
     // SECTION 4: DAMAGE
     // ==========================================
@@ -52,12 +83,32 @@ public class TeenyBalance {
     public static final float DAMAGE_MULTIPLIER_4 = 0.91f;
     public static final float DAMAGE_MULTIPLIER_5 = 0.94f;
     public static final float DAMAGE_MULTIPLIER_6 = 0.97f;
-    public static final float DAMAGE_MULTIPLIER_7 = 1.03f;
-    public static final float DAMAGE_MULTIPLIER_8 = 1.06f;
-    public static final float DAMAGE_MULTIPLIER_9 = 1.09f;
-    public static final float DAMAGE_MULTIPLIER_10 = 1.12f;
-    public static final float DAMAGE_MULTIPLIER_11 = 1.15f;
-    public static final float DAMAGE_MULTIPLIER_12 = 1.18f;
+    public static final float DAMAGE_MULTIPLIER_7 = 1.00f;
+    public static final float DAMAGE_MULTIPLIER_8 = 1.03f;
+    public static final float DAMAGE_MULTIPLIER_9 = 1.06f;
+    public static final float DAMAGE_MULTIPLIER_10 = 1.09f;
+    public static final float DAMAGE_MULTIPLIER_11 = 1.12f;
+    public static final float DAMAGE_MULTIPLIER_12 = 1.15f;
+    public static final float DAMAGE_MULTIPLIER_13 = 1.18f;
+
+    public static float getDamageMultiplier(int tier) {
+        return switch (tier) {
+            case 1 -> DAMAGE_MULTIPLIER_1;
+            case 2 -> DAMAGE_MULTIPLIER_2;
+            case 3 -> DAMAGE_MULTIPLIER_3;
+            case 4 -> DAMAGE_MULTIPLIER_4;
+            case 5 -> DAMAGE_MULTIPLIER_5;
+            case 6 -> DAMAGE_MULTIPLIER_6;
+            case 7 -> DAMAGE_MULTIPLIER_7;
+            case 8 -> DAMAGE_MULTIPLIER_8;
+            case 9 -> DAMAGE_MULTIPLIER_9;
+            case 10 -> DAMAGE_MULTIPLIER_10;
+            case 11 -> DAMAGE_MULTIPLIER_11;
+            case 12 -> DAMAGE_MULTIPLIER_12;
+            case 13 -> DAMAGE_MULTIPLIER_13;
+            default -> 1.0f;
+        };
+    }
 
     public static final float RAYCAST_DELAY_0 = 0.1f;
     public static final float RAYCAST_DELAY_1 = 0.2f;
@@ -78,7 +129,7 @@ public class TeenyBalance {
 
 
     // ==========================================
-    // SECTION 5: EFFECT SCALING (PER 1 MANA)
+    // SECTION 6: EFFECT SCALING (PER 1 MANA)
     // ==========================================
 
     public static final float STUN_DURATION_PERMANA = 0.05f;

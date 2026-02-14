@@ -1,12 +1,17 @@
 {
   "id": "cyborg",
   "name": "Cyborg",
-  "description": "High defense, low luck.",
+  "description": "One of the classic titans, the cyber robot.",
+  "class": "Tech",
+  "groups": ["Titans"],
+  "price": 150,
   "attributes": {
     "hp_scale": 3.0,
     "power_scale": 2.0,
-    "dodge_scale": 0.5,
-    "luck_scale": 1.0
+    "dodge_scale": 1.5,
+    "luck_scale": 1.5
   },
-  "abilities": ["battery_drain", "plasma_shot", "missile_barrage"]
-}
+    "abilities": ["battery_drain", "plasma_shot", "missile_barrage"],
+    "ability_cost_tiers": ["c", "e", "c"]
+  }
+  

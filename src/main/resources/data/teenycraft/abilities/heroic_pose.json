@@ -1,0 +1,12 @@
+{
+  "id": "heroic_pose",
+  "name": "Heroic Pose",
+  "hit_type": "none",
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    { "id": "power_up" }
+  ],
+  "traits": [],
+  "golden_bonus": ["self:heal"]
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "teenycraft:item/figure_model_base",
+  "textures": {
+    "layer0": "teenycraft:item/base"
+  }
+}

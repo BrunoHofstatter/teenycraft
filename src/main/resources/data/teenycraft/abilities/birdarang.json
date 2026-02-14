@@ -1,0 +1,11 @@
+{
+  "id": "birdarang",
+  "name": "Birdarang",
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 7,
+  "damage_tier": 8,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["opponent:undodgeable"]
+}

@@ -1,12 +1,17 @@
 {
   "id": "robin",
   "name": "Robin",
-  "description": "It's the classic titan, the one we all love",
+  "description": "One of the classic titans, the leader of them all",
+  "class": "Martial Arts",
+  "groups": ["Titans", "Young Justice"],
+  "price": 150,
   "attributes": {
-    "hp_scale": 1.75,
-    "power_scale": 1.6,
-    "dodge_scale": 1.5,
-    "luck_scale": 1.65
+    "hp_scale": 1.5,
+    "power_scale": 2.5,
+    "dodge_scale": 2.5,
+    "luck_scale": 1.5
   },
-  "abilities": ["heroic_pose", "birdarang", "staff_slam"]
-}
+    "abilities": ["heroic_pose", "birdarang", "staff_slam"],
+    "ability_cost_tiers": ["b", "c", "d"]
+  }
+  

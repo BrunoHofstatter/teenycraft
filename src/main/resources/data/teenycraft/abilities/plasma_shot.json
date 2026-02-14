@@ -1,0 +1,11 @@
+{
+  "id": "plasma_shot",
+  "name": "Plasma Shot",
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 3,
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["opponent:waffle_chance"]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "missile_barrage",
+  "name": "Missile Barrage",
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 6,
+  "damage_tier": 8,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    { "id": "group_damage" }
+  ],
+  "golden_bonus": ["opponent:power_down:0.4"]
+}

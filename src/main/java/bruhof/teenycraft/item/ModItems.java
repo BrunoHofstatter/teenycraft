@@ -24,6 +24,9 @@ public class ModItems {
     public static final RegistryObject<Item> CYBORG = ITEMS.register("figure_cyborg",
             () -> new ItemFigure(new Item.Properties()));
 
+    public static final RegistryObject<Item> TITAN_PAD = ITEMS.register("titan_pad",
+            () -> new bruhof.teenycraft.item.custom.ItemTitanPad(new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }
