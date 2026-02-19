@@ -49,6 +49,18 @@ public class ModMessages {
                 .encoder(PacketSyncSearchResults::toBytes)
                 .consumerMainThread(PacketSyncSearchResults::handle)
                 .add();
+
+        net.messageBuilder(PacketSortTitanManager.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(PacketSortTitanManager::new)
+                .encoder(PacketSortTitanManager::toBytes)
+                .consumerMainThread(PacketSortTitanManager::handle)
+                .add();
+
+        net.messageBuilder(PacketSyncBattleData.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(PacketSyncBattleData::new)
+                .encoder(PacketSyncBattleData::toBytes)
+                .consumerMainThread(PacketSyncBattleData::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

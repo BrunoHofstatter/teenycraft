@@ -27,6 +27,10 @@ public class AbilityLoader extends SimplePreparableReloadListener<Map<String, Ab
         public String hitType;
         public int raycastDelayTier;
         public int damageTier;
+        public int rangeTier = 4; // Default
+        public int textureIndex = 0; // NEW: Stable index for property overrides
+        public String particleId;
+        public int particleCount = 10;
         public List<EffectData> effectsOnOpponent = new ArrayList<>();
         public List<EffectData> effectsOnSelf = new ArrayList<>();
         public List<TraitData> traits = new ArrayList<>();
@@ -58,6 +62,10 @@ public class AbilityLoader extends SimplePreparableReloadListener<Map<String, Ab
                 data.hitType = json.get("hit_type").getAsString();
                 data.raycastDelayTier = json.has("raycast_delay_tier") ? json.get("raycast_delay_tier").getAsInt() : 0;
                 data.damageTier = json.get("damage_tier").getAsInt();
+                data.rangeTier = json.has("range_tier") ? json.get("range_tier").getAsInt() : 4;
+                data.textureIndex = json.has("texture_index") ? json.get("texture_index").getAsInt() : 0;
+                data.particleId = json.has("particle") ? json.get("particle").getAsString() : null;
+                data.particleCount = json.has("particle_count") ? json.get("particle_count").getAsInt() : 10;
 
                 parseEffects(json.getAsJsonArray("effects_on_opponent"), data.effectsOnOpponent);
                 parseEffects(json.getAsJsonArray("effects_on_self"), data.effectsOnSelf);
@@ -110,5 +118,10 @@ public class AbilityLoader extends SimplePreparableReloadListener<Map<String, Ab
 
     public static AbilityData getAbility(String id) {
         return CACHE.get(id);
+    }
+
+    public static int getTextureIndex(String id) {
+        AbilityData data = CACHE.get(id);
+        return data != null ? data.textureIndex : 0;
     }
 }

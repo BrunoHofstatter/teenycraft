@@ -1,0 +1,17 @@
+{
+  "id": "whale_drop",
+  "name": "Whale Drop",
+  "texture_index": 18,
+  "particle": "minecraft:splash",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 6,
+  "range_tier": 4,
+  "damage_tier": 8,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    { "id": "group_damage" }
+  ],
+  "golden_bonus": ["opponent:stun:0.6"]
+}

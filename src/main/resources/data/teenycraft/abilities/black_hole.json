@@ -1,0 +1,17 @@
+{
+  "id": "black_hole",
+  "name": "Black Hole",
+  "texture_index": 3,
+  "particle": "minecraft:portal",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 5,
+  "range_tier": 4,
+  "damage_tier": 6,
+  "effects_on_opponent": [
+    { "id": "disable", "params": [1.0] }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["opponent:disable:999.0"]
+}

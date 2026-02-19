@@ -15,6 +15,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
+import net.minecraft.client.gui.components.ImageButton;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,18 +41,20 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
 
-        // Add Previous Box Button
-        this.addRenderableWidget(Button.builder(Component.literal("<"), (button) -> {
+        // Add Previous Box Button (<)
+        // Texture: 177, 0 | Hover: 177, 14 | Size: 20x14
+        this.addRenderableWidget(new ImageButton(x + 7, y + 38, 20, 14, 177, 0, 14, TEXTURE, (button) -> {
             changeBox(-1);
-        }).pos(x + 7, y + 38).size(20, 14).build());
+        }));
 
-        // Add Next Box Button
-        this.addRenderableWidget(Button.builder(Component.literal(">"), (button) -> {
+        // Add Next Box Button (>)
+        // Texture: 197, 0 | Hover: 197, 14 | Size: 20x14
+        this.addRenderableWidget(new ImageButton(x + 149, y + 38, 20, 14, 197, 0, 14, TEXTURE, (button) -> {
             changeBox(1);
-        }).pos(x + 149, y + 38).size(20, 14).build());
+        }));
         
         // Add Search Bar
-        // Positioned in the middle where "BOX X" label usually is
+        // Positioned in the middle where "PAGE X" label usually is
         this.searchBox = new EditBox(this.font, x + 35, y + 40, 90, 10, Component.literal("Search")); // Shorter to fit page
         this.searchBox.setMaxLength(32);
         this.searchBox.setBordered(false);
@@ -58,6 +62,36 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
         this.searchBox.setTextColor(0xFFFFFF);
         this.searchBox.setResponder(this::onSearchChanged);
         this.addRenderableWidget(this.searchBox);
+        
+        // --- SORT BUTTONS ---
+        int startX = x + 8;
+        int startY = y + 18;
+        int btnW = 12;
+        int btnH = 12;
+
+        // A-Z (A)
+        // Texture: 177, 28 | Hover: 177, 40 (Diff 12) | Size: 12x12
+        ImageButton sortA = new ImageButton(startX, startY, btnW, btnH, 177, 28, 12, TEXTURE, (btn) -> {
+            ModMessages.sendToServer(new bruhof.teenycraft.networking.PacketSortTitanManager(bruhof.teenycraft.networking.PacketSortTitanManager.SortType.ALPHABETICAL));
+        });
+        sortA.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Sort A-Z")));
+        this.addRenderableWidget(sortA);
+
+        // Level Desc (v) (Strongest)
+        // Texture: 189, 28 | Hover: 189, 40 (Diff 12) | Size: 12x12
+        ImageButton sortDesc = new ImageButton(startX + 14, startY, btnW, btnH, 189, 28, 12, TEXTURE, (btn) -> {
+            ModMessages.sendToServer(new bruhof.teenycraft.networking.PacketSortTitanManager(bruhof.teenycraft.networking.PacketSortTitanManager.SortType.LEVEL_DESC));
+        });
+        sortDesc.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Sort Level (High->Low)")));
+        this.addRenderableWidget(sortDesc);
+
+        // Level Asc (^) (Weakest)
+        // Texture: 201, 28 | Hover: 201, 40 (Diff 12) | Size: 12x12
+        ImageButton sortAsc = new ImageButton(startX + 28, startY, btnW, btnH, 201, 28, 12, TEXTURE, (btn) -> {
+            ModMessages.sendToServer(new bruhof.teenycraft.networking.PacketSortTitanManager(bruhof.teenycraft.networking.PacketSortTitanManager.SortType.LEVEL_ASC));
+        });
+        sortAsc.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Sort Level (Low->High)")));
+        this.addRenderableWidget(sortAsc);
     }
     
     private void onSearchChanged(String query) {
@@ -85,42 +119,21 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
 
-        // Background
-        guiGraphics.fill(x, y, x + imageWidth, y + imageHeight, 0xFFC6C6C6);
-        guiGraphics.fill(x + 1, y + 1, x + imageWidth - 1, y + imageHeight - 1, 0xFF222222);
-
         // Texture
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.setShaderTexture(0, TEXTURE);
         guiGraphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight);
         
-        // Slot Placeholders
-        drawSlotPlaceholder(guiGraphics, x + 61, y + 19);
-        drawSlotPlaceholder(guiGraphics, x + 79, y + 19);
-        drawSlotPlaceholder(guiGraphics, x + 97, y + 19);
-        drawSlotPlaceholder(guiGraphics, x + 133, y + 19);
-
-        // Box Area and Grid
-        guiGraphics.fill(x + 7, y + 53, x + 169, y + 163, 0xFF111111);
-        for(int row = 0; row < 6; row++) {
-            for(int col = 0; col < 9; col++) {
-                drawSlotPlaceholder(guiGraphics, x + 7 + col * 18, y + 53 + row * 18);
-            }
-        }
-
-        // Search Bar / Label Area
-        guiGraphics.fill(x + 30, y + 38, x + 146, y + 52, 0xFF333333);
-        
         // Label Logic
         // We always keep the search box visible so it can be clicked.
         this.searchBox.setVisible(true);
 
-        // If the box is empty and NOT focused, we draw the "BOX X" label over it.
+        // If the box is empty and NOT focused, we draw the "PAGE X" label over it.
         // The search box is transparent (no border), so this looks fine.
         if (!this.searchBox.isFocused() && this.searchBox.getValue().isEmpty()) {
-            String boxName = "BOX " + (this.menu.getCurrentBox() + 1);
-            guiGraphics.drawString(this.font, boxName, x + (imageWidth / 2) - (this.font.width(boxName) / 2), y + 41, 0xFFFFFFFF, false);
+            String boxName = "PAGE " + (this.menu.getCurrentBox() + 1);
+            guiGraphics.drawString(this.font, boxName, x + (imageWidth / 2) - (this.font.width(boxName) / 2), y + 41, 0xFF404040, false);
         } else {
              // In search mode, show Page Number to the right
              if (!this.searchBox.getValue().isEmpty()) {
@@ -128,12 +141,9 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
                  int maxPages = (int) Math.ceil((double)this.menu.getSearchMatchCount() / 54.0);
                  if (maxPages < 1) maxPages = 1;
                  String pageText = currentPage + "/" + maxPages;
-                 guiGraphics.drawString(this.font, pageText, x + 130, y + 41, 0xFFAAAAAA, false);
+                 guiGraphics.drawString(this.font, pageText, x + 128, y + 41, 0xFF404040, false);
              }
         }
-
-        // Player Inventory
-        guiGraphics.fill(x + 7, y + 173, x + 169, y + 250, 0xFF111111);
     }
     
     @Override
@@ -153,12 +163,6 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
             }
         }
         return super.keyPressed(pKeyCode, pScanCode, pModifiers);
-    }
-
-    private void drawSlotPlaceholder(GuiGraphics gui, int x, int y) {
-        gui.fill(x, y, x + 18, y + 18, 0xFF333333);
-        gui.fill(x + 1, y + 1, x + 17, y + 17, 0xFF8B8B8B);
-        gui.fill(x + 1, y + 1, x + 16, y + 16, 0xFF333333);
     }
 
     @Override

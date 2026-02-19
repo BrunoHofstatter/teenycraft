@@ -1,0 +1,1 @@
+{ "parent": "minecraft:item/generated", "textures": { "layer0": "teenycraft:item/ability_dance_golden" } }

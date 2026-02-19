@@ -1,0 +1,16 @@
+{
+  "id": "raven",
+  "name": "Raven",
+  "description": "One of the classic titans, the most mysterious",
+  "class": "Dark Arts",
+  "groups": ["LoveBBRae", "Raven", "Demon Family", "Titans"],
+  "price": 150,
+  "attributes": {
+    "hp_scale": 1.5,
+    "power_scale": 3.0,
+    "dodge_scale": 1.5,
+    "luck_scale": 2.0
+  },
+  "abilities": ["curse", "soul_punch", "black_hole"],
+  "ability_cost_tiers": ["c", "d", "c"]
+}

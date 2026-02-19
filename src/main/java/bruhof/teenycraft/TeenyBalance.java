@@ -18,7 +18,9 @@ public class TeenyBalance {
     // SECTION 2: BATTLE MECHANICS
     // ==========================================
     public static final int BATTLE_MANA_MAX = 100;
-    public static final int BATTLE_MANA_REGEN_PER_SEC = 4; // Example
+    public static final int BATTLE_MANA_REGEN_PER_SEC = 200; // Example
+    public static final int SWAP_COOLDOWN = 5;
+    public static final double RANGED_CONE_ANGLE = 30.0; // Degrees
 
     // ==========================================
     // SECTION 3: ABILITY COST TIERS
@@ -76,7 +78,8 @@ public class TeenyBalance {
     // SECTION 4: DAMAGE
     // ==========================================
 
-    public static final float BASE_DAMAGE_PERMANA = 0.02f;
+    public static final float BASE_DAMAGE_PERMANA = 0.015f;
+    public static final float DAMAGE_MULTIPLIER_0 = 0.0f;
     public static final float DAMAGE_MULTIPLIER_1 = 0.82f;
     public static final float DAMAGE_MULTIPLIER_2 = 0.85f;
     public static final float DAMAGE_MULTIPLIER_3 = 0.88f;
@@ -93,6 +96,7 @@ public class TeenyBalance {
 
     public static float getDamageMultiplier(int tier) {
         return switch (tier) {
+            case 0 -> DAMAGE_MULTIPLIER_0;
             case 1 -> DAMAGE_MULTIPLIER_1;
             case 2 -> DAMAGE_MULTIPLIER_2;
             case 3 -> DAMAGE_MULTIPLIER_3;
@@ -120,21 +124,147 @@ public class TeenyBalance {
     public static final float RAYCAST_DELAY_7 = 0.8f;
     public static final float RAYCAST_DELAY_8 = 0.9f;
     public static final float RAYCAST_DELAY_9 = 1.0f;
+    public static final float RAYCAST_DELAY_10 = 1.1f;
+    public static final float RAYCAST_DELAY_11 = 1.2f;
+
+    public static float getRaycastDelay(int tier) {
+        return switch (tier) {
+            case 0 -> RAYCAST_DELAY_0;
+            case 1 -> RAYCAST_DELAY_1;
+            case 2 -> RAYCAST_DELAY_2;
+            case 3 -> RAYCAST_DELAY_3;
+            case 4 -> RAYCAST_DELAY_4;
+            case 5 -> RAYCAST_DELAY_5;
+            case 6 -> RAYCAST_DELAY_6;
+            case 7 -> RAYCAST_DELAY_7;
+            case 8 -> RAYCAST_DELAY_8;
+            case 9 -> RAYCAST_DELAY_9;
+            case 10 -> RAYCAST_DELAY_10;
+            case 11 -> RAYCAST_DELAY_11;
+            default -> 0.5f;
+        };
+    }
+
+    public static final int RANGE_VALUE_1 = 5;
+    public static final int RANGE_VALUE_2 = 7;
+    public static final int RANGE_VALUE_3 = 9;
+    public static final int RANGE_VALUE_4 = 11;
+    public static final int RANGE_VALUE_5 = 13;
+    public static final int RANGE_VALUE_6 = 15;
+    public static final int RANGE_VALUE_7 = 17;
+    public static final int RANGE_VALUE_8 = 19;
+
+    public static int getRangeValue(int tier) {
+        return switch (tier) {
+            case 1 -> RANGE_VALUE_1;
+            case 2 -> RANGE_VALUE_2;
+            case 3 -> RANGE_VALUE_3;
+            case 4 -> RANGE_VALUE_4;
+            case 5 -> RANGE_VALUE_5;
+            case 6 -> RANGE_VALUE_6;
+            case 7 -> RANGE_VALUE_7;
+            case 8 -> RANGE_VALUE_8;
+            default -> 11;
+        };
+    }
 
     public static final float MELEE_ATTACK_SPEEED = -2.0F;
 
+    // ==========================================
+    // SECTION 5: SHUFFLE BAG (DODGE & LUCK)
+    // ==========================================
+    
+    // Checkpoints (Stat Values)
+    public static final int CHECKPOINT_0 = 0;
+    public static final int CHECKPOINT_1 = 20;
+    public static final int CHECKPOINT_2 = 35;
+    public static final int CHECKPOINT_3 = 55;
+    public static final int CHECKPOINT_4 = 80;
 
-
-
-
-
+    // Bag Sizes for each checkpoint
+    public static final int BAG_SIZE_0 = 10;
+    public static final int BAG_SIZE_1 = 9;
+    public static final int BAG_SIZE_2 = 8;
+    public static final int BAG_SIZE_3 = 7;
+    public static final int BAG_SIZE_4 = 6;
+    
+    public static final float LUCK_BALANCE_MULTIPLIER = 1.0f;
+    public static final float BASE_LUCK_MULTIPLIER = 1.1f;
+    
+    public static int getBagSize(int statValue) {
+        if (statValue >= CHECKPOINT_4) return BAG_SIZE_4;
+        if (statValue >= CHECKPOINT_3) return BAG_SIZE_3;
+        if (statValue >= CHECKPOINT_2) return BAG_SIZE_2;
+        if (statValue >= CHECKPOINT_1) return BAG_SIZE_1;
+        return BAG_SIZE_0;
+    }
+    
+    public static final float CRIT_DAMAGE_MULTIPLIER = 1.5f; // Keep for now as fallback or remove if replaced by formula
+    
     // ==========================================
     // SECTION 6: EFFECT SCALING (PER 1 MANA)
     // ==========================================
 
-    public static final float STUN_DURATION_PERMANA = 0.05f;
-    public static final float FREEZE_PERCENTAGE_PERMANA = 1.4f;
-    public static final float TOFU_CHANCE_HIT_PERMANA = 1.2F;
+    public static final float BASE_MANA_FILL_PERMANA = 2.0f;
+    public static final float BASE_SELF_SHOCK_PERMANA = 0.01f;
+    public static final float BASE_HEAL_PERMANA = 1.0f;
+    public static final float BASE_POWER_UP_PERMANA = 1.0f;
 
+    public static final float STUN_DURATION_PERMANA = 0.05f;
+    public static final float STUN_DURATION_PERLUCK = 0.003f;
+    
+    public static final float DANCE_DURATION_PERMANA = 0.3f;
+    public static final float DANCE_DURATION_PERLUCK = 0.005f;
+    public static final float DANCE_MANA_REGEN_MULTIPLIER = 2.0f;
+
+    public static final float FREEZE_PERMANA = 0.018f;
+    public static final float FREEZE_PERLUCK = 0.00005f;
+
+    public static final float FREEZE_DURATION_PERMANA = 0.03f;
+    public static final float FREEZE_DURATION_PERLUCK = 0.0015f;
+
+
+    public static final float CURSE_DURATION_PERMANA = 0.7f;
+    public static final float CURSE_DURATION_PERLUCK = 0.005f;
+    public static final float CURSE_EFFICIENCY = 0.6f;
+
+    public static final float WAFFLE_DURATION_PERMANA = 0.5f;
+    public static final float WAFFLE_DURATION_PERLUCK = 0.01f;
+
+    public static final float CLEANSE_DURATION_PERMANA = 0.4f;
+    public static final float CLEANSE_DURATION_PERLUCK = 0.008f;
+
+    public static final float KISS_DURATION_PERMANA = 0.35f;
+    public static final float KISS_DURATION_PERLUCK = 0.006f;
+
+    public static final float FREEZE_PERCENTAGE_PERMANA = 1.4f;
+    public static final float FREEZE_PERCENTAGE_PERLUCK = 0.005f;
+
+    public static final float FREEZE_PERCENTAGE_MAX = 80.0f; // Max % of mana that can be burned
+
+    public static final float TOFU_CHANCE_HIT_PERMANA = 1.0F;
+    public static final float TOFU_BASE_MANA = 30.0f;
+    public static final float TOFU_ABILITY_PERMANA = 0.05f;
+
+    // Tofu Effect Multipliers (Applied to Virtual Mana)
+    public static final float TOFU_HEAL_MULT = 0.5f;
+    public static final float TOFU_POWER_UP_MULT = 0.5f;
+    public static final float TOFU_BAR_FILL_MULT = 0.7f;
+    public static final float TOFU_DANCE_MULT = 1.0f;
+    public static final float TOFU_CLEANSE_MULT = 1.0f;
+    
+    public static final float TOFU_STUN_MULT = 1.0f;
+    public static final float TOFU_FREEZE_MULT = 1.0f;
+    public static final float TOFU_WAFFLE_MULT = 1.0f;
+
+    // ==========================================
+    // SECTION 7: BOSS CONFIGURATION
+    // ==========================================
+    public static final int BOSS_ROBIN_BASE_HP = 1000;
+    public static final int BOSS_ROBIN_BASE_POWER = 10;
+    public static final int BOSS_ROBIN_BASE_DODGE = 10;
+    public static final int BOSS_ROBIN_BASE_LUCK = 10;
+    public static final int BOSS_ROBIN_LEVEL = 10;
+    public static final String BOSS_ROBIN_UPGRADES = "HHHHHHHHH"; // 9 HP Upgrades
 
 }

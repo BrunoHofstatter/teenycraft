@@ -23,6 +23,10 @@ public class TeenyCraft {
         bruhof.teenycraft.item.ModCreativeTabs.register(modEventBus);
         bruhof.teenycraft.networking.ModMessages.register();
         bruhof.teenycraft.screen.ModMenuTypes.register(modEventBus);
+        bruhof.teenycraft.entity.ModEntities.register(modEventBus);
+        bruhof.teenycraft.world.dimension.ModDimensions.register();
+        
+        bruhof.teenycraft.battle.effect.EffectRegistry.init();
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::clientSetup);

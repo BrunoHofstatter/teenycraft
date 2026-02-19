@@ -43,9 +43,14 @@ public class TitanManager implements ITitanManager {
 
         @Override
         protected void onContentsChanged(int slot) {
-            // Logic to mark dirty if needed
+            // We need to ensure the data is saved.
+            // Since this handler is inside a Capability, typically the persistence is handled automatically
+            // when the Chunk/Player saves, IF the game knows it needs saving.
+            // For now, we can leave this or add a callback if we notice persistence issues.
         }
     };
+
+    private net.minecraft.nbt.ListTag vanillaItems = new net.minecraft.nbt.ListTag();
 
     @Override
     public ItemStackHandler getInventory() {
@@ -65,16 +70,44 @@ public class TitanManager implements ITitanManager {
     }
 
     @Override
+    public void saveVanillaInventory(net.minecraft.world.entity.player.Player player) {
+        if (hasSavedVanillaInventory()) {
+            player.getInventory().clearContent();
+            return;
+        }
+        this.vanillaItems = new net.minecraft.nbt.ListTag();
+        player.getInventory().save(this.vanillaItems);
+        player.getInventory().clearContent();
+    }
+
+    @Override
+    public void restoreVanillaInventory(net.minecraft.world.entity.player.Player player) {
+        if (this.vanillaItems != null && !this.vanillaItems.isEmpty()) {
+            player.getInventory().load(this.vanillaItems);
+            this.vanillaItems = new net.minecraft.nbt.ListTag();
+        }
+    }
+
+    @Override
+    public boolean hasSavedVanillaInventory() {
+        return this.vanillaItems != null && !this.vanillaItems.isEmpty();
+    }
+
+    @Override
     public void saveNBTData(CompoundTag tag) {
         tag.put("inventory", inventory.serializeNBT());
+        if (this.vanillaItems != null && !this.vanillaItems.isEmpty()) {
+            tag.put("VanillaItems", this.vanillaItems);
+        }
     }
 
     @Override
     public void loadNBTData(CompoundTag tag) {
         CompoundTag invTag = tag.getCompound("inventory");
-        // Safety check: If the saved data is smaller than our current TOTAL_SLOTS,
-        // we need to resize it or at least handle the loading carefully.
-        // ItemStackHandler.deserializeNBT will naturally fill up to its current size.
         inventory.deserializeNBT(invTag);
+        
+        if (tag.contains("VanillaItems")) {
+            this.vanillaItems = tag.getList("VanillaItems", 10); // 10 = CompoundTag
+        }
     }
 }

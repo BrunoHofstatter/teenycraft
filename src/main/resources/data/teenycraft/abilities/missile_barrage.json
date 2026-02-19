@@ -1,13 +1,17 @@
 {
   "id": "missile_barrage",
   "name": "Missile Barrage",
+  "texture_index": 12,
+  "particle": "minecraft:explosion",
+  "particle_count": 5,
   "hit_type": "raycasting",
   "raycast_delay_tier": 6,
+  "range_tier": 4,
   "damage_tier": 8,
   "effects_on_opponent": [],
   "effects_on_self": [],
   "traits": [
     { "id": "group_damage" }
   ],
-  "golden_bonus": ["opponent:power_down:0.4"]
+  "golden_bonus": ["opponent:bar_depleter:1.0"]
 }

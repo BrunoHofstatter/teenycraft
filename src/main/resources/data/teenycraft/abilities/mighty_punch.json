@@ -1,0 +1,15 @@
+{
+  "id": "mighty_punch",
+  "name": "Mighty Punch",
+  "texture_index": 11,
+  "particle": "minecraft:crit",
+  "particle_count": 5,
+  "hit_type": "melee",
+  "damage_tier": 10,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    { "id": "activate", "params":[2.0] }
+  ],
+  "golden_bonus": ["trait:tofu_chance:1.5,1.2"]
+}

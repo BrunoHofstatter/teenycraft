@@ -24,6 +24,7 @@ public class ItemFigure extends Item {
     private static final String TAG_NICKNAME = "Nickname";
     private static final String TAG_LEVEL = "Level";
     private static final String TAG_XP = "XP";
+    private static final String TAG_LAST_UPGRADE = "LastUpgrade";
 
     // Stats Group
     private static final String TAG_STATS = "Stats";
@@ -188,6 +189,99 @@ public class ItemFigure extends Item {
     // 3. SETTERS (Writing to Cold Storage)
     // ==========================================
 
+    public static void setLevel(ItemStack stack, int level) {
+        if (!stack.hasTag()) return;
+        level = Math.max(1, Math.min(level, TeenyBalance.MAX_LEVEL));
+        stack.getTag().putInt(TAG_LEVEL, level);
+        stack.getTag().putInt(TAG_XP, 0); // Reset XP for the new level
+    }
+
+    public static void resetToFactory(ItemStack stack) {
+        String id = getFigureID(stack);
+        ItemStack freshStack = bruhof.teenycraft.util.FigureLoader.getFigureStack(id);
+        if (!freshStack.isEmpty() && freshStack.hasTag()) {
+            stack.setTag(freshStack.getTag().copy());
+        }
+    }
+
+    public static void applyUpgrades(ItemStack stack, String upgradeCode) {
+        if (!stack.hasTag()) return;
+        String code = upgradeCode.toUpperCase();
+        String lastStat = null;
+        for (char c : code.toCharArray()) {
+            switch (c) {
+                case 'H' -> {
+                    upgradeStat(stack, TAG_STAT_HP, TeenyBalance.UPGRADE_GAIN_HP);
+                    lastStat = TAG_STAT_HP;
+                }
+                case 'P' -> {
+                    upgradeStat(stack, TAG_STAT_POWER, TeenyBalance.UPGRADE_GAIN_POWER);
+                    lastStat = TAG_STAT_POWER;
+                }
+                case 'D' -> {
+                    upgradeStat(stack, TAG_STAT_DODGE, TeenyBalance.UPGRADE_GAIN_DODGE);
+                    lastStat = TAG_STAT_DODGE;
+                }
+                case 'L' -> {
+                    upgradeStat(stack, TAG_STAT_LUCK, TeenyBalance.UPGRADE_GAIN_LUCK);
+                    lastStat = TAG_STAT_LUCK;
+                }
+            }
+        }
+        if (lastStat != null) {
+            stack.getTag().putString(TAG_LAST_UPGRADE, lastStat);
+        }
+    }
+
+    public static void setGolden(ItemStack stack, int abilitySlot, boolean active) {
+        if (!stack.hasTag()) return;
+        java.util.ArrayList<String> order = getAbilityOrder(stack);
+        // Slot is 1-based from command, convert to 0-based
+        int index = abilitySlot - 1;
+        if (index >= 0 && index < order.size()) {
+            setGoldenProgress(stack, order.get(index), active ? 1.0f : 0.0f);
+        }
+    }
+
+    public static void setGoldenProgress(ItemStack stack, String abilityId, float value) {
+        if (!stack.hasTag()) return;
+        CompoundTag tag = stack.getTag();
+        if (!tag.contains(TAG_GOLDEN_PROGRESS)) tag.put(TAG_GOLDEN_PROGRESS, new CompoundTag());
+
+        CompoundTag golden = tag.getCompound(TAG_GOLDEN_PROGRESS);
+        golden.putFloat(abilityId, Math.max(0.0f, Math.min(1.0f, value)));
+    }
+
+    public static void setAbilityOrderString(ItemStack stack, String orderCode) {
+        if (!stack.hasTag()) return;
+        java.util.ArrayList<String> currentOrder = getAbilityOrder(stack);
+        if (currentOrder.isEmpty()) return;
+
+        java.util.List<String> newOrder = new java.util.ArrayList<>();
+        
+        // Parse code "312" -> indices 2, 0, 1
+        for (char c : orderCode.toCharArray()) {
+            if (Character.isDigit(c)) {
+                int index = Character.getNumericValue(c) - 1; // 1-based to 0-based
+                if (index >= 0 && index < currentOrder.size()) {
+                    String abilityId = currentOrder.get(index);
+                    if (!newOrder.contains(abilityId)) {
+                        newOrder.add(abilityId);
+                    }
+                }
+            }
+        }
+
+        // Fill in any missing abilities at the end to prevent data loss
+        for (String id : currentOrder) {
+            if (!newOrder.contains(id)) {
+                newOrder.add(id);
+            }
+        }
+
+        setAbilityOrder(stack, newOrder);
+    }
+
     public static void updateGoldenProgress(ItemStack stack, String abilityId, float increment) {
         if (!stack.hasTag()) return;
         CompoundTag tag = stack.getTag();
@@ -297,11 +391,14 @@ public class ItemFigure extends Item {
             return;
         }
 
-        // Header: "Robin (Lvl 5)"
+        // Header: "Robin (Lvl 5) 250/500 xp"
         String name = getFigureName(pStack);
         String fClass = getFigureClass(pStack);
         int level = getLevel(pStack);
-        pTooltipComponents.add(Component.literal("§6" + name.toUpperCase() + " §e[Lvl " + level + "]"));
+        int xp = pStack.getTag().getInt(TAG_XP);
+        int xpNeeded = level * 100;
+
+        pTooltipComponents.add(Component.literal("§6" + name.toUpperCase() + " §e[Lvl " + level + "] §8" + xp + "/" + xpNeeded + " xp"));
         pTooltipComponents.add(Component.literal("§7Class: §f" + fClass));
 
         if (net.minecraft.client.gui.screens.Screen.hasControlDown()) {

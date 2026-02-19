@@ -1,11 +1,15 @@
 {
   "id": "plasma_shot",
   "name": "Plasma Shot",
+  "texture_index": 13,
+  "particle": "minecraft:flame",
+  "particle_count": 5,
   "hit_type": "raycasting",
   "raycast_delay_tier": 3,
+  "range_tier": 4,
   "damage_tier": 9,
   "effects_on_opponent": [],
   "effects_on_self": [],
   "traits": [],
-  "golden_bonus": ["opponent:waffle_chance"]
+  "golden_bonus": ["opponent:waffle_chance:0.5,1.0"]
 }

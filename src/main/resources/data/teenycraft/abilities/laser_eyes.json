@@ -1,0 +1,17 @@
+{
+  "id": "laser_eyes",
+  "name": "Laser Eyes",
+  "texture_index": 10,
+  "particle": "minecraft:witch",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 0,
+  "range_tier": 4,
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    { "id": "charge_up", "params": [1.0] }
+  ],
+  "golden_bonus": ["trait:instant_cast"]
+}

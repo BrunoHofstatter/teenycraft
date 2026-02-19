@@ -3,7 +3,7 @@
   "name": "Robin",
   "description": "One of the classic titans, the leader of them all",
   "class": "Martial Arts",
-  "groups": ["Titans", "Young Justice"],
+  "groups": [ "Young Justice", "Robin", "Titans"],
   "price": 150,
   "attributes": {
     "hp_scale": 1.5,
@@ -12,6 +12,6 @@
     "luck_scale": 1.5
   },
     "abilities": ["heroic_pose", "birdarang", "staff_slam"],
-    "ability_cost_tiers": ["b", "c", "d"]
+    "ability_cost_tiers": ["c", "c", "d"]
   }
   

@@ -1,12 +1,15 @@
 {
   "id": "heroic_pose",
   "name": "Heroic Pose",
+  "texture_index": 9,
+  "particle": "minecraft:happy_villager",
+  "particle_count": 5,
   "hit_type": "none",
   "damage_tier": 7,
   "effects_on_opponent": [],
   "effects_on_self": [
-    { "id": "power_up" }
+    { "id": "power_up", "params": [1.0]}
   ],
   "traits": [],
-  "golden_bonus": ["self:heal"]
+  "golden_bonus": ["self:power_up:0.3"]
 }

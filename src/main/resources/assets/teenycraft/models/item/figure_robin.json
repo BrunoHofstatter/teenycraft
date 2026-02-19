@@ -1,5 +1,5 @@
 {
-  "parent": "teenycraft:item/figure_model_base",
+  "parent": "teenycraft:item/figure_model_base_slim",
   "textures": {
     "layer0": "teenycraft:item/robin"
   }

@@ -1,4 +1,9 @@
-# GEMINI.md - Tenny Craft Context & Core Logic
+I thi# GEMINI.md - Tenny Craft Context & Core Logic
+
+## 0. Current Implementation Status
+* **Core Figure Item (`ItemFigure`):** NBT structure, Stat logic, Chip slot, XP/Leveling stubs.
+* **Titan Manager:** Inventory container, GUI, Network packets (Sorting/Search).
+* **Data Loaders:** JSON loading for Figures and Abilities (`FigureLoader`, `AbilityLoader`).
 
 ## 1. Project Overview
 * **Project Name:** Tenny Craft
@@ -14,6 +19,7 @@
 I have created a dedicated file named `TennyBalance.java`.
 
 * **Requirement:** Every time you need a value (e.g., "How long does Stun last?", "How much damage does Power add?", "Base Mana Regen rate"), you must reference a public static final variable from `TennyBalance.java`.
+* **Constraint:** ABSOLUTELY NO HARDCODED VALUES. If a number is needed for logic, it belongs in `TennyBalance.java`.
 * **Goal:** I want to tweak the game's balance by editing one file, hunting down numbers in spread-out classes.
 
 ---
@@ -23,8 +29,25 @@ To ensure performance and data safety, the mod distinguishes between the "Item" 
 
 ### A. Cold Storage (The Item)
 * **What is it?** The ItemFigure sitting in the player's inventory/Curios slot.
-* **Data:** Stores permanent data via NBT (XP, Level, Nickname, Installed Chips).
-* **Constraint:** This item does not handle battle logic. It is just a data container.
+* **Data Structure:** Strictly follows the NBT tags defined in `ItemFigure.java`.
+
+#### 1. Immutable Identity (Factory Data)
+* **FigureID:** Unique string ID (e.g., "robin").
+* **Name, Description, Class:** Display info.
+* **Groups:** List of tags (e.g., "Titans", "Hive").
+* **Price:** Base coin value.
+* **Abilities:** The full pool of moves available to this figure.
+* **AbilityTiers:** A list of cost tiers (e.g., "a", "b", "c") corresponding to the figure's ability slots (1, 2, 3).
+    * **Logic:** Slot 1 always costs the value of Tier 1, regardless of which ability is placed there.
+
+#### 2. Mutable Progress (Player Data)
+* **Nickname:** User-defined name.
+* **Level, XP:** Current progression.
+* **Stats:** Compound tag containing current Health, Power, Dodge, and Luck.
+* **LastUpgrade:** Tracks the last stat upgraded to prevent consecutive picks of the same stat.
+* **AbilityOrder:** The active loadout order (indices pointing to the `Abilities` list).
+* **GoldenProgress:** Mastery percentage for specific abilities.
+*   **EquippedChip:** Serialized ItemStack of the installed mod chip.
 
 ### B. Hot Data (The Battle Wrapper)
 * **What is it?** A temporary Java Object created only when a battle starts.
@@ -36,7 +59,39 @@ To ensure performance and data safety, the mod distinguishes between the "Item" 
 
 ---
 
-## 4. The Battle Logic (Real-Time Arena)
+## 4. The Titan Manager (Team & Storage)
+The **Titan Manager** is the central hub for Figure management, acting as the player's "PC" or "Box System".
+
+### A. Architecture
+*   **System:** Implemented as a Capability (`ITitanManager`) attached to the Player.
+*   **Independence:** It is a completely separate inventory from the vanilla player inventory.
+*   **Access:** Players access it via the **Titan Pad** item (`ItemTitanPad`).
+
+### B. Slot Layout (The 976 Slots)
+The inventory is divided into three critical zones:
+
+1.  **Team Slots (0-2):**
+    *   **Purpose:** The 3 active figures used in battle.
+    *   **Battle Logic:** The Battle Engine reads *only* these slots to spawn the player's team. It ignores the hotbar.
+    *   **Constraint:** Enforces **Unique Figure IDs**. You cannot have two "Robin" figures in the team at once.
+2.  **Accessory Slot (3):**
+    *   **Purpose:** Holds the active "Battle Accessory" (e.g., Battery, Badge).
+    *   **Battle Logic:** This single item provides the global passive/buff for the entire team during combat.
+3.  **Storage Slots (4-975):**
+    *   **Purpose:** Long-term storage for the collection.
+    *   **Structure:** Logic divides this into 18 "Boxes" of 54 slots each.
+
+### C. The "Virtual" UI Logic
+The GUI cannot display 900+ slots at once. It uses a virtualized view:
+
+*   **Box Mode:** The main grid displays 54 slots corresponding to the selected Box (e.g., Box 1 shows slots 4-57).
+*   **Search Mode:** The server filters the entire storage and sends a list of *matching slot indices* to the client. The UI then displays these specific slots contiguously, hiding the rest.
+*   **Deposit Slot:** A "Smart Input" slot. Placing a figure here automatically pushes it into the first available slot in the main storage (0-975), handling overflow efficiently.
+*   **Sorting:** Performed server-side. The client requests a sort (Alphabetical, Level), and the server rearranges the entire storage list and syncs the changes.
+
+---
+
+## 5. The Battle Logic (Real-Time Arena)
 Battles happen in a custom dimension or arena structure.
 
 ### General Mechanics
@@ -58,8 +113,8 @@ Battles happen in a custom dimension or arena structure.
 
 ---
 
-## 5. Attributes & Statistics
-Figures have 4 base stats. Values and upgrade increments are defined in TennyBalance.java.
+## 6. Attributes & Statistics
+Figures have 4 base stats. Values and upgrade increments are defined in `TennyBalance.java`.
 
 * **Health (HP):** Standard health pool. Visualized via a custom GUI bar overlay.
 * **Power:** Flat damage addition to abilities.
@@ -71,9 +126,14 @@ Figures have 4 base stats. Values and upgrade increments are defined in TennyBal
     * **Crits:** Uses the same "Shuffle Bag" logic as Dodge.
     * **Scaling:** Luck directly increases the Duration or Efficiency of specific abilities (e.g., Stun lasts longer, Heals restore more).
 
+### Upgrade Logic
+* **The "No-Repeat" Rule:** Players cannot upgrade the same stat twice in a row. This is enforced by the `LastUpgrade` NBT tag.
+* **Scaling Values:** The specific amount gained per upgrade is defined in `TeenyBalance.java` (e.g., `UPGRADE_GAIN_HP`).
+* **Damage Calculation Bridge:** `ItemFigure.java` contains `calculateAbilityDamage()`. This bridge method translates "Cold" stats + "Ability Data" + "Balance Constants" into a raw damage number. The Battle Engine calls this; it does not re-calculate formulas.
+
 ---
 
-## 6. Effects & Traits Registry (Battle Logic Hooks)
+## 7. Effects & Traits Registry (Battle Logic Hooks)
 The Battle Engine must support specific "Hooks" to handle these effects. All durations, probabilities, and magnitudes are defined in TennyBalance.java.
 
 ### A. State Control (The "Can I do this?" Checks)
@@ -120,7 +180,7 @@ When a hit registers, the damage value passes through this sequence:
 
 ---
 
-## 7. Figure Acquisition & Leveling
+## 8. Figure Acquisition & Leveling
 * **Starters:** On first join, players choose 1 of 6 starter figures via a GUI.
 * **Mystery Boxes:** The primary way to get new figures. Acts as a loot crate with rarity logic.
 * **Leveling:** Figures gain XP from battles (Win/Loss).
@@ -133,7 +193,7 @@ When a hit registers, the damage value passes through this sequence:
 
 ---
 
-## 8. World Generation & The "Teenyverse"
+## 9. World Generation & The "Teenyverse"
 ### A. Overworld Generation (Teeny Pods)
 * **Structure:** Small, futuristic capsules (3x3x4) spawning in Overworld biomes.
 * **Function:** Act as gateways/teleporters.
@@ -168,7 +228,7 @@ When a hit registers, the damage value passes through this sequence:
 
 ---
 
-## 9. Economy & Quests
+## 10. Economy & Quests
 * **Currency:** Teeny Coins.
 * **Sources:** Won from battles or selling duplicate figures.
 * **Shops:**
@@ -178,7 +238,7 @@ When a hit registers, the damage value passes through this sequence:
 
 ---
 
-## 10. Technical Stack (Essentials)
+## 11. Technical Stack (Essentials)
 * **JSON Driven:** Figures and Abilities are defined in JSON files (stats, models, action lists) so they can be added without recompiling code.
 * **GeckoLib:** Used for all Figure animations and models.
 * **Networking:** The Server is the authority. The Client sends "Intent to Cast", the Server validates (Mana/Cooldown/Stun status) and executes.

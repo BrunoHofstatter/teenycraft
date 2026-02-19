@@ -1,6 +1,9 @@
 {
   "id": "staff_slam",
   "name": "Staff Slam",
+  "texture_index": 15,
+  "particle": "minecraft:crit",
+  "particle_count": 5,
   "hit_type": "melee",
   "damage_tier": 6,
   "effects_on_opponent": [

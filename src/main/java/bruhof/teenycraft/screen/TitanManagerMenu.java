@@ -5,6 +5,7 @@ import bruhof.teenycraft.capability.TitanManager;
 import bruhof.teenycraft.capability.TitanManagerProvider;
 import bruhof.teenycraft.item.custom.ItemFigure;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -41,20 +42,23 @@ public class TitanManagerMenu extends AbstractContainerMenu {
         IItemHandler inventory = titanManager.getInventory();
 
         // 1. Team Slots (0-2)
-        this.addSlot(new SlotItemHandler(inventory, TitanManager.SLOT_TEAM_1, 62, 20));
-        this.addSlot(new SlotItemHandler(inventory, TitanManager.SLOT_TEAM_2, 80, 20));
-        this.addSlot(new SlotItemHandler(inventory, TitanManager.SLOT_TEAM_3, 98, 20));
+        this.addSlot(new SlotItemHandler(inventory, TitanManager.SLOT_TEAM_1, 62, 19));
+        this.addSlot(new SlotItemHandler(inventory, TitanManager.SLOT_TEAM_2, 80, 19));
+        this.addSlot(new SlotItemHandler(inventory, TitanManager.SLOT_TEAM_3, 98, 19));
 
         // 2. Accessory Slot (3)
-        this.addSlot(new SlotItemHandler(inventory, TitanManager.SLOT_ACCESSORY, 134, 20));
+        this.addSlot(new SlotItemHandler(inventory, TitanManager.SLOT_ACCESSORY, 134, 19));
 
-        // 3. Storage Slots
+        // 3. Storage Slots (4-57)
         for (int row = 0; row < 6; row++) {
             for (int col = 0; col < 9; col++) {
                 int slotIndexInBox = col + row * 9;
                 this.addSlot(new TitanBoxSlot(inventory, slotIndexInBox, 8 + col * 18, 54 + row * 18));
             }
         }
+        
+        // 4. Deposit Slot (58)
+        this.addSlot(new DepositSlot(152, 18));
 
         layoutPlayerInventorySlots(inv, 8, 174);
     }
@@ -67,7 +71,6 @@ public class TitanManagerMenu extends AbstractContainerMenu {
         if (!isSearchMode) {
             if (boxIndex >= 0 && boxIndex < 18) {
                 this.currentBox = boxIndex;
-                System.out.println("SetBox to " + currentBox + " on " + (player.level().isClientSide() ? "Client" : "Server"));
             }
         } else {
             // In search mode, "setBox" acts as "setPage"
@@ -78,41 +81,34 @@ public class TitanManagerMenu extends AbstractContainerMenu {
                 this.currentBox = boxIndex;
             }
         }
-        // Force update slots
         this.broadcastChanges();
     }
 
     public void updateSearch(String query) {
         this.lastQuery = query.toLowerCase().trim();
         this.isSearchMode = !this.lastQuery.isEmpty();
-        this.currentBox = 0; // Reset to page 1
+        this.currentBox = 0; 
 
         if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
             // Server Side Search Logic
             List<Integer> matches = new ArrayList<>();
             if (isSearchMode) {
                 IItemHandler inv = titanManager.getInventory();
-                // Scan only storage slots (4 to 975)
                 for (int i = 0; i < TitanManager.TOTAL_STORAGE_SLOTS; i++) {
                     int globalIndex = TitanManager.STORAGE_START + i;
                     ItemStack stack = inv.getStackInSlot(globalIndex);
                     if (!stack.isEmpty()) {
                         String name = stack.getHoverName().getString().toLowerCase();
-                        // Also check FigureID if possible for technical search
                         String id = (stack.getItem() instanceof ItemFigure) ? ItemFigure.getFigureID(stack).toLowerCase() : "";
-                        
                         if (name.contains(this.lastQuery) || id.contains(this.lastQuery)) {
                             matches.add(globalIndex);
                         }
                     }
                 }
             }
-            // Send results to client
             this.searchMatches = matches;
             bruhof.teenycraft.networking.ModMessages.sendToPlayer(new bruhof.teenycraft.networking.PacketSyncSearchResults(matches), serverPlayer);
         } else {
-            // Client Side: Wait for packet
-            // We can preemptively clear matches to show loading state if desired
             if (isSearchMode) {
                 this.searchMatches.clear(); 
             }
@@ -138,7 +134,66 @@ public class TitanManagerMenu extends AbstractContainerMenu {
     }
 
     // =========================================
-    // CUSTOM SLOT
+    // DEPOSIT SLOT (Smart Overflow)
+    // =========================================
+    private class DepositSlot extends Slot {
+        public DepositSlot(int x, int y) {
+            super(new SimpleContainer(1), 0, x, y);
+        }
+
+        @Override
+        public boolean mayPlace(@NotNull ItemStack stack) {
+            return stack.getItem() instanceof ItemFigure;
+        }
+
+        @Override
+        public void set(@NotNull ItemStack stack) {
+            if (stack.isEmpty()) {
+                super.set(stack);
+                return;
+            }
+            
+            // Try to move to main storage immediately
+            IItemHandler handler = titanManager.getInventory();
+            boolean moved = false;
+            
+            for (int i = 0; i < TitanManager.TOTAL_STORAGE_SLOTS; i++) {
+                int slot = TitanManager.STORAGE_START + i;
+                if (handler.insertItem(slot, stack, true).isEmpty()) { // Check if fits
+                    handler.insertItem(slot, stack, false); // Do it
+                    moved = true;
+                    break;
+                }
+            }
+            
+            // Clear this slot regardless, so it acts as a "hole"
+            // If moved=false (full), we ideally shouldn't have accepted it?
+            // But set() is called after logic.
+            // Actually, if we clear it here, and it wasn't moved, it is deleted!
+            // So only clear if moved.
+            
+            if (moved) {
+                super.set(ItemStack.EMPTY); 
+                
+                // Force Sync
+                if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                    player.getCapability(TitanManagerProvider.TITAN_MANAGER).ifPresent(cap -> {
+                        net.minecraft.nbt.CompoundTag nbt = new net.minecraft.nbt.CompoundTag();
+                        cap.saveNBTData(nbt);
+                        bruhof.teenycraft.networking.ModMessages.sendToPlayer(new bruhof.teenycraft.networking.PacketSyncTitanData(nbt), serverPlayer);
+                    });
+                }
+            } else {
+                // Storage Full: Leave it in this slot? 
+                // Or bounce it back? 
+                // For now, if full, it stays in this slot (Slot 58). 
+                super.set(stack);
+            }
+        }
+    }
+
+    // =========================================
+    // CUSTOM BOX SLOT
     // =========================================
 
     private class TitanBoxSlot extends Slot {
@@ -154,14 +209,12 @@ public class TitanManagerMenu extends AbstractContainerMenu {
         @Override
         public int getSlotIndex() {
             if (isSearchMode) {
-                // Search Logic
                 int matchIndex = (currentBox * 54) + slotIndexInBox;
                 if (matchIndex < searchMatches.size()) {
                     return searchMatches.get(matchIndex);
                 }
-                return 0; // Fallback
+                return 0; 
             } else {
-                // Normal Box Logic
                 return TitanManager.STORAGE_START + (currentBox * 54) + slotIndexInBox;
             }
         }
@@ -184,7 +237,6 @@ public class TitanManagerMenu extends AbstractContainerMenu {
         @Override
         public @NotNull ItemStack getItem() {
             int index = getSlotIndex();
-            // Validate range to prevent crashes
             if (index < 0 || index >= itemHandler.getSlots()) return ItemStack.EMPTY;
             return itemHandler.getStackInSlot(index);
         }
@@ -200,7 +252,6 @@ public class TitanManagerMenu extends AbstractContainerMenu {
 
         @Override
         public void setChanged() {
-            // No-op or custom logic
         }
 
         @Override
@@ -218,7 +269,6 @@ public class TitanManagerMenu extends AbstractContainerMenu {
         @Override
         public boolean mayPickup(Player playerIn) {
              if (isSearchMode && !isActive()) return false;
-             // Can always pick up if slot is valid
              return !getItem().isEmpty();
         }
     }
@@ -230,26 +280,40 @@ public class TitanManagerMenu extends AbstractContainerMenu {
         ItemStack sourceStack = sourceSlot.getItem();
         ItemStack copyOfSourceStack = sourceStack.copy();
 
+        // 0-3: Team/Accessory
+        // 4-57: Visible Box (54 slots)
+        // 58: Deposit Slot
+        // 59-85: Inventory
+        // 86-94: Hotbar
+
         if (index < 4) {
-            // Team/Accessory -> Box
-            if (!this.moveItemStackTo(sourceStack, 4, 58, false)) {
-                if (!this.moveItemStackTo(sourceStack, 58, 94, true)) return ItemStack.EMPTY;
-            }
+             // Team -> Visible Box -> Deposit -> Inventory
+             if (!this.moveItemStackTo(sourceStack, 4, 58, false)) {
+                 if (!this.moveItemStackTo(sourceStack, 58, 59, false)) { 
+                     if (!this.moveItemStackTo(sourceStack, 59, 95, true)) return ItemStack.EMPTY;
+                 }
+             }
         } else if (index < 58) {
-            // Box -> Inventory
-            if (!this.moveItemStackTo(sourceStack, 58, 94, true)) return ItemStack.EMPTY;
+             // Box -> Inventory
+             if (!this.moveItemStackTo(sourceStack, 59, 95, true)) return ItemStack.EMPTY;
+        } else if (index == 58) {
+             // Deposit -> Inventory
+             if (!this.moveItemStackTo(sourceStack, 59, 95, true)) return ItemStack.EMPTY;
         } else {
-            // Inventory -> Box
-            // If Searching, we force fail (or prioritize Team slots only) to avoid losing items in hidden slots
-            if (isSearchMode) {
-                if (!this.moveItemStackTo(sourceStack, 0, 3, false)) return ItemStack.EMPTY;
-            } else {
-                if (!this.moveItemStackTo(sourceStack, 4, 58, false)) {
-                    if (!this.moveItemStackTo(sourceStack, 0, 3, false)) {
-                         if (!this.moveItemStackTo(sourceStack, 3, 4, false)) return ItemStack.EMPTY;
-                    }
-                }
-            }
+             // Inventory -> Titan Manager
+             // 1. Try Visible Box
+             if (!this.moveItemStackTo(sourceStack, 4, 58, false)) {
+                 // 2. Try Team
+                 if (!this.moveItemStackTo(sourceStack, 0, 3, false)) {
+                     // 3. Try Accessory
+                     if (!this.moveItemStackTo(sourceStack, 3, 4, false)) {
+                         // 4. Try Deposit Slot (Auto Overflow)
+                         if (!this.moveItemStackTo(sourceStack, 58, 59, false)) {
+                             return ItemStack.EMPTY;
+                         }
+                     }
+                 }
+             }
         }
 
         if (sourceStack.getCount() == 0) {

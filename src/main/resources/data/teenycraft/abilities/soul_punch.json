@@ -1,0 +1,13 @@
+{
+  "id": "soul_punch",
+  "name": "Soul Punch",
+  "texture_index": 14,
+  "particle": "minecraft:crit",
+  "particle_count": 5,
+  "hit_type": "melee",
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["opponent:stun:0.6"]
+}

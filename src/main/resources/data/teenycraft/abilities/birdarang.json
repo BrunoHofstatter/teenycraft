@@ -1,11 +1,15 @@
 {
   "id": "birdarang",
   "name": "Birdarang",
+  "texture_index": 2,
+  "particle": "minecraft:poof",
+  "particle_count": 5,
   "hit_type": "raycasting",
   "raycast_delay_tier": 7,
+  "range_tier": 4,
   "damage_tier": 8,
   "effects_on_opponent": [],
   "effects_on_self": [],
   "traits": [],
-  "golden_bonus": ["opponent:undodgeable"]
+  "golden_bonus": ["trait:undodgeable"]
 }

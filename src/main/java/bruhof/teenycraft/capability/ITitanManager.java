@@ -11,4 +11,9 @@ public interface ITitanManager {
     // For saving/loading to NBT
     void saveNBTData(CompoundTag tag);
     void loadNBTData(CompoundTag tag);
+    
+    // Vanilla Inventory Vault
+    void saveVanillaInventory(net.minecraft.world.entity.player.Player player);
+    void restoreVanillaInventory(net.minecraft.world.entity.player.Player player);
+    boolean hasSavedVanillaInventory();
 }

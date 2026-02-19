@@ -1,0 +1,17 @@
+{
+  "id": "burp_surprise",
+  "name": "Burp Surprise",
+  "texture_index": 5,
+  "particle": "minecraft:bubble_pop",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 8,
+  "range_tier": 4,
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    { "id": "surprise" }
+  ],
+  "golden_bonus": ["self:tofu_chance:1.0"]
+}

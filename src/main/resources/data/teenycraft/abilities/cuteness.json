@@ -1,0 +1,15 @@
+{
+  "id": "cuteness",
+  "name": "Cuteness",
+  "texture_index": 7,
+  "particle": "minecraft:cherry_leaves",
+  "particle_count": 5,
+  "hit_type": "none",
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    { "id": "cuteness", "params": [1.0] }
+  ],
+  "traits": [],
+  "golden_bonus": ["self:cuteness:1.2"]
+}

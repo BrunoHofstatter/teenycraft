@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "teenycraft:item/ability_staff_slam"
+  }
+}

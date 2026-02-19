@@ -1,0 +1,15 @@
+{
+  "id": "burp_shield",
+  "name": "Burp Shield",
+  "texture_index": 4,
+  "particle": "minecraft:bubble",
+  "particle_count": 5,
+  "hit_type": "none",
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    { "id": "shield", "params": [1.0] }
+  ],
+  "traits": [],
+  "golden_bonus": ["self:shield:1.2"]
+}

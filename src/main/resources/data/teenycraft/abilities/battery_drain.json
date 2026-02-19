@@ -1,15 +1,16 @@
 {
   "id": "battery_drain",
   "name": "Battery Drain",
+  "texture_index": 1,
+  "particle": "minecraft:electric_spark",
+  "particle_count": 5,
   "hit_type": "none",
   "damage_tier": 7,
-  "effects_on_opponent": [
-    { "id": "stun", "params": [1.0] }
-  ],
+  "effects_on_opponent":[],
   "effects_on_self": [
-    { "id": "damage", "params": [1.0] },
+    { "id": "self_shock", "params": [1.0] },
     { "id": "bar_fill", "params": [1.0] }
   ],
   "traits": [],
-  "golden_bonus": ["self:damage:0.8"]
+  "golden_bonus": ["self:power_up:0.3"]
 }

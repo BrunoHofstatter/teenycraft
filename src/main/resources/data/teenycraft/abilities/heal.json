@@ -1,0 +1,15 @@
+{
+  "id": "heal",
+  "name": "Heal",
+  "texture_index": 0,
+  "particle": "minecraft:happy_villager",
+  "particle_count": 5,
+  "hit_type": "none",
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    { "id": "heal", "params": [1.0]}
+  ],
+  "traits": [],
+  "golden_bonus": ["self:heal:0.3"]
+}

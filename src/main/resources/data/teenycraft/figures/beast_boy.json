@@ -1,0 +1,16 @@
+{
+  "id": "beast_boy",
+  "name": "Beast Boy",
+  "description": "One of the classic titans, he can transform into any animal",
+  "class": "Beast",
+  "groups": [ "LoveBBRae", "Young Justice", "Beast Boy", "Titans"],
+  "price": 150,
+  "attributes": {
+    "hp_scale": 2.5,
+    "power_scale": 2.5,
+    "dodge_scale": 1.5,
+    "luck_scale": 1.5
+  },
+  "abilities": ["mighty_punch", "whale_drop", "tofu"],
+  "ability_cost_tiers": ["b", "c", "a"]
+}

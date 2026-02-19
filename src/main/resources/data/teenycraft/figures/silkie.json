@@ -1,0 +1,16 @@
+{
+  "id": "silkie",
+  "name": "Silkie",
+  "description": "One of the classic titans, she just burps",
+  "class": "Cute",
+  "groups": [ "Silkie", "Titans", "Trash Lover"],
+  "price": 150,
+  "attributes": {
+    "hp_scale": 2.0,
+    "power_scale": 2.0,
+    "dodge_scale": 1.5,
+    "luck_scale": 2.5
+  },
+  "abilities": ["burp_shield", "burp_surprise", "cuteness"],
+  "ability_cost_tiers": ["c", "c", "b"]
+}

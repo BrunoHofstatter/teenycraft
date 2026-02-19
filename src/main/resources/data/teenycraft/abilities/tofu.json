@@ -1,0 +1,15 @@
+{
+  "id": "tofu",
+  "name": "Tofu",
+  "texture_index": 17,
+  "particle": "minecraft:spore_blossom_air",
+  "particle_count": 5,
+  "hit_type": "none",
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    { "id": "tofu_spawn", "params": [1.0] }
+  ],
+  "traits": [],
+  "golden_bonus": ["self:power_up:0.35"]
+}
