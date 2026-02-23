@@ -27,6 +27,7 @@ public class TeenyCraft {
         bruhof.teenycraft.world.dimension.ModDimensions.register();
         
         bruhof.teenycraft.battle.effect.EffectRegistry.init();
+        bruhof.teenycraft.battle.effect.EffectApplierRegistry.init();
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::clientSetup);

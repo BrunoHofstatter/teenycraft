@@ -1,0 +1,15 @@
+{
+  "id": "dodge_smoke",
+  "name": "Heroic Pose",
+  "texture_index": 9,
+  "particle": "minecraft:happy_villager",
+  "particle_count": 5,
+  "hit_type": "none",
+  "damage_tier": 0,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    { "id": "dodge_smoke", "params": [1.0,1.0]}
+  ],
+  "traits": [],
+  "golden_bonus": ["self:power_up:0.3"]
+}

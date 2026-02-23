@@ -120,6 +120,10 @@ public class AbilityLoader extends SimplePreparableReloadListener<Map<String, Ab
         return CACHE.get(id);
     }
 
+    public static java.util.Set<String> getAbilityIds() {
+        return CACHE.keySet();
+    }
+
     public static int getTextureIndex(String id) {
         AbilityData data = CACHE.get(id);
         return data != null ? data.textureIndex : 0;

@@ -38,6 +38,8 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
 import net.minecraft.world.entity.RelativeMovement;
+import net.minecraft.commands.SharedSuggestionProvider;
+import bruhof.teenycraft.util.AbilityLoader;
 
 public class CommandTeeny {
 
@@ -123,6 +125,7 @@ public class CommandTeeny {
             .then(Commands.literal("cast")
                 .then(Commands.literal("self")
                     .then(Commands.argument("ability", StringArgumentType.string())
+                        .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(AbilityLoader.getAbilityIds(), builder))
                         .then(Commands.argument("mana", IntegerArgumentType.integer())
                             .then(Commands.argument("golden", BoolArgumentType.bool())
                                 .executes(ctx -> castDebug(ctx, true))
@@ -132,6 +135,7 @@ public class CommandTeeny {
                 )
                 .then(Commands.literal("opponent")
                     .then(Commands.argument("ability", StringArgumentType.string())
+                        .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(AbilityLoader.getAbilityIds(), builder))
                         .then(Commands.argument("mana", IntegerArgumentType.integer())
                             .then(Commands.argument("golden", BoolArgumentType.bool())
                                 .executes(ctx -> castDebug(ctx, false))
@@ -247,7 +251,7 @@ public class CommandTeeny {
                 }
 
                 // 2. Initialize Battle Logic (Player Team)
-                battle.initializeBattle(team);
+                battle.initializeBattle(team, player);
                 
                 // 3. Generate Boss Robin (Opponent)
                 ItemStack bossStack = new ItemStack(ModItems.ROBIN.get());

@@ -12,10 +12,15 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,17 +32,27 @@ import java.util.UUID;
 
 public class BattleState implements IBattleState {
 
+    private static final UUID DODGE_SPEED_UUID = UUID.fromString("6f6c94a5-6a5e-4c7b-8b9a-7a5d1b6e2f4c");
+
     private boolean isBattling = false;
     private final List<BattleFigure> team = new ArrayList<>();
     private final List<BattleFigure> opponentTeam = new ArrayList<>();
     private UUID opponentEntityUUID;
     private int activeFigureIndex = 0;
     private int swapCooldown = 0;
+    private ServerPlayer player;
     
     // Player State
     private float currentMana = 0;
     private float currentTofuMana = 0;
     private final Map<String, EffectInstance> activeEffects = new HashMap<>();
+
+    // Charge Up Data
+    private int chargeTicks = 0;
+    private bruhof.teenycraft.util.AbilityLoader.AbilityData pendingAbility = null;
+    private int pendingSlot = -1;
+    private boolean pendingIsGolden = false;
+    private UUID pendingTargetUUID = null;
 
     // Victory Logic
     private boolean battleWon = false;
@@ -63,7 +78,8 @@ public class BattleState implements IBattleState {
     }
 
     @Override
-    public void initializeBattle(List<ItemStack> teamStacks) {
+    public void initializeBattle(List<ItemStack> teamStacks, ServerPlayer player) {
+        this.player = player;
         this.team.clear();
         for (ItemStack stack : teamStacks) {
             if (!stack.isEmpty()) {
@@ -138,8 +154,17 @@ public class BattleState implements IBattleState {
             player.sendSystemMessage(Component.literal("§cYou are Stunned! Cannot swap!"));
             return;
         }
+        if (hasEffect("root")) {
+            player.sendSystemMessage(Component.literal("§c§lROOTED! §7Cannot swap figures."));
+            return;
+        }
         if (newIndex < 0 || newIndex >= team.size()) return;
         if (newIndex == activeFigureIndex) return; // Already active
+
+        if (hasEffect("disable_" + newIndex)) {
+            player.sendSystemMessage(Component.literal("§c§lDISABLED! §7That figure is currently locked."));
+            return;
+        }
 
         if (swapCooldown > 0) {
             player.sendSystemMessage(Component.literal("§cSwap Cooldown: " + (swapCooldown / 20) + "s"));
@@ -157,8 +182,81 @@ public class BattleState implements IBattleState {
     }
 
     @Override
+    public void disableFigure(int index, int duration, Player player) {
+        if (hasEffect("cleanse_immunity")) return;
+        if (index < 0 || index >= team.size()) return;
+
+        // Max 2 Rule
+        List<String> activeDisables = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            if (hasEffect("disable_" + i)) activeDisables.add("disable_" + i);
+        }
+
+        if (activeDisables.size() >= 2 && !hasEffect("disable_" + index)) {
+            // Find the one with shortest remaining duration to remove
+            String oldest = null;
+            int minDur = Integer.MAX_VALUE;
+            for (String id : activeDisables) {
+                EffectInstance inst = getEffectInstance(id);
+                if (inst != null && inst.duration < minDur) {
+                    minDur = inst.duration;
+                    oldest = id;
+                }
+            }
+            if (oldest != null) removeEffect(oldest);
+        }
+
+        // Apply
+        applyEffect("disable_" + index, duration, 0);
+
+        // Auto-Swap if it was the active one
+        if (index == activeFigureIndex) {
+            player.sendSystemMessage(Component.literal("§c§lDISABLED! §7Current figure locked. Swapping..."));
+            
+            // Find next non-disabled figure
+            int nextIndex = -1;
+            for (int i = 1; i < 3; i++) {
+                int check = (activeFigureIndex + i) % team.size();
+                if (!hasEffect("disable_" + check)) {
+                    nextIndex = check;
+                    break;
+                }
+            }
+
+            if (nextIndex != -1) {
+                // Force swap (bypass cooldown/root checks for this forced event)
+                this.activeFigureIndex = nextIndex;
+                this.swapCooldown = TeenyBalance.SWAP_COOLDOWN * 20;
+                refreshPlayerInventory(player);
+                player.sendSystemMessage(Component.literal("§aForce swapped to: " + getActiveFigure().getNickname()));
+            }
+        }
+    }
+
+    @Override
     public int getSwapCooldown() {
         return swapCooldown;
+    }
+
+    @Override
+    public void updatePlayerSpeed(Player player) {
+        AttributeInstance speedAttr = player.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (speedAttr == null) return;
+
+        // Remove existing
+        speedAttr.removeModifier(DODGE_SPEED_UUID);
+
+        if (isBattling) {
+            BattleFigure active = getActiveFigure();
+            if (active != null) {
+                int dodgeStat = active.getDodgeStat();
+                double multiplierValue = TeenyBalance.SPEED_PER_DODGE * dodgeStat;
+                
+                // Operation 1 (MULTIPLY_BASE) adds value to 1.0 (base)
+                // Result = base * (1 + multiplierValue)
+                speedAttr.addTransientModifier(new AttributeModifier(DODGE_SPEED_UUID, "Teeny Dodge Speed", multiplierValue, AttributeModifier.Operation.MULTIPLY_BASE));
+            }
+        }
     }
 
     @Override
@@ -167,6 +265,9 @@ public class BattleState implements IBattleState {
 
         BattleFigure active = getActiveFigure();
         if (active == null) return;
+        
+        updatePlayerSpeed(player);
+
         ItemStack figureStack = active.getOriginalStack();
         java.util.ArrayList<String> abilityOrder = ItemFigure.getAbilityOrder(figureStack);
 
@@ -248,6 +349,19 @@ public class BattleState implements IBattleState {
         // Regen Mana
         regenMana();
 
+        // Update Charge Up
+        if (isCharging()) {
+            if (TeenyBalance.CHARGE_CANCEL_ON_STUN && hasEffect("stun")) {
+                cancelCharge();
+            } else {
+                chargeTicks--;
+                if (chargeTicks <= 0) {
+                    // Execution is handled by AbilityExecutor via tick event monitoring or direct call
+                    // To avoid circular dependency issues, we'll let ModEvents handle the finish call
+                }
+            }
+        }
+
         // Update ALL figures (Cooldowns)
         for (BattleFigure figure : team) {
             figure.tick();
@@ -313,7 +427,7 @@ public class BattleState implements IBattleState {
     
     @Override
     public void regenMana() {
-        if (hasEffect("stun")) return;
+        if (hasEffect("stun") || isCharging()) return;
         
         if (currentMana < TeenyBalance.BATTLE_MANA_MAX) {
             float regenRate = (float) TeenyBalance.BATTLE_MANA_REGEN_PER_SEC / 20.0f;
@@ -333,6 +447,16 @@ public class BattleState implements IBattleState {
     
     @Override
     public void applyEffect(String effectId, int duration, int magnitude) {
+        applyEffect(effectId, duration, magnitude, 0, null);
+    }
+
+    @Override
+    public void applyEffect(String effectId, int duration, int magnitude, float power) {
+        applyEffect(effectId, duration, magnitude, power, null);
+    }
+
+    @Override
+    public void applyEffect(String effectId, int duration, int magnitude, float power, UUID caster) {
         bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(effectId);
         BattleFigure active = getActiveFigure();
         
@@ -346,12 +470,24 @@ public class BattleState implements IBattleState {
         // 2. Apply/Stack
         if (activeEffects.containsKey(effectId)) {
             EffectInstance existing = activeEffects.get(effectId);
-            existing.magnitude += magnitude;
-            if (duration > existing.duration && existing.duration != -1) {
+            int oldMag = existing.magnitude;
+            if (effect != null && effect.canStackMagnitude()) {
+                existing.magnitude += magnitude;
+            } else {
+                existing.magnitude = magnitude; // Replace
+            }
+            // net.minecraft.Util.NIL_UUID might not be easily accessible, using simple sout for now if needed, but lets just ensure logic is 100%
+            // Actually, let's just make sure we are not replacing magnitude by mistake.
+            existing.power = Math.max(existing.power, power); // Keep highest power on stack
+            existing.casterUUID = caster;
+            
+            if (duration == -1) {
+                existing.duration = -1;
+            } else if (duration > existing.duration && existing.duration != -1) {
                 existing.duration = duration;
             }
         } else {
-            activeEffects.put(effectId, new EffectInstance(duration, magnitude));
+            activeEffects.put(effectId, new EffectInstance(duration, magnitude, power, caster));
         }
     }
     
@@ -372,6 +508,11 @@ public class BattleState implements IBattleState {
     }
     
     @Override
+    public EffectInstance getEffectInstance(String effectId) {
+        return activeEffects.get(effectId);
+    }
+    
+    @Override
     public void removeEffectsByCategory(bruhof.teenycraft.battle.effect.BattleEffect.EffectCategory category) {
         BattleFigure active = getActiveFigure();
         activeEffects.entrySet().removeIf(entry -> {
@@ -384,6 +525,52 @@ public class BattleState implements IBattleState {
         });
     }
     
+    @Override
+    public boolean isCharging() { return chargeTicks > 0; }
+
+    @Override
+    public int getChargeTicks() { return chargeTicks; }
+
+    @Override
+    public void startCharge(int ticks, bruhof.teenycraft.util.AbilityLoader.AbilityData data, int slot, boolean isGolden, UUID targetUUID) {
+        this.chargeTicks = ticks;
+        this.pendingAbility = data;
+        this.pendingSlot = slot;
+        this.pendingIsGolden = isGolden;
+        this.pendingTargetUUID = targetUUID;
+    }
+
+    @Override
+    public void cancelCharge() {
+        this.chargeTicks = 0;
+        this.pendingAbility = null;
+        this.pendingSlot = -1;
+        this.pendingIsGolden = false;
+        this.pendingTargetUUID = null;
+    }
+
+    @Override
+    public bruhof.teenycraft.util.AbilityLoader.AbilityData getPendingAbility() { return pendingAbility; }
+
+    @Override
+    public int getPendingSlot() { return pendingSlot; }
+
+    @Override
+    public boolean isPendingGolden() { return pendingIsGolden; }
+
+    @Override
+    public UUID getPendingTargetUUID() { return pendingTargetUUID; }
+
+    @Override
+    public ServerPlayer getPlayerEntity() { return this.player; }
+
+    @Override
+    public LivingEntity getOpponentEntity(ServerLevel level) {
+        if (opponentEntityUUID == null) return null;
+        Entity e = level.getEntity(opponentEntityUUID);
+        return (e instanceof LivingEntity le) ? le : null;
+    }
+
     @Override
     public void triggerOnAttack(BattleFigure attacker) {
         activeEffects.entrySet().removeIf(entry -> {

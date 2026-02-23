@@ -1,1 +1,3 @@
-{ "parent": "minecraft:item/generated", "textures": { "layer0": "teenycraft:item/ability_tofu" } }
+{
+  "parent": "teenycraft:item/tofu"
+}

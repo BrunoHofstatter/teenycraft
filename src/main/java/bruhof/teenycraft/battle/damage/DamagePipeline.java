@@ -17,7 +17,7 @@ public class DamagePipeline {
         public int baseDamagePerHit;
         public int hitCount = 1;
         public boolean isGroupDamage = false;
-        public boolean isCritical = false;
+        public boolean canCrit = false;
         public float knockback = 0.5f; // Default vanilla-ish knockback
         public List<String> effects = new ArrayList<>();
         
@@ -26,11 +26,11 @@ public class DamagePipeline {
             this.baseDamagePerHit = dmg;
         }
 
-        public DamageResult(int dmg, int count, boolean group, boolean crit) {
+        public DamageResult(int dmg, int count, boolean group, boolean canCrit) {
             this.baseDamagePerHit = dmg;
             this.hitCount = count;
             this.isGroupDamage = group;
-            this.isCritical = crit;
+            this.canCrit = canCrit;
         }
     }
     
@@ -38,11 +38,24 @@ public class DamagePipeline {
         public int finalDamage;
         public boolean isDodged;
         public boolean isBlocked; // Shield
+        public boolean isCritical;
+        public int dodgeReduction;
+        public int critBonus;
         
-        public MitigationResult(int dmg, boolean dodged, boolean blocked) {
+        public MitigationResult(int dmg, boolean dodged, boolean blocked, boolean critical) {
             this.finalDamage = dmg;
             this.isDodged = dodged;
             this.isBlocked = blocked;
+            this.isCritical = critical;
+        }
+
+        public MitigationResult(int dmg, boolean dodged, boolean blocked, boolean critical, int dodgeRed, int critB) {
+            this.finalDamage = dmg;
+            this.isDodged = dodged;
+            this.isBlocked = blocked;
+            this.isCritical = critical;
+            this.dodgeReduction = dodgeRed;
+            this.critBonus = critB;
         }
     }
 
@@ -89,19 +102,10 @@ public class DamagePipeline {
             rawDamage += (bonus - malus);
         }
         
-        // 3. Critical Hit Check (Luck)
-        boolean isCrit = attacker.tryCrit();
-        if (isCrit) {
-            float luckVal = attacker.getLuckStat(); // Stat from figure
-            if (state != null) {
-                 luckVal += state.getEffectMagnitude("luck_up"); // Add luck buff
-            }
-            float critMult = (luckVal / 100.0f * TeenyBalance.LUCK_BALANCE_MULTIPLIER) + TeenyBalance.BASE_LUCK_MULTIPLIER;
-            rawDamage *= critMult;
-        }
-
+        // 3. Critical Hit Readiness
+        // We no longer roll here to allow multi-hit independent rolls.
         DamageResult result = new DamageResult(Math.round(rawDamage));
-        result.isCritical = isCrit;
+        result.canCrit = true; // Most abilities can crit
 
         // 4. Trait Processing (Multi-Hit, Group, etc.)
         for (TraitData trait : data.traits) {
@@ -116,9 +120,49 @@ public class DamagePipeline {
         return result;
     }
     
-    public static MitigationResult calculateMitigation(IBattleState state, BattleFigure victim, DamageResult incoming, AbilityData data, boolean isGolden) {
-        int finalDmg = incoming.baseDamagePerHit;
+    public static MitigationResult calculateMitigation(IBattleState state, BattleFigure victim, BattleFigure attacker, DamageResult incoming, AbilityData data, boolean isGolden) {
+        int initialDmg = incoming.baseDamagePerHit;
+        int critBonus = 0;
+        boolean isCrit = false;
+
+        // 1. Critical Hit Roll (Per Hit)
+        if (incoming.canCrit && attacker != null && attacker.tryCrit()) {
+            isCrit = true;
+            float luckVal = attacker.getLuckStat();
+            float critMult = (luckVal / 100.0f * TeenyBalance.LUCK_BALANCE_MULTIPLIER) + TeenyBalance.BASE_LUCK_MULTIPLIER;
+            int critDmg = Math.round(initialDmg * critMult);
+            critBonus = critDmg - initialDmg;
+            initialDmg = critDmg;
+        }
+        
+        MitigationResult res = calculateMitigationInternal(state, victim, initialDmg, data, isGolden);
+        return new MitigationResult(res.finalDamage, res.isDodged, res.isBlocked, isCrit, res.dodgeReduction, critBonus);
+    }
+
+    public static MitigationResult calculatePoisonTick(IBattleState victimState, BattleFigure victim, BattleFigure attacker, float baseTickDamage) {
+        int initialDmg = Math.round(baseTickDamage);
+        int critBonus = 0;
+        boolean isCrit = false;
+
+        // 1. Roll for Crit (Attacker Context)
+        if (attacker != null && attacker.tryCrit()) {
+            isCrit = true;
+            float luckVal = attacker.getLuckStat();
+            float critMult = (luckVal / 100.0f * TeenyBalance.LUCK_BALANCE_MULTIPLIER) + TeenyBalance.BASE_LUCK_MULTIPLIER;
+            int critDmg = Math.round(initialDmg * critMult);
+            critBonus = critDmg - initialDmg;
+            initialDmg = critDmg;
+        }
+
+        // 2. Standard Mitigation (Internal)
+        MitigationResult mit = calculateMitigationInternal(victimState, victim, initialDmg, null, false);
+        return new MitigationResult(mit.finalDamage, mit.isDodged, mit.isBlocked, isCrit, mit.dodgeReduction, critBonus);
+    }
+
+    private static MitigationResult calculateMitigationInternal(IBattleState state, BattleFigure victim, int initialDmg, AbilityData data, boolean isGolden) {
+        int finalDmg = initialDmg;
         boolean isDodged = false;
+        int dodgeReduction = 0;
         
         boolean undodgeable = false;
         if (data != null) {
@@ -141,20 +185,66 @@ public class DamagePipeline {
             }
         }
 
-        // 1. Dodge Check
-        if (!undodgeable && victim.tryDodge()) {
+        // 1. Defense Multipliers (Relative)
+        if (state != null) {
+            int defUp = state.getEffectMagnitude("defense_up");
+            int defDown = state.getEffectMagnitude("defense_down");
+            
+            if (defUp > 0) {
+                float mult = 1.0f - (defUp / 100.0f);
+                finalDmg = (int) (finalDmg * Math.max(0, mult));
+            }
+            if (defDown > 0) {
+                float mult = 1.0f + (defDown / 100.0f);
+                finalDmg = (int) (finalDmg * mult);
+            }
+        }
+
+        // 2. Shield Check (Absolute Negation) - Check BEFORE Dodge so it can skip dodge roll
+        boolean isShielded = false;
+        if (state != null && state.hasEffect("shield")) {
+             state.removeEffect("shield");
+             isShielded = true;
+             if (!undodgeable) {
+                 finalDmg = 0;
+             }
+        }
+
+        // 3. Dodge Check (Absolute) - ONLY if there is damage to dodge
+        int bagModifier = 0;
+        float smokeMult = 0;
+        bruhof.teenycraft.battle.effect.EffectInstance smoke = null;
+        
+        if (state != null && state.hasEffect("dodge_smoke")) {
+            smoke = state.getEffectInstance("dodge_smoke");
+            if (smoke != null) {
+                bagModifier = (int)(smoke.power * TeenyBalance.DODGE_SMOKE_BAGSIZE_PERMANA);
+                smokeMult = smoke.power * TeenyBalance.DODGE_SMOKE_MULT_PERMANA;
+            }
+        }
+
+        if (!undodgeable && finalDmg > 0 && victim.tryDodge(bagModifier)) {
             isDodged = true;
             int mitigation = victim.getDodgeStat();
+            
+            // Apply Dodge Smoke Multiplier to mitigation
+            if (smokeMult > 0) {
+                mitigation = (int)(mitigation * (1.0f + smokeMult));
+            }
+            
+            int preDodge = finalDmg;
             finalDmg = Math.max(0, finalDmg - mitigation);
+            dodgeReduction = preDodge - finalDmg;
         }
         
-        // 2. Shield Check (To be implemented with effects)
-        if (state != null && state.hasEffect("shield")) {
-             // Logic: Consume shield charge, return 0 damage
-             // For now, simple boolean check
-             // return new MitigationResult(0, false, true);
+        // Consume Dodge Smoke charge (every attack)
+        if (smoke != null) {
+            smoke.magnitude--;
+            if (smoke.magnitude <= 0) {
+                state.removeEffect("dodge_smoke");
+            }
         }
         
-        return new MitigationResult(finalDmg, isDodged, false);
+        return new MitigationResult(finalDmg, isDodged, isShielded, false, dodgeReduction, 0);
     }
 }

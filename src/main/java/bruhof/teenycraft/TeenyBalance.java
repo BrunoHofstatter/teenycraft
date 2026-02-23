@@ -18,9 +18,11 @@ public class TeenyBalance {
     // SECTION 2: BATTLE MECHANICS
     // ==========================================
     public static final int BATTLE_MANA_MAX = 100;
-    public static final int BATTLE_MANA_REGEN_PER_SEC = 200; // Example
+    public static final int BATTLE_MANA_REGEN_PER_SEC = 10; // Example
     public static final int SWAP_COOLDOWN = 5;
-    public static final double RANGED_CONE_ANGLE = 30.0; // Degrees
+    
+    public static final float RANGED_START_WIDTH = 1.0f;
+    public static final float RANGED_CONE_ANGLE = 15.0f; // Total angle in degrees
 
     // ==========================================
     // SECTION 3: ABILITY COST TIERS
@@ -170,6 +172,8 @@ public class TeenyBalance {
 
     public static final float MELEE_ATTACK_SPEEED = -2.0F;
 
+    public static final float SPEED_PER_DODGE = 0.005f;
+
     // ==========================================
     // SECTION 5: SHUFFLE BAG (DODGE & LUCK)
     // ==========================================
@@ -199,16 +203,68 @@ public class TeenyBalance {
         return BAG_SIZE_0;
     }
     
-    public static final float CRIT_DAMAGE_MULTIPLIER = 1.5f; // Keep for now as fallback or remove if replaced by formula
+
     
     // ==========================================
-    // SECTION 6: EFFECT SCALING (PER 1 MANA)
+    // SECTION 6: EFFECT SCALING
     // ==========================================
 
     public static final float BASE_MANA_FILL_PERMANA = 2.0f;
     public static final float BASE_SELF_SHOCK_PERMANA = 0.01f;
     public static final float BASE_HEAL_PERMANA = 1.0f;
     public static final float BASE_POWER_UP_PERMANA = 1.0f;
+    public static final float BASE_POWER_DOWN_PERMANA = 0.8f;
+
+    public static final float BASE_DEFENSE_MAG = 10.0f;
+    public static final float DEFENSE_MAG_PERMANA = 0.2f;
+
+    public static final float DEFENSE_UP_DURATION_PERMANA = 0.4f;
+    public static final float DEFENSE_UP_DURATION_PERLUCK = 0.005f;
+
+    public static final float DEFENSE_DOWN_DURATION_PERMANA = 0.4f;
+    public static final float DEFENSE_DOWN_DURATION_PERLUCK = 0.005f;
+
+    public static final float ROOT_DURATION_PERMANA = 0.3f;
+    public static final float ROOT_DURATION_PERLUCK = 0.004f;
+
+    public static final float DISABLE_DURATION_PERMANA = 0.4f;
+    public static final float DISABLE_DURATION_PERLUCK = 0.005f;
+
+    public static final float SHOCK_BASE_AMOUNT = 2.0f;
+    public static final float SHOCK_AMOUNT_PERMANA = 0.15f;
+    public static final float SHOCK_BASE_INTERVAL = 60.0f; // 3s
+    public static final float SHOCK_INTERVAL_PERMANA = 200.0f; // Multiplied by (1/Mana)
+    public static final float SHOCK_INTERVAL_PERLUCK = 0.005f;
+    public static final float SHOCK_DURATION_PERMANA = 0.4f; // Duration of the stun itself
+    public static final float SHOCK_DURATION_PERLUCK = 0.006f;
+
+    public static final float POISON_BASE_AMOUNT = 3.0f;
+    public static final float POISON_AMOUNT_PERMANA = 0.2f;
+    public static final float POISON_BASE_INTERVAL = 40.0f; // 2s
+    public static final float POISON_INTERVAL_PERMANA = 150.0f;
+    public static final float POISON_INTERVAL_PERLUCK = 0.005f;
+
+    public static final float RADIO_BASE_AMOUNT = 3.0f;
+    public static final float RADIO_AMOUNT_PERMANA = 0.2f;
+    public static final float RADIO_BASE_INTERVAL = 40.0f; // 2s
+    public static final float RADIO_INTERVAL_PERMANA = 150.0f;
+    public static final float RADIO_INTERVAL_PERLUCK = 0.005f;
+
+    public static final int BASE_CHARGE_DELAY = 20; // 1 second base
+    public static final boolean CHARGE_CANCEL_ON_STUN = true;
+    public static final boolean CHARGE_LOCK_TARGET_ON_START = false;
+
+    public static final float BAR_DEPLETE_PERMANA = 0.25f;
+    public static final float BAR_DEPLETE_PERLUCK = 0.005f;
+
+    public static final float DODGE_SMOKE_DURATION_PERMANA = 0.4f;
+    public static final float DODGE_SMOKE_DURATION_PERLUCK = 0.005f;
+    public static final float DODGE_SMOKE_BAGSIZE_PERMANA = 0.05f; // 20 mana = 1 reduction
+    public static final float DODGE_SMOKE_MULT_PERMANA = 0.01f; // Enhanced mitigation mult
+    public static final int DODGE_SMOKE_USES = 5;
+
+    public static final float SHIELD_DURATION_PERMANA = 0.25f;
+    public static final float SHIELD_DURATION_PERLUCK = 0.004f;
 
     public static final float STUN_DURATION_PERMANA = 0.05f;
     public static final float STUN_DURATION_PERLUCK = 0.003f;
@@ -217,8 +273,10 @@ public class TeenyBalance {
     public static final float DANCE_DURATION_PERLUCK = 0.005f;
     public static final float DANCE_MANA_REGEN_MULTIPLIER = 2.0f;
 
-    public static final float FREEZE_PERMANA = 0.018f;
-    public static final float FREEZE_PERLUCK = 0.00005f;
+    public static final float FREEZE_PERCENTAGE_PERMANA = 1.8f;
+    public static final float FREEZE_PERCENTAGE_PERLUCK = 0.005f;
+
+    public static final float FREEZE_PERCENTAGE_MAX = 100.0f; // Max % of mana that can be burned
 
     public static final float FREEZE_DURATION_PERMANA = 0.03f;
     public static final float FREEZE_DURATION_PERLUCK = 0.0015f;
@@ -237,10 +295,7 @@ public class TeenyBalance {
     public static final float KISS_DURATION_PERMANA = 0.35f;
     public static final float KISS_DURATION_PERLUCK = 0.006f;
 
-    public static final float FREEZE_PERCENTAGE_PERMANA = 1.4f;
-    public static final float FREEZE_PERCENTAGE_PERLUCK = 0.005f;
 
-    public static final float FREEZE_PERCENTAGE_MAX = 80.0f; // Max % of mana that can be burned
 
     public static final float TOFU_CHANCE_HIT_PERMANA = 1.0F;
     public static final float TOFU_BASE_MANA = 30.0f;

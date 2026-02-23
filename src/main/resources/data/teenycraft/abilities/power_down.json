@@ -1,0 +1,17 @@
+{
+  "id": "power_down",
+  "name": "Curse",
+  "texture_index": 6,
+  "particle": "minecraft:dragon_breath",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 0,
+  "effects_on_opponent": [
+    { "id": "power_down" , "params": [1.0] }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["trait:instant_cast"]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "multi_hit",
+  "name": "Multi Hit",
+  "texture_index": 15,
+  "particle": "minecraft:dragon_breath",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    { "id": "multi_hit" , "params": [4.0] }
+  ],
+  "golden_bonus": ["trait:instant_cast"]
+}

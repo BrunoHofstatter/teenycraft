@@ -28,6 +28,10 @@ public abstract class BattleEffect {
     public EffectCategory getCategory() { return category; }
     public boolean isBeneficial() { return category == EffectCategory.BUFF || category == EffectCategory.SPECIAL; }
 
+    public boolean canStackMagnitude() {
+        return false;
+    }
+
     // ==========================================
     // LOGIC HOOKS
     // ==========================================

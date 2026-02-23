@@ -13,5 +13,5 @@
   "traits": [
     { "id": "group_damage" }
   ],
-  "golden_bonus": ["opponent:bar_depleter:1.0"]
+  "golden_bonus": ["opponent:bar_deplete:1.0"]
 }

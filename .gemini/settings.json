@@ -1,0 +1,8 @@
+{
+  "general": {
+    "defaultApprovalMode": "plan"
+  },
+  "experimental": {
+    "plan": true
+  }
+}

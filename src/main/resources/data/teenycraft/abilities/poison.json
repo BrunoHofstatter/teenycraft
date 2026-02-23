@@ -1,0 +1,17 @@
+{
+  "id": "poison",
+  "name": "Poison",
+  "texture_index": 15,
+  "particle": "minecraft:dragon_breath",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 7,
+  "effects_on_opponent": [
+    { "id": "poison" , "params": [1.0,1.0] }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["trait:instant_cast"]
+}

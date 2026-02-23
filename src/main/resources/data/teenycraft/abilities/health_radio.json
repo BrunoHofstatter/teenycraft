@@ -1,0 +1,15 @@
+{
+  "id": "health_radio",
+  "name": "Health Radio",
+  "texture_index": 16,
+  "particle": "minecraft:heart",
+  "particle_count": 8,
+  "hit_type": "none",
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    { "id": "health_radio", "params": [1.0, 1.0]}
+  ],
+  "traits": [],
+  "golden_bonus": ["self:health_radio:1.0,0.3"]
+}

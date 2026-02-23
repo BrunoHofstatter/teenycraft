@@ -105,6 +105,24 @@ public class BattleFigure {
     // ==========================================
     
     public boolean tryDodge() {
+        return tryDodge(0);
+    }
+
+    public boolean tryDodge(int bagSizeModifier) {
+        if (bagSizeModifier <= 0) {
+            return dodgeBag.next();
+        }
+        
+        // Logic: If we have a modifier, we roll against a virtual smaller bag
+        // Probability = 1 / (OriginalSize - Modifier)
+        int originalSize = TeenyBalance.getBagSize(getDodgeStat());
+        int newSize = Math.max(1, originalSize - bagSizeModifier);
+        
+        // We use Math.random here because modifying the physical bag mid-battle is complex
+        // This mimics the probability of a smaller shuffle bag
+        if (Math.random() < (1.0 / newSize)) return true;
+        
+        // If the bonus roll fails, we still check the regular bag
         return dodgeBag.next();
     }
     

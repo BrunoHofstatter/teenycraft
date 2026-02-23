@@ -34,6 +34,7 @@ public class ModCreativeTabs {
                         pOutput.accept(ModItems.STARFIRE.get());
                         pOutput.accept(ModItems.BEAST_BOY.get());
                         pOutput.accept(ModItems.SILKIE.get());
+                        pOutput.accept(ModItems.TOFU.get());
                     })
                     .build());
 

@@ -120,7 +120,35 @@ public class ModEvents {
     public static void onPlayerTick(net.minecraftforge.event.TickEvent.PlayerTickEvent event) {
         if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && !event.player.level().isClientSide()) {
             event.player.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(state -> {
+                boolean wasBattling = state.isBattling();
+                
+                // Track charge before tick
+                boolean wasCharging = state.isCharging();
+                
                 state.tick();
+                
+                boolean isBattling = state.isBattling();
+                boolean isCharging = state.isCharging();
+
+                // 1. Hand Lock Logic
+                if (isCharging) {
+                    int lockSlot = state.getPendingSlot();
+                    if (lockSlot >= 0 && lockSlot < 9) {
+                        event.player.getInventory().selected = lockSlot;
+                    }
+                }
+
+                // 2. Charge Completion Logic
+                if (wasCharging && !isCharging && state.getChargeTicks() <= 0 && state.getPendingAbility() != null) {
+                    if (event.player instanceof ServerPlayer sp) {
+                        bruhof.teenycraft.battle.AbilityExecutor.finishCharge(state, sp);
+                    }
+                }
+                
+                // If battle ended during tick (e.g. victory timer)
+                if (wasBattling && !isBattling) {
+                    state.updatePlayerSpeed(event.player);
+                }
                 
                 // SYNC
                 if (state.isBattling() && event.player instanceof ServerPlayer serverPlayer) {
