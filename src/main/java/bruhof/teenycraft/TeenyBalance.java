@@ -312,6 +312,27 @@ public class TeenyBalance {
     public static final float TOFU_FREEZE_MULT = 1.0f;
     public static final float TOFU_WAFFLE_MULT = 1.0f;
 
+    // Effects - Luck Up
+    public static final float LUCK_UP_PERCENT_PERMANA = 1.0f;
+    public static final float LUCK_UP_BASE_PERCENT = 10.0f;
+    public static final float LUCK_UP_DURATION_PERMANA = 0.7f;
+    public static final int LUCK_UP_BASE_DURATION = 20;
+
+    // Effects - Cuteness
+    public static final float CUTENESS_DURATION_PERMANA = 0.7f;
+    public static final float CUTENESS_DURATION_PERLUCK = 0.005f;
+    public static final float CUTENESS_PERCENT_PERMANA = 2.0f;
+    public static final float CUTENESS_PERCENT_PERLUCK = 0.005f;
+
+    // Effects - Reflect
+    public static final float REFLECT_DURATION_PERMANA = 0.05f;
+    public static final float REFLECT_DURATION_PERLUCK = 0.0005f;
+    public static final float REFLECT_DEFENSE_PERMANA = 0.008f; // 10% reduction per mana?
+    public static final float REFLECT_DAMAGE_PERMANA = 0.2f; // 5% power-scaled reflection per mana
+
+    // Death Swap
+    public static final int DEATH_SWAP_RESET_TICKS = 60; // 3 seconds
+
     // ==========================================
     // SECTION 7: BOSS CONFIGURATION
     // ==========================================

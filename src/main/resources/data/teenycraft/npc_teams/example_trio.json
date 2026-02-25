@@ -1,0 +1,26 @@
+ {
+  "id": "teenycraft:example_trio",
+  "figures": [
+    {
+      "figure_id": "beast_boy",
+      "level": 10,
+      "upgrades": "HHHHPPPP",
+      "ability_order": [0, 1, 2],
+      "golden_abilities": ["whale_drop"]
+    },
+    {
+      "figure_id": "starfire",
+      "level": 12,
+      "upgrades": "LLLLDDDD",
+      "ability_order": [1, 0, 2],
+      "golden_abilities": ["laser_eyes"]
+    },
+    {
+      "figure_id": "cyborg",
+      "level": 8,
+      "upgrades": "HHHHHHHH",
+      "ability_order": [2, 1, 0],
+      "golden_abilities": []
+    }
+  ]
+}

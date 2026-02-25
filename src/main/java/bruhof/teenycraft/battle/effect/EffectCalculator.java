@@ -38,9 +38,9 @@ public class EffectCalculator {
         return Math.round(value);
     }
 
-    public static int calculateBarDepleteMagnitude(BattleFigure caster, int manaCost, float paramMultiplier) {
+    public static int calculateBarDepleteMagnitude(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
         // Formula: Mana * Param * BaseDeplete * (1 + Luck * BasePerLuck)
-        float luck = caster.getLuckStat();
+        float luck = caster.getEffectiveStat(bruhof.teenycraft.battle.StatType.LUCK, state);
         float luckMultiplier = 1.0f + (luck * TeenyBalance.BAR_DEPLETE_PERLUCK);
         float value = manaCost * paramMultiplier * TeenyBalance.BAR_DEPLETE_PERMANA * luckMultiplier;
         return Math.round(value);
@@ -52,76 +52,78 @@ public class EffectCalculator {
         return Math.round(value);
     }
     
-    public static int calculateEffectDuration(BattleFigure caster, int manaCost, float paramMultiplier, float basePerMana, float basePerLuck) {
+    public static int calculateEffectDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier, float basePerMana, float basePerLuck) {
         // Formula: Mana * Param * BasePerMana * (1 + Luck * BasePerLuck)
-        float luck = caster.getLuckStat();
+        float luck = caster.getEffectiveStat(bruhof.teenycraft.battle.StatType.LUCK, state);
         float luckMultiplier = 1.0f + (luck * basePerLuck);
         float value = manaCost * paramMultiplier * basePerMana * luckMultiplier;
         return Math.round(value * 20); // Convert Seconds to Ticks
     }
 
-    public static int calculateStunDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.STUN_DURATION_PERMANA, TeenyBalance.STUN_DURATION_PERLUCK);
+    public static int calculateStunDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.STUN_DURATION_PERMANA, TeenyBalance.STUN_DURATION_PERLUCK);
     }
     
-    public static int calculateDanceDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.DANCE_DURATION_PERMANA, TeenyBalance.DANCE_DURATION_PERLUCK);
+    public static int calculateDanceDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.DANCE_DURATION_PERMANA, TeenyBalance.DANCE_DURATION_PERLUCK);
     }
     
-    public static int calculateCurseDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.CURSE_DURATION_PERMANA, TeenyBalance.CURSE_DURATION_PERLUCK);
+    public static int calculateCurseDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.CURSE_DURATION_PERMANA, TeenyBalance.CURSE_DURATION_PERLUCK);
     }
     
-    public static int calculateWaffleDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.WAFFLE_DURATION_PERMANA, TeenyBalance.WAFFLE_DURATION_PERLUCK);
+    public static int calculateWaffleDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.WAFFLE_DURATION_PERMANA, TeenyBalance.WAFFLE_DURATION_PERLUCK);
     }
 
-    public static int calculateCleanseDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.CLEANSE_DURATION_PERMANA, TeenyBalance.CLEANSE_DURATION_PERLUCK);
+    public static int calculateCleanseDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.CLEANSE_DURATION_PERMANA, TeenyBalance.CLEANSE_DURATION_PERLUCK);
     }
     
-    public static int calculateKissDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.KISS_DURATION_PERMANA, TeenyBalance.KISS_DURATION_PERLUCK);
+    public static int calculateKissDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.KISS_DURATION_PERMANA, TeenyBalance.KISS_DURATION_PERLUCK);
     }
     
-    public static int calculateShieldDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.SHIELD_DURATION_PERMANA, TeenyBalance.SHIELD_DURATION_PERLUCK);
+    public static int calculateShieldDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.SHIELD_DURATION_PERMANA, TeenyBalance.SHIELD_DURATION_PERLUCK);
     }
     
-    public static int calculateDodgeSmokeDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.DODGE_SMOKE_DURATION_PERMANA, TeenyBalance.DODGE_SMOKE_DURATION_PERLUCK);
+    public static int calculateDodgeSmokeDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.DODGE_SMOKE_DURATION_PERMANA, TeenyBalance.DODGE_SMOKE_DURATION_PERLUCK);
     }
 
-    public static int calculateDefenseUpDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.DEFENSE_UP_DURATION_PERMANA, TeenyBalance.DEFENSE_UP_DURATION_PERLUCK);
+    public static int calculateDefenseUpDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.DEFENSE_UP_DURATION_PERMANA, TeenyBalance.DEFENSE_UP_DURATION_PERLUCK);
     }
 
-    public static int calculateDefenseDownDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.DEFENSE_DOWN_DURATION_PERMANA, TeenyBalance.DEFENSE_DOWN_DURATION_PERLUCK);
+    public static int calculateDefenseDownDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.DEFENSE_DOWN_DURATION_PERMANA, TeenyBalance.DEFENSE_DOWN_DURATION_PERLUCK);
     }
 
-    public static int calculateRootDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.ROOT_DURATION_PERMANA, TeenyBalance.ROOT_DURATION_PERLUCK);
+    public static int calculateRootDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.ROOT_DURATION_PERMANA, TeenyBalance.ROOT_DURATION_PERLUCK);
     }
 
-    public static int calculateDisableDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.DISABLE_DURATION_PERMANA, TeenyBalance.DISABLE_DURATION_PERLUCK);
+    public static int calculateDisableDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.DISABLE_DURATION_PERMANA, TeenyBalance.DISABLE_DURATION_PERLUCK);
     }
 
     public static int calculateShockAmount(int manaCost, float paramMultiplier) {
         return (int) (TeenyBalance.SHOCK_BASE_AMOUNT + (manaCost * TeenyBalance.SHOCK_AMOUNT_PERMANA));
     }
 
-    public static int calculateShockInterval(BattleFigure caster, int manaCost, float paramMultiplier) {
+    public static int calculateShockInterval(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
         float m = Math.max(1, manaCost);
-        float luckMult = 1.0f - (caster.getLuckStat() * TeenyBalance.SHOCK_INTERVAL_PERLUCK);
+        float luck = caster.getEffectiveStat(bruhof.teenycraft.battle.StatType.LUCK, state);
+        float luckMult = 1.0f - (luck * TeenyBalance.SHOCK_INTERVAL_PERLUCK);
         float base = ((1.0f / m) * TeenyBalance.SHOCK_INTERVAL_PERMANA) + TeenyBalance.SHOCK_BASE_INTERVAL;
         return (int) (base * paramMultiplier * luckMult);
     }
 
-    public static int calculateShockLength(BattleFigure caster, int manaCost, float paramMultiplier) {
+    public static int calculateShockLength(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
         float base = manaCost * TeenyBalance.SHOCK_DURATION_PERMANA;
-        float luckMult = 1.0f + (caster.getLuckStat() * TeenyBalance.SHOCK_DURATION_PERLUCK);
+        float luck = caster.getEffectiveStat(bruhof.teenycraft.battle.StatType.LUCK, state);
+        float luckMult = 1.0f + (luck * TeenyBalance.SHOCK_DURATION_PERLUCK);
         return (int) (base * paramMultiplier * luckMult);
     }
 
@@ -129,9 +131,10 @@ public class EffectCalculator {
         return (int) (TeenyBalance.POISON_BASE_AMOUNT + (manaCost * TeenyBalance.POISON_AMOUNT_PERMANA));
     }
 
-    public static int calculatePoisonInterval(BattleFigure caster, int manaCost, float paramMultiplier) {
+    public static int calculatePoisonInterval(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
         float m = Math.max(1, manaCost);
-        float luckMult = 1.0f - (caster.getLuckStat() * TeenyBalance.POISON_INTERVAL_PERLUCK);
+        float luck = caster.getEffectiveStat(bruhof.teenycraft.battle.StatType.LUCK, state);
+        float luckMult = 1.0f - (luck * TeenyBalance.POISON_INTERVAL_PERLUCK);
         float base = ((1.0f / m) * TeenyBalance.POISON_INTERVAL_PERMANA) + TeenyBalance.POISON_BASE_INTERVAL;
         return (int) (base * paramMultiplier * luckMult);
     }
@@ -140,9 +143,10 @@ public class EffectCalculator {
         return (int) (TeenyBalance.RADIO_BASE_AMOUNT + (manaCost * TeenyBalance.RADIO_AMOUNT_PERMANA) * paramMultiplier);
     }
 
-    public static int calculateRadioInterval(BattleFigure caster, int manaCost, float paramMultiplier) {
+    public static int calculateRadioInterval(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
         float m = Math.max(1, manaCost);
-        float luckMult = 1.0f - (caster.getLuckStat() * TeenyBalance.RADIO_INTERVAL_PERLUCK);
+        float luck = caster.getEffectiveStat(bruhof.teenycraft.battle.StatType.LUCK, state);
+        float luckMult = 1.0f - (luck * TeenyBalance.RADIO_INTERVAL_PERLUCK);
         float base = ((1.0f / m) * TeenyBalance.RADIO_INTERVAL_PERMANA) + TeenyBalance.RADIO_BASE_INTERVAL;
         return (int) (base * paramMultiplier * luckMult);
     }
@@ -160,18 +164,54 @@ public class EffectCalculator {
         return Math.max(0, base);
     }
 
+    public static int calculateLuckUpMagnitude(int manaCost, float paramMultiplier) {
+        return Math.round((manaCost * TeenyBalance.LUCK_UP_PERCENT_PERMANA * paramMultiplier) + TeenyBalance.LUCK_UP_BASE_PERCENT);
+    }
+
+    public static int calculateLuckUpDuration(int manaCost, float paramMultiplier) {
+        return Math.round((manaCost * TeenyBalance.LUCK_UP_DURATION_PERMANA * paramMultiplier) + TeenyBalance.LUCK_UP_BASE_DURATION);
+    }
+
+    public static int calculateCutenessDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.CUTENESS_DURATION_PERMANA, TeenyBalance.CUTENESS_DURATION_PERLUCK);
+    }
+
+    public static int calculateCutenessPercent(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        float luck = caster.getEffectiveStat(bruhof.teenycraft.battle.StatType.LUCK, state);
+        float luckMult = 1.0f + (TeenyBalance.CUTENESS_PERCENT_PERLUCK * luck);
+        float value = manaCost * TeenyBalance.CUTENESS_PERCENT_PERMANA * paramMultiplier * luckMult;
+        return Math.round(value);
+    }
+
+    public static int calculateReflectDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.REFLECT_DURATION_PERMANA, TeenyBalance.REFLECT_DURATION_PERLUCK);
+    }
+
+    public static int calculateReflectDefense(int manaCost, float paramMultiplier) {
+        float reduction = manaCost * TeenyBalance.REFLECT_DEFENSE_PERMANA * paramMultiplier;
+        // The magnitude is the % of damage KEPT (e.g. 0.3 means take 30% damage)
+        float kept = 1.0f - reduction;
+        return Math.round(Math.max(0, kept) * 100);
+    }
+
+    public static int calculateReflectDamage(BattleFigure caster, int manaCost, float paramMultiplier) {
+        float value = manaCost * caster.getPowerStat() * TeenyBalance.REFLECT_DAMAGE_PERMANA * paramMultiplier;
+        return Math.round(value);
+    }
+
     public static int calculateDefenseMagnitude(int manaCost, float paramMultiplier) {
         return (int) ((TeenyBalance.BASE_DEFENSE_MAG + (manaCost * TeenyBalance.DEFENSE_MAG_PERMANA)) * paramMultiplier);
     }
 
-    public static int calculateFreezeMagnitude(BattleFigure caster, int manaCost, float paramMultiplier) {
+    public static int calculateFreezeMagnitude(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
         float base = manaCost * paramMultiplier * TeenyBalance.FREEZE_PERCENTAGE_PERMANA;
-        float luckMult = 1.0f + (caster.getLuckStat() * TeenyBalance.FREEZE_PERCENTAGE_PERLUCK);
+        float luck = caster.getEffectiveStat(bruhof.teenycraft.battle.StatType.LUCK, state);
+        float luckMult = 1.0f + (luck * TeenyBalance.FREEZE_PERCENTAGE_PERLUCK);
         return (int) Math.min(base * luckMult, TeenyBalance.FREEZE_PERCENTAGE_MAX);
     }
     
-    public static int calculateFreezeDuration(BattleFigure caster, int manaCost, float paramMultiplier) {
+    public static int calculateFreezeDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
         // Param index 1 is for duration in user prompt
-        return calculateEffectDuration(caster, manaCost, paramMultiplier, TeenyBalance.FREEZE_DURATION_PERMANA, TeenyBalance.FREEZE_DURATION_PERLUCK);
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.FREEZE_DURATION_PERMANA, TeenyBalance.FREEZE_DURATION_PERLUCK);
     }
 }

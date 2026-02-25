@@ -4,6 +4,7 @@ import bruhof.teenycraft.battle.effect.EffectInstance;
 import bruhof.teenycraft.battle.effect.EffectRegistry;
 import bruhof.teenycraft.battle.BattleFigure;
 import bruhof.teenycraft.TeenyBalance;
+import bruhof.teenycraft.entity.custom.EntityTeenyDummy;
 import bruhof.teenycraft.item.ModItems;
 import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.networking.ModMessages;
@@ -36,13 +37,12 @@ public class BattleState implements IBattleState {
 
     private boolean isBattling = false;
     private final List<BattleFigure> team = new ArrayList<>();
-    private final List<BattleFigure> opponentTeam = new ArrayList<>();
-    private UUID opponentEntityUUID;
     private int activeFigureIndex = 0;
     private int swapCooldown = 0;
+    private int lockedSlot = -1;
     private ServerPlayer player;
     
-    // Player State
+    // Participant State
     private float currentMana = 0;
     private float currentTofuMana = 0;
     private final Map<String, EffectInstance> activeEffects = new HashMap<>();
@@ -54,7 +54,7 @@ public class BattleState implements IBattleState {
     private boolean pendingIsGolden = false;
     private UUID pendingTargetUUID = null;
 
-    // Victory Logic
+    // Victory/Persistence Logic (Still tracked per state for now)
     private boolean battleWon = false;
     private int victoryTimer = 0;
     private ServerPlayer winnerPlayer = null;
@@ -92,41 +92,10 @@ public class BattleState implements IBattleState {
         this.currentMana = 0;
         this.activeEffects.clear();
         
-        // Reset Opponent
-        this.opponentTeam.clear();
-        this.opponentEntityUUID = null;
-        
         // Reset Victory
         this.battleWon = false;
         this.victoryTimer = 0;
         this.winnerPlayer = null;
-    }
-
-    @Override
-    public void setOpponentTeam(List<BattleFigure> team) {
-        this.opponentTeam.clear();
-        this.opponentTeam.addAll(team);
-    }
-
-    @Override
-    public List<BattleFigure> getOpponentTeam() {
-        return opponentTeam;
-    }
-
-    @Override
-    public BattleFigure getActiveOpponent() {
-        if (opponentTeam.isEmpty()) return null;
-        return opponentTeam.get(0);
-    }
-
-    @Override
-    public void setOpponentEntityUUID(UUID uuid) {
-        this.opponentEntityUUID = uuid;
-    }
-
-    @Override
-    public UUID getOpponentEntityUUID() {
-        return opponentEntityUUID;
     }
 
     @Override
@@ -159,7 +128,12 @@ public class BattleState implements IBattleState {
             return;
         }
         if (newIndex < 0 || newIndex >= team.size()) return;
-        if (newIndex == activeFigureIndex) return; // Already active
+        if (newIndex == activeFigureIndex) return; 
+
+        if (team.get(newIndex).getCurrentHp() <= 0) {
+            player.sendSystemMessage(Component.literal("§cThat figure has fainted!"));
+            return;
+        }
 
         if (hasEffect("disable_" + newIndex)) {
             player.sendSystemMessage(Component.literal("§c§lDISABLED! §7That figure is currently locked."));
@@ -171,7 +145,6 @@ public class BattleState implements IBattleState {
             return;
         }
 
-        // Perform Swap
         this.activeFigureIndex = newIndex;
         this.swapCooldown = TeenyBalance.SWAP_COOLDOWN * 20;
 
@@ -186,14 +159,12 @@ public class BattleState implements IBattleState {
         if (hasEffect("cleanse_immunity")) return;
         if (index < 0 || index >= team.size()) return;
 
-        // Max 2 Rule
         List<String> activeDisables = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             if (hasEffect("disable_" + i)) activeDisables.add("disable_" + i);
         }
 
         if (activeDisables.size() >= 2 && !hasEffect("disable_" + index)) {
-            // Find the one with shortest remaining duration to remove
             String oldest = null;
             int minDur = Integer.MAX_VALUE;
             for (String id : activeDisables) {
@@ -206,25 +177,20 @@ public class BattleState implements IBattleState {
             if (oldest != null) removeEffect(oldest);
         }
 
-        // Apply
         applyEffect("disable_" + index, duration, 0);
 
-        // Auto-Swap if it was the active one
         if (index == activeFigureIndex) {
             player.sendSystemMessage(Component.literal("§c§lDISABLED! §7Current figure locked. Swapping..."));
-            
-            // Find next non-disabled figure
             int nextIndex = -1;
-            for (int i = 1; i < 3; i++) {
+            for (int i = 1; i < team.size(); i++) {
                 int check = (activeFigureIndex + i) % team.size();
-                if (!hasEffect("disable_" + check)) {
+                if (team.get(check).getCurrentHp() > 0 && !hasEffect("disable_" + check)) {
                     nextIndex = check;
                     break;
                 }
             }
 
             if (nextIndex != -1) {
-                // Force swap (bypass cooldown/root checks for this forced event)
                 this.activeFigureIndex = nextIndex;
                 this.swapCooldown = TeenyBalance.SWAP_COOLDOWN * 20;
                 refreshPlayerInventory(player);
@@ -242,8 +208,6 @@ public class BattleState implements IBattleState {
     public void updatePlayerSpeed(Player player) {
         AttributeInstance speedAttr = player.getAttribute(Attributes.MOVEMENT_SPEED);
         if (speedAttr == null) return;
-
-        // Remove existing
         speedAttr.removeModifier(DODGE_SPEED_UUID);
 
         if (isBattling) {
@@ -251,9 +215,6 @@ public class BattleState implements IBattleState {
             if (active != null) {
                 int dodgeStat = active.getDodgeStat();
                 double multiplierValue = TeenyBalance.SPEED_PER_DODGE * dodgeStat;
-                
-                // Operation 1 (MULTIPLY_BASE) adds value to 1.0 (base)
-                // Result = base * (1 + multiplierValue)
                 speedAttr.addTransientModifier(new AttributeModifier(DODGE_SPEED_UUID, "Teeny Dodge Speed", multiplierValue, AttributeModifier.Operation.MULTIPLY_BASE));
             }
         }
@@ -262,16 +223,13 @@ public class BattleState implements IBattleState {
     @Override
     public void refreshPlayerInventory(Player player) {
         player.getInventory().clearContent();
-
         BattleFigure active = getActiveFigure();
         if (active == null) return;
         
         updatePlayerSpeed(player);
-
         ItemStack figureStack = active.getOriginalStack();
         java.util.ArrayList<String> abilityOrder = ItemFigure.getAbilityOrder(figureStack);
 
-        // 1. Give Abilities (Slots 0-2)
         Item[] abilityItems = { ModItems.ABILITY_1.get(), ModItems.ABILITY_2.get(), ModItems.ABILITY_3.get() };
         for (int i = 0; i < 3; i++) {
             if (i < abilityOrder.size()) {
@@ -281,25 +239,21 @@ public class BattleState implements IBattleState {
                     ItemStack stack = new ItemStack(abilityItems[i]);
                     int damage = ItemFigure.calculateAbilityDamage(figureStack, i);
                     boolean golden = ItemFigure.isAbilityGolden(figureStack, id);
-                    
                     bruhof.teenycraft.item.custom.battle.ItemAbility.initializeAbility(stack, id, data.name, damage, golden);
                     player.getInventory().setItem(i, stack);
                 }
             }
         }
 
-        // 2. Give Bench Figures (Slots 6-8)
         int benchSlot = 6;
         for (int i = 0; i < team.size(); i++) {
             if (i == activeFigureIndex) continue;
-            
             if (benchSlot <= 8) {
                 player.getInventory().setItem(benchSlot, team.get(i).getOriginalStack().copy());
                 benchSlot++;
             }
         }
         
-        // 3. Give Tofu (Slot 4)
         if (currentTofuMana > 0) {
             player.getInventory().setItem(4, new ItemStack(ModItems.TOFU.get()));
         }
@@ -307,14 +261,6 @@ public class BattleState implements IBattleState {
         player.inventoryMenu.broadcastChanges();
     }
     
-    @Override
-    public void triggerVictory(ServerPlayer player) {
-        this.battleWon = true;
-        this.victoryTimer = 40; // 2 seconds
-        this.winnerPlayer = player;
-        player.sendSystemMessage(Component.literal("§6§lVICTORY! Teleporting in 2 seconds..."));
-    }
-
     @Override
     public void tick() {
         if (!isBattling) return;
@@ -324,7 +270,6 @@ public class BattleState implements IBattleState {
             if (victoryTimer > 0) {
                 victoryTimer--;
             } else {
-                // Time's up -> End Battle & Teleport
                 ServerPlayer playerToTeleport = this.winnerPlayer;
                 endBattle();
                 
@@ -343,59 +288,125 @@ public class BattleState implements IBattleState {
             }
         }
 
-        // Cooldowns (Global or Active Only?)
         if (swapCooldown > 0) swapCooldown--;
-        
-        // Regen Mana
         regenMana();
 
-        // Update Charge Up
         if (isCharging()) {
             if (TeenyBalance.CHARGE_CANCEL_ON_STUN && hasEffect("stun")) {
                 cancelCharge();
             } else {
                 chargeTicks--;
-                if (chargeTicks <= 0) {
-                    // Execution is handled by AbilityExecutor via tick event monitoring or direct call
-                    // To avoid circular dependency issues, we'll let ModEvents handle the finish call
-                }
             }
         }
 
-        // Update ALL figures (Cooldowns)
         for (BattleFigure figure : team) {
             figure.tick();
         }
         
-        // Update Effects
         BattleFigure active = getActiveFigure();
-        activeEffects.entrySet().removeIf(entry -> {
+        // Use a snapshot to avoid ConcurrentModificationException if onRemove modifies the map
+        List<Map.Entry<String, EffectInstance>> snapshot = new ArrayList<>(activeEffects.entrySet());
+        for (Map.Entry<String, EffectInstance> entry : snapshot) {
             String id = entry.getKey();
             EffectInstance instance = entry.getValue();
             
-            // Call OnTick (Pass active figure as context?)
-            bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(id);
+            // Re-verify existence in case a previous effect in this loop removed it
+            if (!activeEffects.containsKey(id)) continue;
+
+            bruhof.teenycraft.battle.effect.BattleEffect effect = bruhof.teenycraft.battle.effect.EffectRegistry.get(id);
             if (effect != null && active != null) {
                 effect.onTick(this, active, instance.duration);
             }
-
-            // Decrement Duration
+            
             if (instance.duration > 0) {
                 instance.duration--;
             }
-
-            // Remove if expired
+            
             if (instance.duration == 0) {
-                if (effect != null && active != null) effect.onRemove(this, active);
-                return true;
+                removeEffect(id);
             }
-            return false;
-        });
+        }
     }
-    
-    // ==========================================
-    // MANA & EFFECTS
-    // ==========================================
+
+    @Override
+    public void checkFaint(LivingEntity entity) {
+        BattleFigure active = getActiveFigure();
+        if (active == null || active.getCurrentHp() > 0) return;
+
+        // Search for next alive figure
+        int nextIndex = -1;
+        for (int i = 1; i < team.size(); i++) {
+            int check = (activeFigureIndex + i) % team.size();
+            if (team.get(check).getCurrentHp() > 0) {
+                nextIndex = check;
+                break;
+            }
+        }
+
+        if (nextIndex != -1) {
+            // SWAP CASE (Round Reset)
+            this.activeFigureIndex = nextIndex;
+            BattleFigure newActive = getActiveFigure();
+            
+            // 1. Clear all effects (Fresh start)
+            this.activeEffects.clear();
+            
+            // 2. Apply Reset Lock to self
+            applyEffect("reset_lock", TeenyBalance.DEATH_SWAP_RESET_TICKS, 1);
+            
+            // 3. Visuals for self
+            if (entity instanceof EntityTeenyDummy dummy) {
+                dummy.setCustomName(Component.literal("§c" + newActive.getNickname()));
+            }
+            entity.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, TeenyBalance.DEATH_SWAP_RESET_TICKS, 0));
+            entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(), net.minecraft.sounds.SoundEvents.FIREWORK_ROCKET_BLAST, net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
+            if (entity.level() instanceof ServerLevel sl) {
+                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.CAMPFIRE_COSY_SMOKE, entity.getX(), entity.getY() + 1, entity.getZ(), 600, 0.5, 0.5, 0.5, 0.05);
+            }
+
+            // 4. Find opponent and apply reset visuals to them too
+            entity.level().getEntitiesOfClass(LivingEntity.class, entity.getBoundingBox().inflate(20),
+                e -> e != entity && e.getCapability(BattleStateProvider.BATTLE_STATE).isPresent())
+                .forEach(opponent -> {
+                    opponent.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(oppState -> {
+                        oppState.applyEffect("reset_lock", TeenyBalance.DEATH_SWAP_RESET_TICKS, 1);
+                    });
+                    opponent.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, TeenyBalance.DEATH_SWAP_RESET_TICKS, 0));
+                    opponent.level().playSound(null, opponent.getX(), opponent.getY(), opponent.getZ(), net.minecraft.sounds.SoundEvents.FIREWORK_ROCKET_BLAST, net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
+                    if (opponent.level() instanceof ServerLevel sl) {
+                        sl.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE, opponent.getX(), opponent.getY() + 1, opponent.getZ(), 60, 0.5, 0.5, 0.5, 0.05);
+                    }
+                });
+
+            if (entity instanceof ServerPlayer sp) {
+                sp.sendSystemMessage(Component.literal("§c" + active.getNickname() + " Fainted! §e--- ROUND RESET ---"));
+                refreshPlayerInventory(sp);
+            }
+        } else {
+            // TEAM DEFEATED (Victory/Defeat logic)
+            if (entity instanceof EntityTeenyDummy dummy) {
+                dummy.kill();
+                ServerPlayer winner = entity.level().getEntitiesOfClass(ServerPlayer.class, entity.getBoundingBox().inflate(30))
+                    .stream().findFirst().orElse(null);
+                
+                if (winner != null) {
+                    winner.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(s -> {
+                        if (s instanceof BattleState bs) {
+                            bs.battleWon = true;
+                            bs.victoryTimer = 40;
+                            bs.winnerPlayer = winner;
+                            winner.sendSystemMessage(Component.literal("§6§lVICTORY! §fOpponent team defeated."));
+                        }
+                    });
+                }
+            } else if (entity instanceof ServerPlayer sp) {
+                sp.sendSystemMessage(Component.literal("§c§lDEFEAT! §fAll your figures fainted."));
+                this.battleWon = false;
+                this.victoryTimer = 40;
+                this.winnerPlayer = sp; 
+            }
+        }
+    }
     
     @Override
     public float getCurrentMana() { return currentMana; }
@@ -404,9 +415,15 @@ public class BattleState implements IBattleState {
     public float getCurrentTofuMana() { return currentTofuMana; }
     
     @Override
+    public int getLockedSlot() { return lockedSlot; }
+
+    @Override
+    public void setLockedSlot(int slot) { this.lockedSlot = slot; }
+
+    @Override
     public void spawnTofu(float power) {
-        if (power > 0 && this.currentTofuMana > 0) return; // Prevent overwriting existing Tofu
-        this.currentTofuMana = power; // Allow clearing (0) or initial spawn
+        if (power > 0 && this.currentTofuMana > 0) return; 
+        this.currentTofuMana = power; 
     }
 
     @Override
@@ -428,16 +445,13 @@ public class BattleState implements IBattleState {
     @Override
     public void regenMana() {
         if (hasEffect("stun") || isCharging()) return;
-        
         if (currentMana < TeenyBalance.BATTLE_MANA_MAX) {
             float regenRate = (float) TeenyBalance.BATTLE_MANA_REGEN_PER_SEC / 20.0f;
-            
             if (hasEffect("curse")) {
                 regenRate *= TeenyBalance.CURSE_EFFICIENCY;
             } else if (hasEffect("dance")) {
                 regenRate *= TeenyBalance.DANCE_MANA_REGEN_MULTIPLIER;
             }
-            
             currentMana += regenRate;
             if (currentMana > TeenyBalance.BATTLE_MANA_MAX) {
                 currentMana = TeenyBalance.BATTLE_MANA_MAX;
@@ -459,28 +473,21 @@ public class BattleState implements IBattleState {
     public void applyEffect(String effectId, int duration, int magnitude, float power, UUID caster) {
         bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(effectId);
         BattleFigure active = getActiveFigure();
-        
-        // 1. Logic Hook
         if (effect != null && active != null) {
             if (!effect.onApply(this, active, duration, magnitude)) {
-                return; // Blocked
+                return; 
             }
         }
         
-        // 2. Apply/Stack
         if (activeEffects.containsKey(effectId)) {
             EffectInstance existing = activeEffects.get(effectId);
-            int oldMag = existing.magnitude;
             if (effect != null && effect.canStackMagnitude()) {
                 existing.magnitude += magnitude;
             } else {
-                existing.magnitude = magnitude; // Replace
+                existing.magnitude = magnitude; 
             }
-            // net.minecraft.Util.NIL_UUID might not be easily accessible, using simple sout for now if needed, but lets just ensure logic is 100%
-            // Actually, let's just make sure we are not replacing magnitude by mistake.
-            existing.power = Math.max(existing.power, power); // Keep highest power on stack
+            existing.power = Math.max(existing.power, power); 
             existing.casterUUID = caster;
-            
             if (duration == -1) {
                 existing.duration = -1;
             } else if (duration > existing.duration && existing.duration != -1) {
@@ -496,9 +503,28 @@ public class BattleState implements IBattleState {
         return activeEffects.containsKey(effectId);
     }
     
+    private boolean isRemovingEffect = false;
+
     @Override
     public void removeEffect(String effectId) {
-        activeEffects.remove(effectId);
+        if (isRemovingEffect) {
+            activeEffects.remove(effectId);
+            return;
+        }
+
+        EffectInstance inst = activeEffects.remove(effectId);
+        if (inst != null) {
+            isRemovingEffect = true;
+            try {
+                bruhof.teenycraft.battle.effect.BattleEffect effect = bruhof.teenycraft.battle.effect.EffectRegistry.get(effectId);
+                BattleFigure active = getActiveFigure();
+                if (effect != null && active != null) {
+                    effect.onRemove(this, active);
+                }
+            } finally {
+                isRemovingEffect = false;
+            }
+        }
     }
     
     @Override
@@ -536,6 +562,7 @@ public class BattleState implements IBattleState {
         this.chargeTicks = ticks;
         this.pendingAbility = data;
         this.pendingSlot = slot;
+        this.lockedSlot = slot;
         this.pendingIsGolden = isGolden;
         this.pendingTargetUUID = targetUUID;
     }
@@ -545,6 +572,7 @@ public class BattleState implements IBattleState {
         this.chargeTicks = 0;
         this.pendingAbility = null;
         this.pendingSlot = -1;
+        this.lockedSlot = -1;
         this.pendingIsGolden = false;
         this.pendingTargetUUID = null;
     }
@@ -560,16 +588,6 @@ public class BattleState implements IBattleState {
 
     @Override
     public UUID getPendingTargetUUID() { return pendingTargetUUID; }
-
-    @Override
-    public ServerPlayer getPlayerEntity() { return this.player; }
-
-    @Override
-    public LivingEntity getOpponentEntity(ServerLevel level) {
-        if (opponentEntityUUID == null) return null;
-        Entity e = level.getEntity(opponentEntityUUID);
-        return (e instanceof LivingEntity le) ? le : null;
-    }
 
     @Override
     public void triggerOnAttack(BattleFigure attacker) {
@@ -624,8 +642,6 @@ public class BattleState implements IBattleState {
         tag.putBoolean("IsBattling", isBattling);
         tag.putInt("ActiveIndex", activeFigureIndex);
         tag.putFloat("Mana", currentMana);
-        // Save Effects? For now, we assume simple reconnect logic or data loss on crash is acceptable for effects.
-        // Or implement serialization for EffectInstance.
     }
 
     @Override
@@ -639,11 +655,12 @@ public class BattleState implements IBattleState {
     public void endBattle() {
         this.isBattling = false;
         this.team.clear();
-        this.opponentTeam.clear();
         this.activeFigureIndex = 0;
-        this.battleWon = false;
-        this.victoryTimer = 0;
-        this.winnerPlayer = null;
+        
+        if (this.player != null) {
+            updatePlayerSpeed(this.player);
+        }
+
         this.currentMana = 0;
         this.currentTofuMana = 0;
         this.activeEffects.clear();

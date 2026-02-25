@@ -28,6 +28,7 @@ public class TeenyCraft {
         
         bruhof.teenycraft.battle.effect.EffectRegistry.init();
         bruhof.teenycraft.battle.effect.EffectApplierRegistry.init();
+        bruhof.teenycraft.battle.trait.TraitRegistry.init();
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::clientSetup);
@@ -50,5 +51,6 @@ public class TeenyCraft {
     private void onAddReloadListener(net.minecraftforge.event.AddReloadListenerEvent event) {
         event.addListener(new bruhof.teenycraft.util.FigureLoader());
         event.addListener(new bruhof.teenycraft.util.AbilityLoader());
+        event.addListener(new bruhof.teenycraft.util.NPCTeamLoader());
     }
 }

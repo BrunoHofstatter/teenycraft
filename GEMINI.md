@@ -1,65 +1,31 @@
-I thi# GEMINI.md - Tenny Craft Context & Core Logic
+# GEMINI.md - Tenny Craft Context & Core Logic
 
 ## 0. Current Implementation Status
-* **Core Figure Item (`ItemFigure`):** NBT structure, Stat logic, Chip slot, XP/Leveling stubs.
-* **Titan Manager:** Inventory container, GUI, Network packets (Sorting/Search).
-* **Data Loaders:** JSON loading for Figures and Abilities (`FigureLoader`, `AbilityLoader`).
+* **Core Figure System:** NBT structure, Stat logic (`StatType`), Chip slot, Mastery (Golden).
+* **Titan Manager:** Independent inventory (976 slots), Box system, Sorting/Search sync.
+* **Decoupled Battle Engine:** 
+    * `IBattleState` capability attached to all `LivingEntity`.
+    * Real-time battle loop with Mana, Cooldowns, and Virtual HP.
+    * Generic `AbilityExecutor` supporting Player-vs-NPC, NPC-vs-Player, and future PvP.
+* **Modular Mechanics:** Centralized `EffectApplierRegistry` and Interface-driven `TraitRegistry`.
+* **Data Loaders:** JSON loading for Figures, Abilities, and NPC Teams.
+* **Debug Tools:** Comprehensive commands for casting, figure management, and NPC battles.
 
-## 1. Project Overview
-* **Project Name:** Tenny Craft
-* **Platform:** Minecraft Forge 1.20.1
-* **Core Concept:** A real-time collectible figure battler inspired by Teeny Titans.
-* **Gameplay Loop:** Players collect figures -> Equip them in a team -> Enter a separate dimension/arena -> Battle in real-time (WASD movement + Ability usage) -> Gain XP/Loot.
-
----
-
-## 2. The Golden Rule: TennyBalance.java
-**CRITICAL:** Do not hardcode numbers, durations, damage values, or probabilities in the logic classes.
-
-I have created a dedicated file named `TennyBalance.java`.
-
-* **Requirement:** Every time you need a value (e.g., "How long does Stun last?", "How much damage does Power add?", "Base Mana Regen rate"), you must reference a public static final variable from `TennyBalance.java`.
-* **Constraint:** ABSOLUTELY NO HARDCODED VALUES. If a number is needed for logic, it belongs in `TennyBalance.java`.
-* **Goal:** I want to tweak the game's balance by editing one file, hunting down numbers in spread-out classes.
+## 0. Project Overview
+* **Platform:** Minecraft Forge 1.20.1.
+* **Core Concept:** Real-time collectible figure battler (Teeny Titans inspiration).
+* **Gameplay Loop:** Collect figures -> Manage team in Titan Pad -> Battle in the Teenyverse -> Gain XP/Loot -> Master abilities (Golden status).
 
 ---
 
-## 3. Data Architecture (The "Cold vs. Hot" System)
-To ensure performance and data safety, the mod distinguishes between the "Item" and the "Battle Entity".
-
-### A. Cold Storage (The Item)
-* **What is it?** The ItemFigure sitting in the player's inventory/Curios slot.
-* **Data Structure:** Strictly follows the NBT tags defined in `ItemFigure.java`.
-
-#### 1. Immutable Identity (Factory Data)
-* **FigureID:** Unique string ID (e.g., "robin").
-* **Name, Description, Class:** Display info.
-* **Groups:** List of tags (e.g., "Titans", "Hive").
-* **Price:** Base coin value.
-* **Abilities:** The full pool of moves available to this figure.
-* **AbilityTiers:** A list of cost tiers (e.g., "a", "b", "c") corresponding to the figure's ability slots (1, 2, 3).
-    * **Logic:** Slot 1 always costs the value of Tier 1, regardless of which ability is placed there.
-
-#### 2. Mutable Progress (Player Data)
-* **Nickname:** User-defined name.
-* **Level, XP:** Current progression.
-* **Stats:** Compound tag containing current Health, Power, Dodge, and Luck.
-* **LastUpgrade:** Tracks the last stat upgraded to prevent consecutive picks of the same stat.
-* **AbilityOrder:** The active loadout order (indices pointing to the `Abilities` list).
-* **GoldenProgress:** Mastery percentage for specific abilities.
-*   **EquippedChip:** Serialized ItemStack of the installed mod chip.
-
-### B. Hot Data (The Battle Wrapper)
-* **What is it?** A temporary Java Object created only when a battle starts.
-* **Data:** Stores volatile battle state (Current Mana, Cooldown timers, Active Status Effects, Accessory Battery).
-* **Lifecycle:**
-    * **Battle Start:** Read NBT from Item -> Create Hot Object.
-    * **During Battle:** Logic updates here (20 ticks/second).
-    * **Battle End:** Calculate XP/State -> Write back to Item NBT -> Destroy Hot Object.
+## 1. The Golden Rule: TeenyBalance.java
+**CRITICAL:** Every numeric value (damage mults, durations, regen rates, probabilities) MUST be referenced from `TeenyBalance.java`. 
+* **Hardcoding is strictly forbidden.** 
+* **Goal:** Tweak the entire game's balance by editing a single class.
 
 ---
 
-## 4. The Titan Manager (Team & Storage)
+## 2. The Titan Manager (Team & Storage)
 The **Titan Manager** is the central hub for Figure management, acting as the player's "PC" or "Box System".
 
 ### A. Architecture
@@ -91,92 +57,73 @@ The GUI cannot display 900+ slots at once. It uses a virtualized view:
 
 ---
 
-## 5. The Battle Logic (Real-Time Arena)
-Battles happen in a custom dimension or arena structure.
+## 3. Data Architecture (Cold vs. Hot)
+### A. Cold Storage (The Item)
+* **ItemFigure:** Serializes Figure identity (ID, Class, Base Stats) and Progress (Level, XP, Upgrades, Ability Order, Golden Progress).
+* **Logic:** `ItemFigure.java` provides helper methods to calculate "Snapshotted" stats (e.g., `calculateAbilityDamage`) used by the engine.
 
-### General Mechanics
-* **Movement:** Player moves freely using standard WASD.
-* **Visuals:** The player's render is replaced (morphed) into the GeckoLib model of their active Figure.
-* **Input Throttling:** To prevent spam-clicking, we strictly respect the Vanilla Attack Cooldown (player.getAttackStrengthScale). If the bar isn't full, the ability fails.
-
-### The "Vault" (Inventory Safety)
-* **Concept:** Players cannot bring their vanilla items (swords/blocks) into the arena.
-* **Flow:**
-    * **Save:** Before teleporting, the player's full inventory/state is serialized and saved to a safe external storage (e.g., World Data).
-    * **Clear:** Inventory is wiped. Attributes/Potion effects are cleared.
-    * **Equip:** Player is given specific "Battle Items" (Ability 1-3, Tofu, Bench Swap).
-    * **Restore:** Upon battle end (Win or Loss), the "Battle Items" are removed, and the saved inventory/state is restored from the Vault.
-
-### Ability Types
-* **Melee:** Hits an area in front of the player (Hitbox check). Mana consumed on Hit.
-* **Ranged (Lock-On):** Uses a Raycast to find a target. If found, it "locks on" and deals damage after a delay. Mana consumed on Cast.
+### B. Hot Data (The Battle State)
+* **IBattleState:** A Capability attached to the `LivingEntity` (Player or Dummy).
+* **Volatile Data:** Stores Current Mana, Active Effects, Tofu Mana, and Charge-up state.
+* **Lifecycle:** 
+    * Created/Initialized when battle starts.
+    * Ticked 20/sec during combat.
+    * Inventory Vault handles player item safety.
 
 ---
 
-## 6. Attributes & Statistics
-Figures have 4 base stats. Values and upgrade increments are defined in `TennyBalance.java`.
+## 4. The Battle Engine
+### A. Participant Symmetry
+The system treats Players and NPCs identically. Both have an `IBattleState` and an active `BattleFigure`.
+* **Attacks:** Automatically target the "Enemy" (Nearest participant with a state).
+* **Buffs/Heals:** Automatically target "Self" (The caster).
 
-* **Health (HP):** Standard health pool. Visualized via a custom GUI bar overlay.
-* **Power:** Flat damage addition to abilities.
-* **Dodge:** A damage mitigation mechanic.
-    * **Logic:** Uses a "Shuffle Bag" (Deck of Cards) system.
-    * **Example:** A deck of 10 cards. 1 is "Dodge", 9 are "Hit". You draw one per hit. If "Dodge" is drawn, damage is reduced to 0.
-    * **Scaling:** Higher stats improve the odds (e.g., deck size gets smaller).
-* **Luck:** Affects Critical Hits and Status Effects.
-    * **Crits:** Uses the same "Shuffle Bag" logic as Dodge.
-    * **Scaling:** Luck directly increases the Duration or Efficiency of specific abilities (e.g., Stun lasts longer, Heals restore more).
+### B. Ability Execution (`AbilityExecutor`)
+* **Melee:** Area-of-effect check in front of caster. Mana consumed on hit.
+* **Ranged:** Cone-based target search (Tier-based range). Mana consumed on cast.
+* **None (Buffs):** Instant application to self.
+* **Golden Bonus:** Golden abilities trigger extra effects/traits parsed from the `golden_bonus` list.
 
-### Upgrade Logic
-* **The "No-Repeat" Rule:** Players cannot upgrade the same stat twice in a row. This is enforced by the `LastUpgrade` NBT tag.
-* **Scaling Values:** The specific amount gained per upgrade is defined in `TeenyBalance.java` (e.g., `UPGRADE_GAIN_HP`).
-* **Damage Calculation Bridge:** `ItemFigure.java` contains `calculateAbilityDamage()`. This bridge method translates "Cold" stats + "Ability Data" + "Balance Constants" into a raw damage number. The Battle Engine calls this; it does not re-calculate formulas.
+### C. The Damage Pipeline
+1. **Base:** Figure Power * Mana Mult * Ability Base * Golden Mult.
+2. **Mitigation:**
+    * **Effective Stat:** Stats scale with Level/Upgrades.
+    * **Dodge:** Reduces damage by the victim's Dodge stat (formula in `DamagePipeline`).
+    * **Shield:** Negates damage instances (unless Shield Pierce is active).
+3. **Critical Hits:** Uses "Shuffle Bag" logic for predictable RNG based on Luck.
+4. **Group Damage:** Distributes damage among all alive figures in the victim's team.
 
 ---
 
-## 7. Effects & Traits Registry (Battle Logic Hooks)
-The Battle Engine must support specific "Hooks" to handle these effects. All durations, probabilities, and magnitudes are defined in TennyBalance.java.
+## 5. Effects & Traits System
+### A. Modular Effects (`EffectApplier`)
+Effects are centralized in `EffectApplierRegistry`. 
+* **Periodic Effects:** Abstract `PeriodicBattleEffect` handles DOT/ROT logic (Poison, Radios).
+* **Radio Effects:** Smart-split logic (Damage/Heal split between active and bench figures).
+* **State Modifiers:** Stun (lock move/cast), Root (lock swap), Waffle (lock slot), Kiss (block buffs).
 
-### A. State Control (The "Can I do this?" Checks)
-Before a figure moves, casts, or swaps, the engine checks these flags:
-* **Stun:** Hard stop. Logic: canMove = false, canCast = false, manaRegen = 0.
-* **Root:** Player cannot swap active figures (Hotbar slots 7-8 locked).
-* **Waffle (Silence):** Disables a specific ability slot. Visual: A waffle icon overlays the slot.
-* **Freeze:** Stops Mana Regen completely. Reduces movement speed significantly.
-* **Reflect:** Player is immobile and cannot cast. Incoming damage is reduced, and a % is reflected back to the attacker.
-* **Flight:** Moves the player to a Y-level above the arena floor (on invisible barriers), making them immune to ground melee.
-* **Disable Opponent:** Target enemy figure in the "Bench" cannot be swapped in.
+### B. Trait Registry (`ITrait`)
+Abilities possess traits that hook into the execution flow:
+* **Execution Hooks:** `multi_hit`, `charge_up`.
+* **Pipeline Hooks:** `undodgeable`, `shield_pierce`.
+* **Hit Trigger Hooks:** `tofu_chance`, recoil logic.
 
-### B. Mana Engine Modifiers (The Tick Loop)
-Logic applied every tick (20 times/second) regarding Mana.
-* **Dance:** Increases Mana Regen rate.
-* **Curse:** Decreases Mana Regen rate.
-* **Shock:** A strict timer. Every X ticks, it triggers a "Mini-Stun" (0.1s) that interrupts charging/movement.
-* **Blue Ability (Channeling):** A state where Mana drains over time instead of instant cost. Effect triggers periodically while draining. Ends if Mana = 0 or Stunned.
-* **Battle Bar Fill/Deplete:** Instant addition or subtraction of Mana from self or enemy.
+---
 
-### C. Damage Calculation Pipeline
-When a hit registers, the damage value passes through this sequence:
-1. **Base:** Attacker Power + Ability Base Damage.
-2. **Multipliers (Attacker):**
-    * **Power Up/Down:** Temporary flat buff/debuff to the next attack.
-    * **Luck Up:** Increases Critical Hit chance.
-    * **Shield Pierce:** Ignores the victim's Shield status.
-3. **Mitigation (Victim):**
-    * **Defense Up/Down:** Multiplies incoming damage (e.g., 0.5x or 1.5x).
-    * **Shield:** Negates the next damage instance entirely (sets to 0).
-    * **Dodge:** Uses "Shuffle Bag" logic. If Dodge triggers, damage = 0.
-    * **Undodgeable:** Skips the Dodge check entirely.
-4. **Post-Hit Triggers:**
-    * **Cuteness (Thorns):** Return fixed damage to attacker.
-    * **Kiss:** If active, prevents the victim from receiving positive buffs/healing.
-    * **Cleanse:** Removes all negative effects from self and positive effects from enemy.
+## 6. Death Swapping & Round Reset
+When a figure faints (Virtual HP <= 0):
+1. **Auto-Swap:** The system instantly selects the next alive figure in the team.
+2. **Cleanse:** All active effects (Buffs and Debuffs) are cleared from the state.
+3. **Reset Lock:** Both participants receive a `DEATH_SWAP_RESET_TICKS` (3s) lockdown.
+4. **Visuals:** Both participants Glow, play a Firework Blast sound, and emit a Large Smoke burst.
+5. **Victory:** Triggered only when the entire team (3 figures) has fainted.
 
-### D. Special Mechanics & Summons
-* **Tofu (Slot 5):** A consumable generated by abilities or RNG. When eaten, grants a random effect (Heal, Shield, Power Up, etc.).
-* **Charge Up:** An attack that requires a "casting time" where the player is vulnerable. Cannot be cancelled by damage, only Stun.
-* **Multi-Hit:** A single ability use that triggers multiple damage packets (e.g., 3 hits). Each hit independently rolls for Dodge/Crit.
-* **Group Damage:** Deals damage to the active figure AND the figures on the bench.
-* **Pets / Radio:** Temporary logic entities that trigger effects (Damage or Heal) on specific intervals or when the player attacks.
+---
+
+## 7. NPC & AI Infrastructure
+* **NPCTeamLoader:** Loads team compositions from `data/teenycraft/npc_teams/*.json`.
+* **EntityTeenyDummy:** A generic combat entity that uses GeckoLib models to morph into the active figure.
+* **Persistence:** Dummies stay alive during figure swaps; they only "die" (vanilla kill) when the entire virtual team is defeated.
 
 ---
 
@@ -188,6 +135,9 @@ When a hit registers, the damage value passes through this sequence:
 * **Upgrade UI:** On level up, the figure glows. Player right-clicks to open a GUI offering 3 random stat upgrades (Health, Power, Dodge, or Luck).
     * **Restriction:** Cannot pick the same stat twice in a row.
 * **The Silkie Block:** An incubator block.
+    * **Input:** 1 Target Figure + 1 Sacrifice Figure.
+    * **Result:** Sacrifice is deleted. Target gains "Gold" status on one ability (lowered cost or higher damage).
+* **Shops:** Buy figures with teeny coins.
     * **Input:** 1 Target Figure + 1 Sacrifice Figure.
     * **Result:** Sacrifice is deleted. Target gains "Gold" status on one ability (lowered cost or higher damage).
 
@@ -238,7 +188,8 @@ When a hit registers, the damage value passes through this sequence:
 
 ---
 
-## 11. Technical Stack (Essentials)
-* **JSON Driven:** Figures and Abilities are defined in JSON files (stats, models, action lists) so they can be added without recompiling code.
-* **GeckoLib:** Used for all Figure animations and models.
-* **Networking:** The Server is the authority. The Client sends "Intent to Cast", the Server validates (Mana/Cooldown/Stun status) and executes.
+## 11. Technical Stack
+* **GeckoLib:** Animations and morphing renders.
+* **Capability System:** Modular data attachment to players/entities.
+* **Network Authority:** Server validates all actions (Mana/CD/Stun) and syncs to client via `PacketSyncBattleData`.
+* **JSON Driven:** All content (Figures, Abilities, Teams) is loaded via data packs.

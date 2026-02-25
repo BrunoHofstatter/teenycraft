@@ -1,0 +1,15 @@
+{
+  "id": "reflect",
+  "name": "Battery Drain",
+  "texture_index": 1,
+  "particle": "minecraft:electric_spark",
+  "particle_count": 5,
+  "hit_type": "none",
+  "damage_tier": 7,
+  "effects_on_opponent":[],
+  "effects_on_self": [
+    { "id": "reflect", "params": [1.0] }
+  ],
+  "traits": [],
+  "golden_bonus": ["self:power_up:0.3"]
+}

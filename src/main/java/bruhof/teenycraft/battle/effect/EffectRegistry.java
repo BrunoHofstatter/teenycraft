@@ -8,6 +8,7 @@ import bruhof.teenycraft.battle.effect.BattleEffect.EffectType;
 import bruhof.teenycraft.battle.effect.BattleEffect.EffectCategory;
 
 import bruhof.teenycraft.capability.BattleState;
+import net.minecraft.world.entity.LivingEntity;
 
 public class EffectRegistry {
     private static final Map<String, BattleEffect> REGISTRY = new HashMap<>();
@@ -44,6 +45,9 @@ public class EffectRegistry {
         register(new DodgeSmokeEffect());
         register(new DefenseUpEffect());
         register(new DefenseDownEffect());
+        register(new LuckUpEffect());
+        register(new CutenessEffect());
+        register(new ReflectEffect());
         register(new RootEffect());
         register(new ShockEffect());
         register(new DisableEffect(0));
@@ -52,11 +56,16 @@ public class EffectRegistry {
         register(new PoisonEffect());
         register(new HealthRadioEffect());
         register(new PowerRadioEffect());
+        register(new ResetLockEffect());
     }
 
     // ==========================================
     // CONCRETE IMPLEMENTATIONS
     // ==========================================
+
+    public static class ResetLockEffect extends BattleEffect {
+        public ResetLockEffect() { super("reset_lock", EffectType.DURATION, EffectCategory.SPECIAL); }
+    }
 
     public static class HealthRadioEffect extends PeriodicBattleEffect {
         public HealthRadioEffect() { super("health_radio", EffectCategory.BUFF); }
@@ -103,45 +112,25 @@ public class EffectRegistry {
         }
 
         @Override
-        protected void onPeriodicTick(IBattleState state, BattleFigure target, int remainingDuration, EffectInstance inst) {
+        protected void onPeriodicTick(IBattleState victimState, BattleFigure victimFigure, int remainingDuration, EffectInstance inst) {
+            // Find attacker state if possible via casterUUID
+            // For now, if we don't have it, we calculate with base stats
             BattleFigure attackerFigure = null;
-            net.minecraft.server.level.ServerPlayer attackerPlayer = null;
-            net.minecraft.world.entity.LivingEntity victimEntity = null;
+            IBattleState attackerState = null;
+            LivingEntity victimEntity = null; // We'd need a way to find the entity from the state, 
+            // but for simple red flash we can skip if unknown for now.
 
-            if (inst.casterUUID != null && state instanceof BattleState bs) {
-                // Caster vs Victim Logic
-                if (inst.casterUUID.equals(state.getOpponentEntityUUID())) {
-                    // The opponent poisoned the player
-                    attackerFigure = state.getActiveOpponent();
-                    victimEntity = state.getPlayerEntity();
-                    attackerPlayer = state.getPlayerEntity(); // In PVE, notify the player they were hit
-                } else {
-                    // The player poisoned the opponent
-                    attackerFigure = state.getActiveFigure();
-                    attackerPlayer = state.getPlayerEntity();
-                    victimEntity = state.getOpponentEntity(attackerPlayer.serverLevel());
-                }
-            }
-
+            // To support the flash/sound, we need the entity. 
+            // In a decoupled system, the state might store its entity reference or we find it.
+            
             bruhof.teenycraft.battle.damage.DamagePipeline.MitigationResult mit = 
-                bruhof.teenycraft.battle.damage.DamagePipeline.calculatePoisonTick(state, target, attackerFigure, inst.power);
+                bruhof.teenycraft.battle.damage.DamagePipeline.calculatePoisonTick(victimState, victimFigure, attackerFigure, attackerState, inst.power);
 
             if (mit.finalDamage > 0) {
-                target.modifyHp(-mit.finalDamage);
+                victimFigure.modifyHp(-mit.finalDamage);
             }
             
-            // Announce Poison Damage
-            bruhof.teenycraft.battle.AbilityExecutor.announceDamage(attackerPlayer, victimEntity, target, mit, "Poison");
-
-            // Visual feedback (Flash only, no knockback) if not dodged
-            if (!mit.isDodged && victimEntity != null) {
-                // Only flash if the target is currently active
-                if (target == state.getActiveFigure() || target == state.getActiveOpponent()) {
-                    victimEntity.handleEntityEvent((byte)2); // Red Flash
-                    victimEntity.level().playSound(null, victimEntity.getX(), victimEntity.getY(), victimEntity.getZ(), 
-                        net.minecraft.sounds.SoundEvents.PLAYER_HURT, net.minecraft.sounds.SoundSource.PLAYERS, 0.5f, 1.0f);
-                }
-            }
+            // Notification logic moved to a more generic place or handled via events
         }
     }
 
@@ -194,6 +183,46 @@ public class EffectRegistry {
         public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
             if (state.hasEffect("cleanse_immunity")) return false;
             return true;
+        }
+    }
+
+    public static class LuckUpEffect extends BattleEffect {
+        public LuckUpEffect() { super("luck_up", EffectType.DURATION, EffectCategory.BUFF); }
+        @Override
+        public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
+            if (state.hasEffect("kiss")) return false;
+            return true;
+        }
+    }
+
+    public static class CutenessEffect extends BattleEffect {
+        public CutenessEffect() { super("cuteness", EffectType.DURATION, EffectCategory.BUFF); }
+        @Override
+        public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
+            if (state.hasEffect("kiss")) return false;
+            return true;
+        }
+    }
+
+    public static class ReflectEffect extends BattleEffect {
+        public ReflectEffect() { super("reflect", EffectType.DURATION, EffectCategory.BUFF); }
+        
+        @Override
+        public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
+            // Note: Not denied by kiss as per user mandate
+            if (target == state.getActiveFigure()) {
+                state.setLockedSlot(state.getActiveFigureIndex());
+            }
+            return true;
+        }
+
+        @Override
+        public void onRemove(IBattleState state, BattleFigure target) {
+            if (target == state.getActiveFigure()) {
+                state.setLockedSlot(-1);
+                state.removeEffect("stun");
+                state.removeEffect("freeze_movement");
+            }
         }
     }
 

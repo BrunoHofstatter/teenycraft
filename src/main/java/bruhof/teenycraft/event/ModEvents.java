@@ -4,10 +4,13 @@ import bruhof.teenycraft.TeenyCraft;
 import bruhof.teenycraft.capability.ITitanManager;
 import bruhof.teenycraft.capability.TitanManagerProvider;
 import bruhof.teenycraft.capability.BattleStateProvider;
+import bruhof.teenycraft.capability.IBattleState;
 import bruhof.teenycraft.item.custom.ItemFigure;
+import bruhof.teenycraft.battle.BattleFigure;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraft.world.InteractionResult;
 import bruhof.teenycraft.networking.PacketSyncBattleData;
+import net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket;
 import bruhof.teenycraft.entity.ModEntities;
 import bruhof.teenycraft.item.custom.battle.ItemAbility;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
@@ -21,6 +24,7 @@ import bruhof.teenycraft.networking.PacketSyncTitanData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
@@ -28,6 +32,8 @@ import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 
 import bruhof.teenycraft.command.CommandTeeny;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -46,6 +52,9 @@ public class ModEvents {
             if (!event.getObject().getCapability(TitanManagerProvider.TITAN_MANAGER).isPresent()) {
                 event.addCapability(new ResourceLocation(TeenyCraft.MOD_ID, "titan_manager"), new TitanManagerProvider());
             }
+        }
+        
+        if (event.getObject() instanceof LivingEntity) {
             if (!event.getObject().getCapability(BattleStateProvider.BATTLE_STATE).isPresent()) {
                 event.addCapability(new ResourceLocation(TeenyCraft.MOD_ID, "battle_state"), new BattleStateProvider());
             }
@@ -64,11 +73,6 @@ public class ModEvents {
             });
         });
 
-        // Battle State generally resets on death, but if we want to persist it (e.g. keeping team info), we could copy.
-        // For now, let's assume death ends the battle, so we don't copy the active battle state.
-        // However, if we store persistent "last used team" there, we might want to copy.
-        // Let's leave it empty for now, effectively resetting battle state on death.
-
         if (event.isWasDeath()) {
             event.getOriginal().invalidateCaps();
         }
@@ -82,7 +86,6 @@ public class ModEvents {
                 handler.saveNBTData(nbt);
                 ModMessages.sendToPlayer(new PacketSyncTitanData(nbt), player);
             });
-            // TODO: Sync Battle State if necessary (often battle state is server-authoritative and only syncs events)
         }
     }
 
@@ -90,14 +93,12 @@ public class ModEvents {
     public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             player.getCapability(TitanManagerProvider.TITAN_MANAGER).ifPresent(handler -> {
-                // VAULT LOGIC
                 if (event.getTo() == ModDimensions.TEENYVERSE_KEY) {
                     handler.saveVanillaInventory(player);
                 } else if (event.getFrom() == ModDimensions.TEENYVERSE_KEY) {
                     handler.restoreVanillaInventory(player);
                 }
 
-                // SYNC
                 CompoundTag nbt = new CompoundTag();
                 handler.saveNBTData(nbt);
                 ModMessages.sendToPlayer(new PacketSyncTitanData(nbt), player);
@@ -115,45 +116,51 @@ public class ModEvents {
             });
         }
     }
-    
+
     @SubscribeEvent
-    public static void onPlayerTick(net.minecraftforge.event.TickEvent.PlayerTickEvent event) {
-        if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && !event.player.level().isClientSide()) {
-            event.player.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(state -> {
-                boolean wasBattling = state.isBattling();
-                
-                // Track charge before tick
+    public static void onLivingTick(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (!entity.level().isClientSide) {
+            entity.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(state -> {
                 boolean wasCharging = state.isCharging();
-                
                 state.tick();
                 
-                boolean isBattling = state.isBattling();
-                boolean isCharging = state.isCharging();
+                // Charge Completion Logic (Generic for NPCs and Players)
+                if (wasCharging && !state.isCharging() && state.getChargeTicks() <= 0 && state.getPendingAbility() != null) {
+                    AbilityExecutor.finishCharge(state, entity);
+                }
+            });
+        }
+    }
+    
+    @SubscribeEvent
+    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase == TickEvent.Phase.END && !event.player.level().isClientSide()) {
+            event.player.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(state -> {
+                if (!state.isBattling()) return;
 
                 // 1. Hand Lock Logic
-                if (isCharging) {
-                    int lockSlot = state.getPendingSlot();
-                    if (lockSlot >= 0 && lockSlot < 9) {
+                int lockSlot = state.getLockedSlot();
+                if (lockSlot >= 0 && lockSlot < 9) {
+                    if (event.player.getInventory().selected != lockSlot) {
                         event.player.getInventory().selected = lockSlot;
+                        if (event.player instanceof ServerPlayer sp) {
+                            sp.connection.send(new ClientboundSetCarriedItemPacket(lockSlot));
+                        }
                     }
                 }
 
-                // 2. Charge Completion Logic
-                if (wasCharging && !isCharging && state.getChargeTicks() <= 0 && state.getPendingAbility() != null) {
-                    if (event.player instanceof ServerPlayer sp) {
-                        bruhof.teenycraft.battle.AbilityExecutor.finishCharge(state, sp);
-                    }
-                }
-                
-                // If battle ended during tick (e.g. victory timer)
-                if (wasBattling && !isBattling) {
-                    state.updatePlayerSpeed(event.player);
-                }
-                
-                // SYNC
-                if (state.isBattling() && event.player instanceof ServerPlayer serverPlayer) {
-                    bruhof.teenycraft.battle.BattleFigure active = state.getActiveFigure();
-                    bruhof.teenycraft.battle.BattleFigure opponent = state.getActiveOpponent();
+                // 3. Sync
+                if (event.player instanceof ServerPlayer serverPlayer) {
+                    BattleFigure active = state.getActiveFigure();
+                    
+                    // Simple logic to find nearby battle participants for syncing opponent health
+                    LivingEntity target = serverPlayer.level().getEntitiesOfClass(LivingEntity.class, serverPlayer.getBoundingBox().inflate(15), 
+                        e -> e != serverPlayer && e.getCapability(BattleStateProvider.BATTLE_STATE).isPresent())
+                        .stream().findFirst().orElse(null);
+                    
+                    IBattleState opponentState = (target != null) ? target.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null) : null;
+                    BattleFigure opponent = (opponentState != null) ? opponentState.getActiveFigure() : null;
                     
                     if (active != null) {
                         ModMessages.sendToPlayer(new PacketSyncBattleData(
@@ -179,17 +186,13 @@ public class ModEvents {
     @SubscribeEvent
     public static void onPlayerAttackEntity(AttackEntityEvent event) {
         if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof ServerPlayer player) {
-            // Check if holding ItemAbility
             net.minecraft.world.item.ItemStack held = player.getMainHandItem();
             if (held.getItem() instanceof ItemAbility itemAbility) {
-                // Check Battle State
                 player.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(battle -> {
                     if (battle.isBattling()) {
                         bruhof.teenycraft.battle.BattleFigure active = battle.getActiveFigure();
                         if (active != null) {
                             int slot = itemAbility.getSlotIndex();
-                            
-                            // Check Cooldown (Vanilla)
                             if (player.getAttackStrengthScale(0.5f) >= 1.0f) {
                                 AbilityExecutor.executeAttack(player, active, slot, event.getTarget());
                             }
@@ -207,8 +210,6 @@ public class ModEvents {
             event.getEntity().getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(battle -> {
                 if (battle.isBattling()) {
                     String clickedId = ItemFigure.getFigureID(event.getItemStack());
-                    
-                    // Find the index of this figure in the team
                     int targetIndex = -1;
                     var team = battle.getTeam();
                     for (int i = 0; i < team.size(); i++) {
@@ -233,6 +234,7 @@ public class ModEvents {
         @SubscribeEvent
         public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
             event.register(ITitanManager.class);
+            event.register(IBattleState.class);
         }
 
         @SubscribeEvent

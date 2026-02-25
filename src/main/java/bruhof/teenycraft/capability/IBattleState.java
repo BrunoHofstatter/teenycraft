@@ -3,11 +3,9 @@ package bruhof.teenycraft.capability;
 import bruhof.teenycraft.battle.BattleFigure;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.capabilities.AutoRegisterCapability;
 
 import java.util.List;
 
-@AutoRegisterCapability
 public interface IBattleState {
 
     // Is the player currently in a battle context?
@@ -35,18 +33,9 @@ public interface IBattleState {
     void refreshPlayerInventory(net.minecraft.world.entity.player.Player player);
     void updatePlayerSpeed(net.minecraft.world.entity.player.Player player);
 
-    // Opponent Logic
-    void setOpponentTeam(List<BattleFigure> team);
-    List<BattleFigure> getOpponentTeam();
-    BattleFigure getActiveOpponent();
-    void setOpponentEntityUUID(java.util.UUID uuid);
-    java.util.UUID getOpponentEntityUUID();
-    
-    // Victory
-    void triggerVictory(net.minecraft.server.level.ServerPlayer player);
-
     // Core Loop
     void tick();
+    void checkFaint(net.minecraft.world.entity.LivingEntity entity);
     
     // Player State (Mana & Effects)
     float getCurrentMana();
@@ -57,6 +46,9 @@ public interface IBattleState {
     // Tofu Logic
     float getCurrentTofuMana();
     void spawnTofu(float power);
+    
+    int getLockedSlot();
+    void setLockedSlot(int slot);
     
     // Swap Logic Extensions
     void disableFigure(int index, int duration, net.minecraft.world.entity.player.Player player);
@@ -82,9 +74,6 @@ public interface IBattleState {
     boolean isPendingGolden();
     java.util.UUID getPendingTargetUUID();
     
-    net.minecraft.server.level.ServerPlayer getPlayerEntity();
-    net.minecraft.world.entity.LivingEntity getOpponentEntity(net.minecraft.server.level.ServerLevel level);
-
     // UI Helpers
     List<String> getEffectList();
     List<String> getBenchInfoList();

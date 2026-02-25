@@ -2,6 +2,7 @@ package bruhof.teenycraft.battle.damage;
 
 import bruhof.teenycraft.capability.IBattleState;
 import bruhof.teenycraft.battle.BattleFigure;
+import bruhof.teenycraft.battle.StatType;
 import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.util.AbilityLoader;
 import bruhof.teenycraft.util.AbilityLoader.AbilityData;
@@ -18,6 +19,7 @@ public class DamagePipeline {
         public int hitCount = 1;
         public boolean isGroupDamage = false;
         public boolean canCrit = false;
+        public boolean undodgeable = false;
         public float knockback = 0.5f; // Default vanilla-ish knockback
         public List<String> effects = new ArrayList<>();
         
@@ -63,7 +65,7 @@ public class DamagePipeline {
      * Calculates the outgoing damage package from an attacker using an ability.
      * Does NOT apply mitigation (Defense/Shield) yet, as that depends on the victim.
      */
-    public static DamageResult calculateOutput(IBattleState state, BattleFigure attacker, int slotIndex) {
+    public static DamageResult calculateOutput(IBattleState attackerState, BattleFigure attacker, int slotIndex) {
         // 1. Get Ability Data
         java.util.ArrayList<String> order = ItemFigure.getAbilityOrder(attacker.getOriginalStack());
         if (slotIndex >= order.size()) return new DamageResult(0);
@@ -77,10 +79,10 @@ public class DamagePipeline {
         String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
         int manaCost = TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
         
-        return calculateOutput(state, attacker, data, manaCost);
+        return calculateOutput(attackerState, attacker, data, manaCost);
     }
 
-    public static DamageResult calculateOutput(IBattleState state, BattleFigure attacker, AbilityData data, int manaCost) {
+    public static DamageResult calculateOutput(IBattleState attackerState, BattleFigure attacker, AbilityData data, int manaCost) {
         // 1. If damageTier is 0, it's a pure utility move.
         // We skip calculation to preserve Power Up/Down and Luck bags for real hits.
         if (data.damageTier == 0) {
@@ -89,65 +91,56 @@ public class DamagePipeline {
 
         // 2. Base Damage Calculation (Using HOT stats from BattleFigure)
         // Formula: Power * ManaCost * BaseConstant * TierMultiplier
-        int power = attacker.getPowerStat();
+        int power = attacker.getEffectiveStat(StatType.POWER, attackerState);
         float damageMultiplier = TeenyBalance.getDamageMultiplier(data.damageTier);
         
         // Calculate Raw Damage
         float rawDamage = power * manaCost * TeenyBalance.BASE_DAMAGE_PERMANA * damageMultiplier;
         
         // Add Flat Damage Modifications (Effects from State)
-        if (state != null) {
-            int bonus = state.getEffectMagnitude("flat_damage_up") + state.getEffectMagnitude("power_up");
-            int malus = state.getEffectMagnitude("flat_damage_down") + state.getEffectMagnitude("power_down");
-            rawDamage += (bonus - malus);
-        }
+        rawDamage += attacker.getEffectiveStat(StatType.FLAT_DAMAGE, attackerState);
         
         // 3. Critical Hit Readiness
         // We no longer roll here to allow multi-hit independent rolls.
         DamageResult result = new DamageResult(Math.round(rawDamage));
         result.canCrit = true; // Most abilities can crit
 
-        // 4. Trait Processing (Multi-Hit, Group, etc.)
-        for (TraitData trait : data.traits) {
-            if ("multi_hit".equals(trait.id) && !trait.params.isEmpty()) {
-                result.hitCount = Math.max(1, trait.params.get(0).intValue());
-            }
-            if ("group_damage".equals(trait.id)) {
-                result.isGroupDamage = true;
-            }
-        }
+        // 4. Trait Processing
+        bruhof.teenycraft.battle.trait.TraitRegistry.triggerPipelineHooks(data.traits, result);
         
         return result;
     }
     
-    public static MitigationResult calculateMitigation(IBattleState state, BattleFigure victim, BattleFigure attacker, DamageResult incoming, AbilityData data, boolean isGolden) {
+    public static MitigationResult calculateMitigation(IBattleState victimState, BattleFigure victim, IBattleState attackerState, BattleFigure attacker, DamageResult incoming, AbilityData data, boolean isGolden) {
         int initialDmg = incoming.baseDamagePerHit;
         int critBonus = 0;
         boolean isCrit = false;
 
         // 1. Critical Hit Roll (Per Hit)
-        if (incoming.canCrit && attacker != null && attacker.tryCrit()) {
+        if (incoming.canCrit && attacker != null && attacker.tryCrit(attackerState)) {
             isCrit = true;
-            float luckVal = attacker.getLuckStat();
+            float luckVal = attacker.getEffectiveStat(StatType.LUCK, attackerState);
             float critMult = (luckVal / 100.0f * TeenyBalance.LUCK_BALANCE_MULTIPLIER) + TeenyBalance.BASE_LUCK_MULTIPLIER;
             int critDmg = Math.round(initialDmg * critMult);
             critBonus = critDmg - initialDmg;
             initialDmg = critDmg;
         }
         
-        MitigationResult res = calculateMitigationInternal(state, victim, initialDmg, data, isGolden);
+        MitigationResult res = calculateMitigationInternal(victimState, victim, initialDmg, incoming.undodgeable, data, isGolden);
         return new MitigationResult(res.finalDamage, res.isDodged, res.isBlocked, isCrit, res.dodgeReduction, critBonus);
     }
 
-    public static MitigationResult calculatePoisonTick(IBattleState victimState, BattleFigure victim, BattleFigure attacker, float baseTickDamage) {
+    public static MitigationResult calculatePoisonTick(IBattleState victimState, BattleFigure victim, BattleFigure attacker, IBattleState attackerState, float baseTickDamage) {
         int initialDmg = Math.round(baseTickDamage);
         int critBonus = 0;
         boolean isCrit = false;
 
         // 1. Roll for Crit (Attacker Context)
-        if (attacker != null && attacker.tryCrit()) {
+        if (attacker != null && attacker.tryCrit(attackerState)) {
             isCrit = true;
-            float luckVal = attacker.getLuckStat();
+            float luckVal = attacker.getLuckStat(); // Fallback to base stat if attackerState is null (which it shouldn't be for long)
+            if (attackerState != null) luckVal = attacker.getEffectiveStat(StatType.LUCK, attackerState);
+            
             float critMult = (luckVal / 100.0f * TeenyBalance.LUCK_BALANCE_MULTIPLIER) + TeenyBalance.BASE_LUCK_MULTIPLIER;
             int critDmg = Math.round(initialDmg * critMult);
             critBonus = critDmg - initialDmg;
@@ -155,55 +148,42 @@ public class DamagePipeline {
         }
 
         // 2. Standard Mitigation (Internal)
-        MitigationResult mit = calculateMitigationInternal(victimState, victim, initialDmg, null, false);
+        MitigationResult mit = calculateMitigationInternal(victimState, victim, initialDmg, false, null, false);
         return new MitigationResult(mit.finalDamage, mit.isDodged, mit.isBlocked, isCrit, mit.dodgeReduction, critBonus);
     }
 
-    private static MitigationResult calculateMitigationInternal(IBattleState state, BattleFigure victim, int initialDmg, AbilityData data, boolean isGolden) {
+    private static MitigationResult calculateMitigationInternal(IBattleState victimState, BattleFigure victim, int initialDmg, boolean isUndodgeable, AbilityData data, boolean isGolden) {
         int finalDmg = initialDmg;
         boolean isDodged = false;
         int dodgeReduction = 0;
         
-        boolean undodgeable = false;
-        if (data != null) {
-            // Check Base Traits
-            for (TraitData t : data.traits) {
-                if ("undodgeable".equals(t.id)) {
+        boolean undodgeable = isUndodgeable;
+        if (data != null && !undodgeable && isGolden && data.goldenBonus != null) {
+            for (String bonus : data.goldenBonus) {
+                if ("trait:undodgeable".equals(bonus)) {
                     undodgeable = true;
                     break;
-                }
-            }
-            
-            // Check Golden Traits
-            if (!undodgeable && isGolden && data.goldenBonus != null) {
-                for (String bonus : data.goldenBonus) {
-                    if ("trait:undodgeable".equals(bonus)) {
-                        undodgeable = true;
-                        break;
-                    }
                 }
             }
         }
 
         // 1. Defense Multipliers (Relative)
-        if (state != null) {
-            int defUp = state.getEffectMagnitude("defense_up");
-            int defDown = state.getEffectMagnitude("defense_down");
-            
-            if (defUp > 0) {
-                float mult = 1.0f - (defUp / 100.0f);
-                finalDmg = (int) (finalDmg * Math.max(0, mult));
-            }
-            if (defDown > 0) {
-                float mult = 1.0f + (defDown / 100.0f);
-                finalDmg = (int) (finalDmg * mult);
-            }
+        int defMod = victim.getEffectiveStat(StatType.DEFENSE_PERCENT, victimState);
+        if (defMod != 0) {
+            float mult = 1.0f - (defMod / 100.0f);
+            finalDmg = (int) (finalDmg * Math.max(0, mult));
+        }
+
+        // 1.5 Reflect Reduction (Multiplicative)
+        if (victimState != null && victimState.hasEffect("reflect")) {
+            int reflectMag = victimState.getEffectMagnitude("reflect");
+            finalDmg = (int)(finalDmg * (reflectMag / 100.0f));
         }
 
         // 2. Shield Check (Absolute Negation) - Check BEFORE Dodge so it can skip dodge roll
         boolean isShielded = false;
-        if (state != null && state.hasEffect("shield")) {
-             state.removeEffect("shield");
+        if (victimState != null && victimState.hasEffect("shield")) {
+             victimState.removeEffect("shield");
              isShielded = true;
              if (!undodgeable) {
                  finalDmg = 0;
@@ -215,8 +195,8 @@ public class DamagePipeline {
         float smokeMult = 0;
         bruhof.teenycraft.battle.effect.EffectInstance smoke = null;
         
-        if (state != null && state.hasEffect("dodge_smoke")) {
-            smoke = state.getEffectInstance("dodge_smoke");
+        if (victimState != null && victimState.hasEffect("dodge_smoke")) {
+            smoke = victimState.getEffectInstance("dodge_smoke");
             if (smoke != null) {
                 bagModifier = (int)(smoke.power * TeenyBalance.DODGE_SMOKE_BAGSIZE_PERMANA);
                 smokeMult = smoke.power * TeenyBalance.DODGE_SMOKE_MULT_PERMANA;
@@ -241,7 +221,7 @@ public class DamagePipeline {
         if (smoke != null) {
             smoke.magnitude--;
             if (smoke.magnitude <= 0) {
-                state.removeEffect("dodge_smoke");
+                victimState.removeEffect("dodge_smoke");
             }
         }
         
