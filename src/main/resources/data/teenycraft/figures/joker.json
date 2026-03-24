@@ -1,0 +1,17 @@
+{
+  "id": "joker",
+  "name": "The Joker",
+  "description": "The Clown Prince of Crime is here to have the last laugh!",
+  "class": "none",
+  "groups": [ "Mad Love", "Villains" ],
+  "price": 10000,
+  "model_type": "slim",
+  "attributes": {
+    "hp_scale": 2.0,
+    "power_scale": 2.0,
+    "dodge_scale": 0.5,
+    "luck_scale": 4.0
+  },
+  "abilities": ["chattering_teeth", "evil_laugh", "jokers_mallet"],
+  "ability_cost_tiers": ["c", "c", "e"]
+}

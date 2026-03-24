@@ -124,12 +124,16 @@ public class ModEvents {
             entity.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(state -> {
                 boolean wasCharging = state.isCharging();
                 state.tick();
-                
+
                 // Charge Completion Logic (Generic for NPCs and Players)
                 if (wasCharging && !state.isCharging() && state.getChargeTicks() <= 0 && state.getPendingAbility() != null) {
                     AbilityExecutor.finishCharge(state, entity);
                 }
-            });
+
+                // Blue Channel Tick Logic
+                if (state.isBlueChanneling()) {
+                    AbilityExecutor.tickBlueChannel(state, entity);
+                }            });
         }
     }
     
@@ -155,27 +159,69 @@ public class ModEvents {
                     BattleFigure active = state.getActiveFigure();
                     
                     // Simple logic to find nearby battle participants for syncing opponent health
-                    LivingEntity target = serverPlayer.level().getEntitiesOfClass(LivingEntity.class, serverPlayer.getBoundingBox().inflate(15), 
+                    LivingEntity target = serverPlayer.level().getEntitiesOfClass(LivingEntity.class, serverPlayer.getBoundingBox().inflate(64), 
                         e -> e != serverPlayer && e.getCapability(BattleStateProvider.BATTLE_STATE).isPresent())
                         .stream().findFirst().orElse(null);
                     
                     IBattleState opponentState = (target != null) ? target.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null) : null;
                     BattleFigure opponent = (opponentState != null) ? opponentState.getActiveFigure() : null;
                     
+                    boolean[] hasActiveMineArr = new boolean[3];
+                    boolean[] enemyHasActiveMineArr = new boolean[3];
+                    if (opponentState != null) {
+                        for(int i=0; i<3; i++) hasActiveMineArr[i] = state.hasActiveMine(i, target.getUUID());
+                    }
+                    if (opponentState != null && target != null) {
+                        for(int i=0; i<3; i++) enemyHasActiveMineArr[i] = opponentState.hasActiveMine(i, serverPlayer.getUUID());
+                    }
+
                     if (active != null) {
-                        ModMessages.sendToPlayer(new PacketSyncBattleData(
+                        bruhof.teenycraft.networking.ModMessages.sendToPlayer(new bruhof.teenycraft.networking.PacketSyncBattleData(
                             true,
                             active.getNickname(),
+                            state.getActiveFigureId(),
+                            bruhof.teenycraft.util.FigureLoader.getModelType(state.getActiveFigureId()),
                             state.getActiveFigureIndex(),
                             active.getCurrentHp(),
                             active.getMaxHp(),
                             state.getCurrentMana(),
+                            state.getBatteryCharge(),
+                            state.getBatterySpawnPct(),
+                            state.getBasePower(),
+                            state.getEffectMagnitude("power_up"),
+                            state.getEffectMagnitude("power_down"),
+                            state.getCooldowns(),
+                            new int[]{state.getSlotProgress(0), state.getSlotProgress(1), state.getSlotProgress(2)},
+                            hasActiveMineArr,
+                            state.getAbilityIds(),
+                            state.getAbilityTiers(),
+                            state.getAbilityGoldenStatus(),
                             state.getEffectList(),
                             state.getBenchInfoList(),
                             state.getBenchIndicesList(),
+                            state.getBenchFigureIds(),
                             opponent != null ? opponent.getNickname() : "None",
+                            opponentState != null ? opponentState.getActiveFigureId() : "none",
+                            opponentState != null ? bruhof.teenycraft.util.FigureLoader.getModelType(opponentState.getActiveFigureId()) : "default",
+                            opponentState != null ? opponentState.getActiveFigureIndex() : 0,
                             opponent != null ? opponent.getCurrentHp() : 0,
-                            opponent != null ? opponent.getMaxHp() : 100
+                            opponent != null ? opponent.getMaxHp() : 100,
+                            opponentState != null ? opponentState.getCurrentMana() : 0,
+                            opponentState != null ? opponentState.getBatteryCharge() : 0,
+                            opponentState != null ? opponentState.getBatterySpawnPct() : -1.0f,
+                            opponentState != null ? opponentState.getBasePower() : 0,
+                            opponentState != null ? opponentState.getEffectMagnitude("power_up") : 0,
+                            opponentState != null ? opponentState.getEffectMagnitude("power_down") : 0,
+                            opponentState != null ? opponentState.getCooldowns() : new int[3],
+                            opponentState != null ? new int[]{opponentState.getSlotProgress(0), opponentState.getSlotProgress(1), opponentState.getSlotProgress(2)} : new int[3],
+                            enemyHasActiveMineArr,
+                            opponentState != null ? opponentState.getAbilityIds() : new java.util.ArrayList<>(),
+                            opponentState != null ? opponentState.getAbilityTiers() : new java.util.ArrayList<>(),
+                            opponentState != null ? opponentState.getAbilityGoldenStatus() : new java.util.ArrayList<>(),
+                            opponentState != null ? opponentState.getEffectList() : new java.util.ArrayList<>(),
+                            opponentState != null ? opponentState.getBenchInfoList() : new java.util.ArrayList<>(),
+                            opponentState != null ? opponentState.getBenchIndicesList() : new java.util.ArrayList<>(),
+                            opponentState != null ? opponentState.getBenchFigureIds() : new java.util.ArrayList<>()
                         ), serverPlayer);
                     }
                 }

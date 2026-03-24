@@ -1,0 +1,17 @@
+{
+  "id": "see_more",
+  "name": "See-More",
+  "description": "A H.I.V.E. member who's always keeping an eye out. Literally.",
+  "class": "Tech",
+  "groups": [ "Hive" ],
+  "price": 200,
+  "model_type": "slim",
+  "attributes": {
+    "hp_scale": 1.5,
+    "power_scale": 3.0,
+    "dodge_scale": 1.5,
+    "luck_scale": 2.0
+  },
+  "abilities": ["nuh_uh", "plasma_shot", "laser_eyes2"],
+  "ability_cost_tiers": ["c", "c", "b"]
+}

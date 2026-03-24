@@ -1,0 +1,20 @@
+{
+  "id": "punchies",
+  "name": "Punchies",
+  "texture_index": 151,
+  "particle": "minecraft:crit",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 5,
+  "range_tier": 2,
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "multi_hit",
+      "params": [4.0]
+    }
+  ],
+  "golden_bonus": ["trait:undodgeable"]
+}

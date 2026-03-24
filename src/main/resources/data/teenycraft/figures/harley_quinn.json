@@ -1,0 +1,17 @@
+{
+  "id": "harley_quinn",
+  "name": "Harley Quinn",
+  "description": "Ready to cause some chaos and maybe a little heartbreak.",
+  "class": "Cute",
+  "groups": [ "Mad Love", "Villains" ],
+  "price": 6000,
+  "model_type": "slim",
+  "attributes": {
+    "hp_scale": 1.0,
+    "power_scale": 1.0,
+    "dodge_scale": 2.5,
+    "luck_scale": 3.5
+  },
+  "abilities": ["harleys_mallet", "puddin_pucker", "bang"],
+  "ability_cost_tiers": ["d", "d", "b"]
+}

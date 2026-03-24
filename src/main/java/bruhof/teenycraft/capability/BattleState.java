@@ -45,7 +45,17 @@ public class BattleState implements IBattleState {
     // Participant State
     private float currentMana = 0;
     private float currentTofuMana = 0;
+    
+    // Battery State
+    private float batteryCharge = 0;
+    private float batterySpawnPct = -1.0f;
+    private int batterySpawnTimer = TeenyBalance.BATTERY_SPAWN_MIN_TICKS;
+    
     private final Map<String, EffectInstance> activeEffects = new HashMap<>();
+    private final Map<String, Integer> internalCooldowns = new HashMap<>();
+    private final int[] slotProgress = new int[3];
+
+    public ServerPlayer getPlayer() { return this.player; }
 
     // Charge Up Data
     private int chargeTicks = 0;
@@ -53,6 +63,17 @@ public class BattleState implements IBattleState {
     private int pendingSlot = -1;
     private boolean pendingIsGolden = false;
     private UUID pendingTargetUUID = null;
+    
+    // Blue Channel Data
+    private int blueChannelTicks = 0;
+    private int blueChannelTotalTicks = 0;
+    private int blueChannelInterval = 0;
+    private bruhof.teenycraft.util.AbilityLoader.AbilityData blueChannelAbility = null;
+    private int blueChannelSlot = -1;
+    private boolean blueChannelGolden = false;
+    private float blueChannelTotalDamage = 0;
+    private float blueChannelTotalHeal = 0;
+    private float blueChannelTotalMana = 0;
 
     // Victory/Persistence Logic (Still tracked per state for now)
     private boolean battleWon = false;
@@ -145,6 +166,11 @@ public class BattleState implements IBattleState {
             return;
         }
 
+        // Cancel flight on swap
+        if (hasEffect("flight")) {
+            removeEffect("flight");
+        }
+
         this.activeFigureIndex = newIndex;
         this.swapCooldown = TeenyBalance.SWAP_COOLDOWN * 20;
 
@@ -180,7 +206,7 @@ public class BattleState implements IBattleState {
         applyEffect("disable_" + index, duration, 0);
 
         if (index == activeFigureIndex) {
-            player.sendSystemMessage(Component.literal("§c§lDISABLED! §7Current figure locked. Swapping..."));
+            if (player != null) player.sendSystemMessage(Component.literal("§c§lDISABLED! §7Current figure locked. Swapping..."));
             int nextIndex = -1;
             for (int i = 1; i < team.size(); i++) {
                 int check = (activeFigureIndex + i) % team.size();
@@ -193,8 +219,10 @@ public class BattleState implements IBattleState {
             if (nextIndex != -1) {
                 this.activeFigureIndex = nextIndex;
                 this.swapCooldown = TeenyBalance.SWAP_COOLDOWN * 20;
-                refreshPlayerInventory(player);
-                player.sendSystemMessage(Component.literal("§aForce swapped to: " + getActiveFigure().getNickname()));
+                if (player != null) {
+                    refreshPlayerInventory(player);
+                    player.sendSystemMessage(Component.literal("§aForce swapped to: " + getActiveFigure().getNickname()));
+                }
             }
         }
     }
@@ -249,7 +277,13 @@ public class BattleState implements IBattleState {
         for (int i = 0; i < team.size(); i++) {
             if (i == activeFigureIndex) continue;
             if (benchSlot <= 8) {
-                player.getInventory().setItem(benchSlot, team.get(i).getOriginalStack().copy());
+                ItemStack icon = team.get(i).getOriginalStack().copy();
+                // Preserve only identity for swapping logic
+                String figureId = ItemFigure.getFigureID(icon);
+                icon.setTag(new CompoundTag());
+                icon.getOrCreateTag().putString("FigureID", figureId);
+                
+                player.getInventory().setItem(benchSlot, icon);
                 benchSlot++;
             }
         }
@@ -274,11 +308,7 @@ public class BattleState implements IBattleState {
                 endBattle();
                 
                 if (playerToTeleport != null) {
-                    ModMessages.sendToPlayer(new PacketSyncBattleData(
-                        false, "", 0, 0, 0, 0, 
-                        new ArrayList<>(), new ArrayList<>(), new ArrayList<>(),
-                        "", 0, 0
-                    ), playerToTeleport);
+                    ModMessages.sendToPlayer(PacketSyncBattleData.off(), playerToTeleport);
                     ServerLevel overworld = playerToTeleport.serverLevel().getServer().getLevel(Level.OVERWORLD);
                     if (overworld != null) {
                         playerToTeleport.teleportTo(overworld, playerToTeleport.getX(), playerToTeleport.getY(), playerToTeleport.getZ(), Set.of(), playerToTeleport.getYRot(), playerToTeleport.getXRot());
@@ -290,6 +320,29 @@ public class BattleState implements IBattleState {
 
         if (swapCooldown > 0) swapCooldown--;
         regenMana();
+
+        // Battery Passive Charge
+        if (batteryCharge < TeenyBalance.BATTERY_MAX_CHARGE) {
+            batteryCharge += TeenyBalance.BATTERY_PASSIVE_CHARGE_RATE;
+            if (batteryCharge > TeenyBalance.BATTERY_MAX_CHARGE) {
+                batteryCharge = TeenyBalance.BATTERY_MAX_CHARGE;
+            }
+        }
+        
+        // Battery Spawn Logic
+        if (batterySpawnPct == -1.0f) {
+            if (batterySpawnTimer > 0) {
+                batterySpawnTimer--;
+            } else {
+                float range = TeenyBalance.BATTERY_SPAWN_MAX_PCT - TeenyBalance.BATTERY_SPAWN_MIN_PCT;
+                batterySpawnPct = TeenyBalance.BATTERY_SPAWN_MIN_PCT + (float)(Math.random() * range);
+            }
+        }
+
+        // Tick internal cooldowns
+        internalCooldowns.entrySet().forEach(entry -> {
+            if (entry.getValue() > 0) entry.setValue(entry.getValue() - 1);
+        });
 
         if (isCharging()) {
             if (TeenyBalance.CHARGE_CANCEL_ON_STUN && hasEffect("stun")) {
@@ -326,6 +379,19 @@ public class BattleState implements IBattleState {
                 removeEffect(id);
             }
         }
+
+        // Tick projectiles
+        java.util.Iterator<PendingProjectile> it = pendingProjectiles.iterator();
+        while (it.hasNext()) {
+            PendingProjectile proj = it.next();
+            proj.ticksRemaining--;
+            if (proj.ticksRemaining <= 0) {
+                if (player != null) {
+                    bruhof.teenycraft.battle.AbilityExecutor.resolveProjectile(this, player, proj);
+                }
+                it.remove();
+            }
+        }
     }
 
     @Override
@@ -349,6 +415,8 @@ public class BattleState implements IBattleState {
             BattleFigure newActive = getActiveFigure();
             
             // 1. Clear all effects (Fresh start)
+            entity.removeEffect(net.minecraft.world.effect.MobEffects.LEVITATION);
+            entity.removeEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);
             this.activeEffects.clear();
             
             // 2. Apply Reset Lock to self
@@ -427,9 +495,114 @@ public class BattleState implements IBattleState {
     }
 
     @Override
+    public float getBatteryCharge() { return batteryCharge; }
+    
+    @Override
+    public void addBatteryCharge(float amount) {
+        this.batteryCharge += amount;
+        if (this.batteryCharge > TeenyBalance.BATTERY_MAX_CHARGE) {
+            this.batteryCharge = TeenyBalance.BATTERY_MAX_CHARGE;
+        } else if (this.batteryCharge < 0) {
+            this.batteryCharge = 0;
+        }
+    }
+    
+    @Override
+    public float getBatterySpawnPct() { return batterySpawnPct; }
+    
+    @Override
+    public int getBatterySpawnTimer() { return batterySpawnTimer; }
+
+    @Override
+    public boolean isBlueChanneling() { return blueChannelTicks > 0; }
+
+    @Override
+    public void startBlueChannel(int totalTicks, int interval, bruhof.teenycraft.util.AbilityLoader.AbilityData data, int slot, boolean isGolden, float totalDamage, float totalHeal, float totalMana) {
+        this.blueChannelTicks = totalTicks;
+        this.blueChannelTotalTicks = totalTicks;
+        this.blueChannelInterval = interval;
+        this.blueChannelAbility = data;
+        this.blueChannelSlot = slot;
+        this.lockedSlot = slot;
+        this.blueChannelGolden = isGolden;
+        this.blueChannelTotalDamage = totalDamage;
+        this.blueChannelTotalHeal = totalHeal;
+        this.blueChannelTotalMana = totalMana;
+    }
+
+    @Override
+    public void cancelBlueChannel() {
+        this.blueChannelTicks = 0;
+        this.blueChannelTotalTicks = 0;
+        this.blueChannelInterval = 0;
+        this.blueChannelAbility = null;
+        this.blueChannelSlot = -1;
+        this.lockedSlot = -1;
+        this.blueChannelGolden = false;
+        this.blueChannelTotalDamage = 0;
+        this.blueChannelTotalHeal = 0;
+        this.blueChannelTotalMana = 0;
+    }
+
+    @Override
+    public void decrementBlueChannelTicks() {
+        if (this.blueChannelTicks > 0) {
+            this.blueChannelTicks--;
+        }
+    }
+
+    @Override
+    public int getBlueChannelTicks() { return blueChannelTicks; }
+
+    @Override
+    public int getBlueChannelTotalTicks() { return blueChannelTotalTicks; }
+
+    @Override
+    public int getBlueChannelInterval() { return blueChannelInterval; }
+
+    @Override
+    public bruhof.teenycraft.util.AbilityLoader.AbilityData getBlueChannelAbility() { return blueChannelAbility; }
+
+    @Override
+    public int getBlueChannelSlot() { return blueChannelSlot; }
+
+    @Override
+    public boolean isBlueChannelGolden() { return blueChannelGolden; }
+
+    @Override
+    public float getBlueChannelTotalDamage() { return blueChannelTotalDamage; }
+
+    @Override
+    public float getBlueChannelTotalHeal() { return blueChannelTotalHeal; }
+
+    @Override
+    public float getBlueChannelTotalMana() { return blueChannelTotalMana; }
+
+    @Override
+    public void consumeMana(float amount) {
+        this.currentMana -= amount;
+        if (this.currentMana < 0) this.currentMana = 0;
+    }
+
+    @Override
     public void consumeMana(int amount) {
         this.currentMana -= amount;
         if (this.currentMana < 0) this.currentMana = 0;
+    }
+
+    private void checkBatteryCollection() {
+        if (batterySpawnPct != -1.0f) {
+            float targetMana = TeenyBalance.BATTLE_MANA_MAX * batterySpawnPct;
+            if (currentMana >= targetMana) {
+                addBatteryCharge(TeenyBalance.BATTERY_COLLECT_CHARGE);
+                batterySpawnPct = -1.0f;
+                float range = TeenyBalance.BATTERY_SPAWN_MAX_TICKS - TeenyBalance.BATTERY_SPAWN_MIN_TICKS;
+                batterySpawnTimer = TeenyBalance.BATTERY_SPAWN_MIN_TICKS + (int)(Math.random() * range);
+                if (this.player != null) {
+                    this.player.level().playSound(null, this.player.getX(), this.player.getY(), this.player.getZ(), net.minecraft.sounds.SoundEvents.EXPERIENCE_ORB_PICKUP, net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
+                }
+            }
+        }
     }
 
     @Override
@@ -440,11 +613,12 @@ public class BattleState implements IBattleState {
         } else if (this.currentMana < 0) {
             this.currentMana = 0;
         }
+        checkBatteryCollection();
     }
     
     @Override
     public void regenMana() {
-        if (hasEffect("stun") || isCharging()) return;
+        if (hasEffect("stun") || isCharging() || isBlueChanneling()) return;
         if (currentMana < TeenyBalance.BATTLE_MANA_MAX) {
             float regenRate = (float) TeenyBalance.BATTLE_MANA_REGEN_PER_SEC / 20.0f;
             if (hasEffect("curse")) {
@@ -456,6 +630,7 @@ public class BattleState implements IBattleState {
             if (currentMana > TeenyBalance.BATTLE_MANA_MAX) {
                 currentMana = TeenyBalance.BATTLE_MANA_MAX;
             }
+            checkBatteryCollection();
         }
     }
     
@@ -589,6 +764,18 @@ public class BattleState implements IBattleState {
     @Override
     public UUID getPendingTargetUUID() { return pendingTargetUUID; }
 
+    private final List<PendingProjectile> pendingProjectiles = new ArrayList<>();
+
+    @Override
+    public void addProjectile(PendingProjectile projectile) {
+        pendingProjectiles.add(projectile);
+    }
+
+    @Override
+    public List<PendingProjectile> getProjectiles() {
+        return pendingProjectiles;
+    }
+
     @Override
     public void triggerOnAttack(BattleFigure attacker) {
         activeEffects.entrySet().removeIf(entry -> {
@@ -635,6 +822,96 @@ public class BattleState implements IBattleState {
             list.add(i);
         }
         return list;
+    }
+
+    @Override
+    public List<String> getBenchFigureIds() {
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < team.size(); i++) {
+            if (i == activeFigureIndex) continue;
+            list.add(team.get(i).getFigureId());
+        }
+        return list;
+    }
+
+    @Override
+    public String getActiveFigureId() {
+        BattleFigure active = getActiveFigure();
+        return (active != null) ? active.getFigureId() : "none";
+    }
+
+    @Override
+    public int getBasePower() {
+        BattleFigure active = getActiveFigure();
+        return (active != null) ? active.getPowerStat() : 0;
+    }
+
+    @Override
+    public int[] getCooldowns() {
+        BattleFigure active = getActiveFigure();
+        if (active == null) return new int[3];
+        return new int[]{active.getCooldown(0), active.getCooldown(1), active.getCooldown(2)};
+    }
+
+    @Override
+    public List<String> getAbilityIds() {
+        BattleFigure active = getActiveFigure();
+        if (active == null) return new ArrayList<>();
+        return ItemFigure.getAbilityOrder(active.getOriginalStack());
+    }
+
+    @Override
+    public List<String> getAbilityTiers() {
+        BattleFigure active = getActiveFigure();
+        if (active == null) return new ArrayList<>();
+        return ItemFigure.getAbilityTiers(active.getOriginalStack());
+    }
+
+    @Override
+    public List<Boolean> getAbilityGoldenStatus() {
+        BattleFigure active = getActiveFigure();
+        if (active == null) return new ArrayList<>();
+        ItemStack stack = active.getOriginalStack();
+        List<String> ids = getAbilityIds();
+        List<Boolean> golden = new ArrayList<>();
+        for (String id : ids) {
+            golden.add(ItemFigure.isAbilityGolden(stack, id));
+        }
+        return golden;
+    }
+
+    @Override
+    public int getInternalCooldown(String key) {
+        return internalCooldowns.getOrDefault(key, 0);
+    }
+
+    @Override
+    public void setInternalCooldown(String key, int ticks) {
+        internalCooldowns.put(key, ticks);
+    }
+
+    @Override
+    public int getSlotProgress(int slot) {
+        if (slot < 0 || slot >= 3) return 0;
+        return slotProgress[slot];
+    }
+
+    @Override
+    public void setSlotProgress(int slot, int val) {
+        if (slot >= 0 && slot < 3) slotProgress[slot] = val;
+    }
+
+    @Override
+    public boolean hasActiveMine(int slot, UUID targetUUID) {
+        if (player == null || targetUUID == null) return false;
+        Entity target = ((ServerLevel)player.level()).getEntity(targetUUID);
+        if (!(target instanceof LivingEntity living)) return false;
+        
+        return living.getCapability(BattleStateProvider.BATTLE_STATE).map(s -> {
+            String effectId = "remote_mine_" + slot;
+            bruhof.teenycraft.battle.effect.EffectInstance inst = s.getEffectInstance(effectId);
+            return inst != null && player.getUUID().equals(inst.casterUUID);
+        }).orElse(false);
     }
 
     @Override

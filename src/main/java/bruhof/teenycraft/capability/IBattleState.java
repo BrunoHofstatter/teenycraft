@@ -40,6 +40,7 @@ public interface IBattleState {
     // Player State (Mana & Effects)
     float getCurrentMana();
     void consumeMana(int amount);
+    void consumeMana(float amount);
     void addMana(int amount);
     void regenMana();
     
@@ -47,8 +48,22 @@ public interface IBattleState {
     float getCurrentTofuMana();
     void spawnTofu(float power);
     
+    // Battery / Accessory Logic
+    float getBatteryCharge();
+    void addBatteryCharge(float amount);
+    float getBatterySpawnPct();
+    int getBatterySpawnTimer();
+    
     int getLockedSlot();
     void setLockedSlot(int slot);
+    
+    int getInternalCooldown(String key);
+    void setInternalCooldown(String key, int ticks);
+    
+    int getSlotProgress(int slot);
+    void setSlotProgress(int slot, int val);
+    
+    boolean hasActiveMine(int slot, java.util.UUID targetUUID);
     
     // Swap Logic Extensions
     void disableFigure(int index, int duration, net.minecraft.world.entity.player.Player player);
@@ -74,10 +89,58 @@ public interface IBattleState {
     boolean isPendingGolden();
     java.util.UUID getPendingTargetUUID();
     
+    // Blue Channel logic
+    boolean isBlueChanneling();
+    void startBlueChannel(int totalTicks, int interval, bruhof.teenycraft.util.AbilityLoader.AbilityData data, int slot, boolean isGolden, float totalDamage, float totalHeal, float totalMana);
+    void cancelBlueChannel();
+    void decrementBlueChannelTicks();
+    int getBlueChannelTicks();
+    int getBlueChannelTotalTicks();
+    int getBlueChannelInterval();
+    bruhof.teenycraft.util.AbilityLoader.AbilityData getBlueChannelAbility();
+    int getBlueChannelSlot();
+    boolean isBlueChannelGolden();
+    float getBlueChannelTotalDamage();
+    float getBlueChannelTotalHeal();
+    float getBlueChannelTotalMana();
+
+    // Projectile logic
+    class PendingProjectile {
+        public bruhof.teenycraft.util.AbilityLoader.AbilityData data;
+        public int slotIndex;
+        public boolean isGolden;
+        public int manaCost;
+        public java.util.UUID targetUUID;
+        public net.minecraft.world.phys.Vec3 castPosition;
+        public int ticksRemaining;
+        public bruhof.teenycraft.battle.BattleFigure attackerFigure;
+
+        public PendingProjectile(bruhof.teenycraft.util.AbilityLoader.AbilityData data, int slotIndex, boolean isGolden, int manaCost, java.util.UUID targetUUID, net.minecraft.world.phys.Vec3 castPosition, int ticksRemaining, bruhof.teenycraft.battle.BattleFigure attackerFigure) {
+            this.data = data;
+            this.slotIndex = slotIndex;
+            this.isGolden = isGolden;
+            this.manaCost = manaCost;
+            this.targetUUID = targetUUID;
+            this.castPosition = castPosition;
+            this.ticksRemaining = ticksRemaining;
+            this.attackerFigure = attackerFigure;
+        }
+    }
+
+    void addProjectile(PendingProjectile projectile);
+    List<PendingProjectile> getProjectiles();
+
     // UI Helpers
     List<String> getEffectList();
     List<String> getBenchInfoList();
     List<Integer> getBenchIndicesList();
+    List<String> getBenchFigureIds();
+    String getActiveFigureId();
+    int getBasePower();
+    int[] getCooldowns();
+    List<String> getAbilityIds();
+    List<String> getAbilityTiers();
+    List<Boolean> getAbilityGoldenStatus();
 
     // Data persistence (Minimal, mainly for reconnecting during battle if we support that)
     void saveNBTData(CompoundTag tag);

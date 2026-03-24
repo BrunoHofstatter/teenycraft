@@ -13,5 +13,5 @@
   "traits": [
     { "id": "surprise" }
   ],
-  "golden_bonus": ["self:tofu_chance:1.0"]
+  "golden_bonus": ["trait:tofu_chance:1.5,1.2"]
 }

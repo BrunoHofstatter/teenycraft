@@ -1,0 +1,17 @@
+{
+  "id": "superman",
+  "name": "Superman",
+  "description": "Faster than a speeding bullet, and definitely more expensive for some reason.",
+  "class": "Super",
+  "groups": [ "Justice League" ],
+  "price": 15000,
+  "model_type": "default",
+  "attributes": {
+    "hp_scale": 3.5,
+    "power_scale": 3.5,
+    "dodge_scale": 0.5,
+    "luck_scale": 0.5
+  },
+  "abilities": ["flight", "super_sockem", "heat_vision"],
+  "ability_cost_tiers": ["c", "d", "d"]
+}

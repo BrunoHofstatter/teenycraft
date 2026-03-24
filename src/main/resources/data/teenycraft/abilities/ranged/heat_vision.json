@@ -1,0 +1,20 @@
+{
+  "id": "heat_vision",
+  "name": "Heat Vision",
+  "texture_index": 112,
+  "particle": "minecraft:flame",
+  "particle_count": 10,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 8,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "blue",
+      "params": [1.0]
+    }
+  ],
+  "golden_bonus": ["trait:blue:0.7"]
+}

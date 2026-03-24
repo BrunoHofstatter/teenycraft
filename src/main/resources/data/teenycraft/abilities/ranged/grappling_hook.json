@@ -1,0 +1,20 @@
+{
+  "id": "grappling_hook",
+  "name": "Grappling Hook",
+  "texture_index": 101,
+  "particle": "minecraft:crit",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 7,
+  "range_tier": 6,
+  "damage_tier": 5,
+  "effects_on_opponent": [
+    {
+      "id": "defense_down",
+      "params": [1.0]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["opponent:defense_down:1.3"]
+}

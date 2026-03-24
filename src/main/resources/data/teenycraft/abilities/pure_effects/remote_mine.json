@@ -1,20 +1,17 @@
 {
-  "id": "curse",
+  "id": "remote_mine",
   "name": "Curse",
-  "texture_index": 6,
+  "texture_index": 2,
   "particle": "minecraft:dragon_breath",
   "particle_count": 5,
   "hit_type": "raycasting",
   "raycast_delay_tier": 0,
   "range_tier": 8,
-  "damage_tier": 0,
+  "damage_tier": 7,
   "effects_on_opponent": [
-    { "id": "curse" , "params": [1.0] }
+    { "id": "remote_mine" , "params": [1.0] }
   ],
   "effects_on_self": [],
-  "traits": [
-    { "id": "undodgeable", "params": [] },
-    { "id": "charge_up", "params": [1.0] }
-  ],
+  "traits": [],
   "golden_bonus": ["trait:instant_cast"]
 }

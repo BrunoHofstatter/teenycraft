@@ -48,11 +48,56 @@ public class EffectRegistry {
         register(new LuckUpEffect());
         register(new CutenessEffect());
         register(new ReflectEffect());
+        register(new PetSlotEffect("pet_slot_1"));
+        register(new PetSlotEffect("pet_slot_2"));
+        register(new RemoteMineEffect("remote_mine_0"));
+        register(new RemoteMineEffect("remote_mine_1"));
+        register(new RemoteMineEffect("remote_mine_2"));
         register(new RootEffect());
         register(new ShockEffect());
         register(new DisableEffect(0));
         register(new DisableEffect(1));
         register(new DisableEffect(2));
+        register(new BattleEffect("flight", EffectType.DURATION, EffectCategory.BUFF) {
+            @Override
+            public void onTick(bruhof.teenycraft.capability.IBattleState state, bruhof.teenycraft.battle.BattleFigure target, int remainingDuration) {
+                EffectInstance inst = state.getEffectInstance("flight");
+                if (inst == null) return;
+                
+                int elapsed = (int)inst.power - remainingDuration;
+                
+                if (state instanceof bruhof.teenycraft.capability.BattleState bs) {
+                    net.minecraft.server.level.ServerPlayer player = bs.getPlayer();
+                    if (player != null) {
+                        // Apply drag every tick while flying
+                        net.minecraft.world.phys.Vec3 vel = player.getDeltaMovement();
+                        player.setDeltaMovement(
+                            vel.x * bruhof.teenycraft.TeenyBalance.FLIGHT_HORIZONTAL_DRAG, 
+                            vel.y, 
+                            vel.z * bruhof.teenycraft.TeenyBalance.FLIGHT_HORIZONTAL_DRAG
+                        );
+                        
+                        // Catch at apex
+                        if (elapsed == bruhof.teenycraft.TeenyBalance.FLIGHT_APEX_TICK_DELAY) {
+                            player.setNoGravity(true);
+                            player.setDeltaMovement(player.getDeltaMovement().multiply(1, 0, 1));
+                            player.hasImpulse = true;
+                            player.hurtMarked = true;
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onRemove(bruhof.teenycraft.capability.IBattleState state, bruhof.teenycraft.battle.BattleFigure target) {
+                if (state instanceof bruhof.teenycraft.capability.BattleState bs) {
+                    net.minecraft.server.level.ServerPlayer player = bs.getPlayer();
+                    if (player != null) {
+                        player.setNoGravity(false);
+                    }
+                }
+            }
+        });
         register(new PoisonEffect());
         register(new HealthRadioEffect());
         register(new PowerRadioEffect());
@@ -463,5 +508,38 @@ public class EffectRegistry {
     
     public static class CleanseImmunityEffect extends BattleEffect {
         public CleanseImmunityEffect() { super("cleanse_immunity", EffectType.DURATION, EffectCategory.SPECIAL); }
+    }
+
+    public static class PetSlotEffect extends BattleEffect {
+        public PetSlotEffect(String id) { super(id, EffectType.DURATION, EffectCategory.BUFF); }
+        
+        @Override
+        public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
+            if (state.hasEffect("kiss")) return false;
+            return true;
+        }
+    }
+
+    public static class RemoteMineEffect extends BattleEffect {
+        public RemoteMineEffect(String id) { super(id, EffectType.INFINITE, EffectCategory.DEBUFF); }
+        
+        @Override
+        public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
+            if (state.hasEffect("cleanse_immunity")) return false;
+            return true;
+        }
+
+        @Override
+        public void onTick(IBattleState state, BattleFigure target, int remainingDuration) {
+            EffectInstance inst = state.getEffectInstance(getId());
+            if (inst != null) {
+                inst.tickCounter++;
+                if (inst.tickCounter % bruhof.teenycraft.TeenyBalance.REMOTE_MINE_STAGE_INTERVAL == 0) {
+                    if (inst.magnitude < bruhof.teenycraft.TeenyBalance.REMOTE_MINE_STAGES) {
+                        inst.magnitude++;
+                    }
+                }
+            }
+        }
     }
 }

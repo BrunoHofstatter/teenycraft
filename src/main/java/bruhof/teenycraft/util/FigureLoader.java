@@ -22,6 +22,7 @@ import java.util.Map;
 public class FigureLoader extends SimplePreparableReloadListener<Map<String, JsonObject>> {
     private static final Gson GSON = new Gson();
     private static final Map<String, JsonObject> CACHE = new HashMap<>();
+    private static final Map<String, String> MODEL_CACHE = new HashMap<>();
 
     @Override
     protected Map<String, JsonObject> prepare(ResourceManager resourceManager, ProfilerFiller profilerFiller) {
@@ -34,6 +35,12 @@ public class FigureLoader extends SimplePreparableReloadListener<Map<String, Jso
                 JsonObject json = GSON.fromJson(reader, JsonObject.class);
                 String id = json.get("id").getAsString();
                 figures.put(id, json);
+                
+                if (json.has("model_type")) {
+                    MODEL_CACHE.put(id, json.get("model_type").getAsString());
+                } else {
+                    MODEL_CACHE.put(id, "default");
+                }
             } catch (Exception e) {
                 System.err.println("Failed to load figure: " + entry.getKey());
             }
@@ -44,7 +51,22 @@ public class FigureLoader extends SimplePreparableReloadListener<Map<String, Jso
     @Override
     protected void apply(Map<String, JsonObject> result, ResourceManager resourceManager, ProfilerFiller profilerFiller) {
         CACHE.clear();
+        // Note: MODEL_CACHE is filled in prepare, and we don't clear it here 
+        // because prepare runs before apply and result only contains JsonObjects.
+        // If we want to be safe, we'd rebuild MODEL_CACHE here from result.
+        MODEL_CACHE.clear();
+        for (Map.Entry<String, JsonObject> entry : result.entrySet()) {
+            if (entry.getValue().has("model_type")) {
+                MODEL_CACHE.put(entry.getKey(), entry.getValue().get("model_type").getAsString());
+            } else {
+                MODEL_CACHE.put(entry.getKey(), "default");
+            }
+        }
         CACHE.putAll(result);
+    }
+
+    public static String getModelType(String id) {
+        return MODEL_CACHE.getOrDefault(id, "default");
     }
 
     public static ItemStack getFigureStack(String id) {

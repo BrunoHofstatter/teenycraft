@@ -11,7 +11,7 @@
   "effects_on_opponent": [],
   "effects_on_self": [],
   "traits": [
-    { "id": "charge_up", "params": [1.0] }
+    { "id": "charge_up", "params": [1.2] }
   ],
-  "golden_bonus": ["trait:instant_cast"]
+  "golden_bonus": ["trait:instant_cast_chance"]
 }

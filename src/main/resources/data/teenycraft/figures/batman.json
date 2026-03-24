@@ -1,0 +1,17 @@
+{
+  "id": "batman",
+  "name": "Batman",
+  "description": "The Dark Knight who definitely doesn't have enough prep time for this.",
+  "class": "Martial Arts",
+  "groups": [ "BatRivals", "BatBrothers", "Justice League"],
+  "price": 15000,
+  "model_type": "default",
+  "attributes": {
+    "hp_scale": 2.0,
+    "power_scale": 3.0,
+    "dodge_scale": 2.5,
+    "luck_scale": 0.5
+  },
+  "abilities": ["bat_mine", "grappling_hook", "jiu_jitsu"],
+  "ability_cost_tiers": ["c", "b", "b"]
+}

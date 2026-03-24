@@ -1,0 +1,19 @@
+{
+  "id": "quick_punch",
+  "name": "Quick Punch",
+  "texture_index": 152,
+  "particle": "minecraft:sweep_attack",
+  "particle_count": 2,
+  "hit_type": "melee",
+  "raycast_delay_tier": 0,
+  "damage_tier": 6,
+  "effects_on_opponent": [
+    {
+      "id": "stun",
+      "params": [0.7]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["trait:undodgeable"]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "bang",
+  "name": "Bang!",
+  "texture_index": 132,
+  "particle": "minecraft:explosion",
+  "particle_count": 3,
+  "hit_type": "melee",
+  "raycast_delay_tier": 0,
+  "damage_tier": 10,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    { "id": "self_damage", "params": [0.5] }
+  ],
+  "traits": [],
+  "golden_bonus": ["self:power_up:0.3"]
+}

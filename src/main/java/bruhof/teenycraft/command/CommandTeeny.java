@@ -360,7 +360,7 @@ public class CommandTeeny {
         player.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(battle -> {
             battle.endBattle();
             if (player instanceof ServerPlayer serverPlayer) {
-                 ModMessages.sendToPlayer(new PacketSyncBattleData(false, "", 0, 0, 0, 0, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), "", 0, 0), serverPlayer);
+                 ModMessages.sendToPlayer(PacketSyncBattleData.off(), serverPlayer);
                  ServerLevel overworld = serverPlayer.serverLevel().getServer().getLevel(Level.OVERWORLD);
                  if (overworld != null) {
                      serverPlayer.teleportTo(overworld, serverPlayer.getX(), serverPlayer.getY(), serverPlayer.getZ(), Set.of(), serverPlayer.getYRot(), serverPlayer.getXRot());

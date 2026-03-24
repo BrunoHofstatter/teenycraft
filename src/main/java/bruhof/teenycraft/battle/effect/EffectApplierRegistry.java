@@ -109,7 +109,7 @@ public class EffectApplierRegistry {
         register("power_up", (state, attacker, figure, data, manaCost, params, target) -> {
             float paramMult = (!params.isEmpty()) ? params.get(0) : 1.0f;
             int magnitude = EffectCalculator.calculatePowerUpMagnitude(figure, manaCost, paramMult);
-            
+
             target.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(targetState -> {
                 if (targetState.hasEffect("kiss")) {
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§d§lKISS! §cPositive effects blocked!"));
@@ -117,13 +117,24 @@ public class EffectApplierRegistry {
                     int oldMag = targetState.getEffectMagnitude("power_up");
                     targetState.applyEffect("power_up", -1, magnitude);
                     int newMag = targetState.getEffectMagnitude("power_up");
-                    
+
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§6§lPOWER UP! §eStrength increased by " + magnitude + " (Total: " + newMag + ")"));
                     if (attacker instanceof ServerPlayer sp && target != attacker) sp.sendSystemMessage(Component.literal("§6Gave target +" + magnitude + " Power! (Total: " + newMag + ")"));
                 }
             });
         });
+        register("self:power_up", get("power_up"));
 
+        // EAGLE (50% Heal, 50% Power Up)
+        EffectApplier eagleApplier = (state, attacker, figure, data, manaCost, params, target) -> {
+            if (Math.random() < 0.5) {
+                get("heal").apply(state, attacker, figure, data, manaCost, params, target);
+            } else {
+                get("power_up").apply(state, attacker, figure, data, manaCost, params, target);
+            }
+        };
+        register("eagle", eagleApplier);
+        register("self:eagle", eagleApplier);
         // POWER DOWN
         register("power_down", (state, attacker, figure, data, manaCost, params, target) -> {
             float paramMult = (!params.isEmpty()) ? params.get(0) : 1.0f;
@@ -192,6 +203,66 @@ public class EffectApplierRegistry {
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§b§lLUCK UP! §fCritical hit chance increased by " + magnitude + "% (" + (duration/20.0) + "s)"));
                     if (attacker instanceof ServerPlayer sp && target != attacker) sp.sendSystemMessage(Component.literal("§bBuffed target's luck by " + magnitude + "%!"));
                 }
+            });
+        });
+
+        // REMOTE MINE
+        register("remote_mine", (state, attacker, figure, data, manaCost, params, target) -> {
+            float param0 = (!params.isEmpty()) ? params.get(0) : 1.0f; // Damage Multiplier
+            
+            int maxDmg = EffectCalculator.calculateRemoteMineMaxDamage(figure, state, manaCost, data.damageTier, param0);
+            
+            target.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(targetState -> {
+                if (targetState.hasEffect("cleanse_immunity")) {
+                    if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§cTarget is immune to mines!"));
+                    return;
+                }
+
+                // Determine slot from the item in hand (since this is an applier context)
+                int slot = 0; // Default fallback for commands
+                if (attacker instanceof ServerPlayer sp) {
+                    net.minecraft.world.item.ItemStack held = sp.getMainHandItem();
+                    if (held.getItem() instanceof bruhof.teenycraft.item.custom.battle.ItemAbility ia) {
+                        slot = ia.getSlotIndex();
+                    }
+                }
+
+                // Apply with Infinite Duration (-1)
+                targetState.applyEffect("remote_mine_" + slot, -1, 0, (float)maxDmg, attacker.getUUID());
+                if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§b§lMINE PLACED! §7Icon turned to button."));
+            });
+        });
+
+        // PETS
+        register("pets", (state, attacker, figure, data, manaCost, params, target) -> {
+            float param0 = (!params.isEmpty()) ? params.get(0) : 1.0f; // Duration
+            float param1 = (params.size() > 1) ? params.get(1) : 1.0f; // Damage
+            
+            int duration = EffectCalculator.calculatePetDuration(figure, state, manaCost, param0);
+            int magnitude = EffectCalculator.calculatePetDamage(manaCost, param1);
+            
+            target.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(targetState -> {
+                if (targetState.hasEffect("kiss")) {
+                    if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§d§lKISS! §cPositive effects blocked!"));
+                    return;
+                }
+
+                String slotToUse = "pet_slot_1";
+                if (!targetState.hasEffect("pet_slot_1")) {
+                    slotToUse = "pet_slot_1";
+                } else if (!targetState.hasEffect("pet_slot_2")) {
+                    slotToUse = "pet_slot_2";
+                } else {
+                    // Both full, find lowest duration
+                    EffectInstance i1 = targetState.getEffectInstance("pet_slot_1");
+                    EffectInstance i2 = targetState.getEffectInstance("pet_slot_2");
+                    if (i1 != null && i2 != null) {
+                        slotToUse = (i1.duration <= i2.duration) ? "pet_slot_1" : "pet_slot_2";
+                    }
+                }
+
+                targetState.applyEffect(slotToUse, duration, magnitude);
+                if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§b§lPET SUMMONED! §f(" + (duration/20.0) + "s)"));
             });
         });
 
@@ -473,7 +544,7 @@ public class EffectApplierRegistry {
         register("self_shock", (state, attacker, figure, data, manaCost, params, target) -> {
             float paramMult = (!params.isEmpty()) ? params.get(0) : 1.0f;
             int magnitude = EffectCalculator.calculateSelfShockDamage(figure, manaCost, paramMult);
-            
+
             attacker.hurt(attacker.damageSources().magic(), 0.01f);
             if (attacker instanceof ServerPlayer sp) {
                 sp.setHealth(sp.getMaxHealth());
@@ -482,6 +553,34 @@ public class EffectApplierRegistry {
             state.applyEffect("self_shock", 0, magnitude);
         });
 
+        // SELF DAMAGE (Mitigated Recoil)
+        register("self_damage", (state, attacker, figure, data, manaCost, params, target) -> {
+            float paramMult = (!params.isEmpty()) ? params.get(0) : 1.0f; // 1.0 = 100% of raw damage
+
+            // 1. Calculate the Raw Base Damage of the ability
+            int rawDamage = 0;
+            if (data != null && data.damageTier > 0) {
+                boolean isGolden = bruhof.teenycraft.item.custom.ItemFigure.isAbilityGolden(figure.getOriginalStack(), data.id);
+                bruhof.teenycraft.battle.damage.DamagePipeline.DamageResult calc = 
+                    bruhof.teenycraft.battle.damage.DamagePipeline.calculateOutput(state, figure, data, manaCost, isGolden);
+                rawDamage = calc.baseDamagePerHit;
+            }
+
+            // 2. Apply the multiplier (e.g. 50% recoil)
+            int recoilBase = Math.round(rawDamage * paramMult);
+
+            if (recoilBase > 0) {
+                // 3. Create a fake "Damage Result" for the recoil
+                bruhof.teenycraft.battle.damage.DamagePipeline.DamageResult recoilResult = 
+                    new bruhof.teenycraft.battle.damage.DamagePipeline.DamageResult(recoilBase, 1, false, false);
+
+                // 4. Send it through the standard damage pipeline (Attacker hits Attacker)
+                // This will automatically roll Dodge, apply Defense, subtract HP, and announce it!
+                bruhof.teenycraft.battle.AbilityExecutor.applyDamageToFigure(
+                    state, attacker, attacker, state, figure, recoilResult, null, 0, false, true, false
+                );
+            }
+        });
         // TOFU SPAWN
         register("tofu_spawn", (state, attacker, figure, data, manaCost, params, target) -> {
             float paramMult = (!params.isEmpty()) ? params.get(0) : 1.0f;
@@ -532,6 +631,31 @@ public class EffectApplierRegistry {
                     targetState.applyEffect("power_radio", amount * interval, interval, totalMag, attacker.getUUID());
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§6§lPOWER RADIO! §7Increasing power over time..."));
                     if (attacker instanceof ServerPlayer sp && target != attacker) sp.sendSystemMessage(Component.literal("§6Applied Power Radio to target!"));
+                }
+            });
+        });
+
+        // FLIGHT
+        register("flight", (state, attacker, figure, data, manaCost, params, target) -> {
+            float paramMult = (!params.isEmpty()) ? params.get(0) : 1.0f;
+            int duration = EffectCalculator.calculateFlightDuration(figure, state, manaCost, paramMult);
+
+            target.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(targetState -> {
+                if (targetState.hasEffect("kiss")) {
+                    if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§d§lKISS! §cPositive effects blocked!"));
+                } else {
+                    boolean alreadyFlying = targetState.hasEffect("flight");
+                    // Store the INITIAL duration in the 'power' parameter so onTick knows when to catch
+                    targetState.applyEffect("flight", duration, 1, (float)duration);
+                    
+                    if (!alreadyFlying) {
+                        target.setDeltaMovement(target.getDeltaMovement().x, TeenyBalance.FLIGHT_VERTICAL_BOOST, target.getDeltaMovement().z);
+                        target.hasImpulse = true;
+                        if (target instanceof ServerPlayer sp) sp.hurtMarked = true;
+                        
+                        if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§b§lFLIGHT! §fEvading all attacks! (" + (duration/20.0) + "s)"));
+                        if (attacker instanceof ServerPlayer sp && target != attacker) sp.sendSystemMessage(Component.literal("§bTarget is now flying!"));
+                    }
                 }
             });
         });

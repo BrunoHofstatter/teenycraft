@@ -1,0 +1,19 @@
+{
+  "id": "jokers_mallet",
+  "name": "Joker's Mallet",
+  "texture_index": 142,
+  "particle": "minecraft:crit",
+  "particle_count": 8,
+  "hit_type": "melee",
+  "raycast_delay_tier": 0,
+  "damage_tier": 5,
+  "effects_on_opponent": [
+    {
+      "id": "stun",
+      "params": [1.0]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["opponent:stun:1.3"]
+}

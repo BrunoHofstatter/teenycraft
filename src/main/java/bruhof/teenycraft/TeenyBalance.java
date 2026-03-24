@@ -18,11 +18,23 @@ public class TeenyBalance {
     // SECTION 2: BATTLE MECHANICS
     // ==========================================
     public static final int BATTLE_MANA_MAX = 100;
-    public static final int BATTLE_MANA_REGEN_PER_SEC = 10; // Example
+    public static final int BATTLE_MANA_REGEN_PER_SEC = 30; // Example
     public static final int SWAP_COOLDOWN = 5;
     
     public static final float RANGED_START_WIDTH = 1.0f;
     public static final float RANGED_CONE_ANGLE = 15.0f; // Total angle in degrees
+
+    // ==========================================
+    // SECTION 2.5: BATTERY MECHANICS
+    // ==========================================
+    public static final float BATTERY_MAX_CHARGE = 100.0f;
+    public static final float BATTERY_PASSIVE_CHARGE_RATE = 0.05f; // Per tick
+    public static final float ABILITY_BATTERY_CHARGE_MULT = 0.5f;
+    public static final float BATTERY_COLLECT_CHARGE = 15.0f;
+    public static final int BATTERY_SPAWN_MIN_TICKS = 100;
+    public static final int BATTERY_SPAWN_MAX_TICKS = 200;
+    public static final float BATTERY_SPAWN_MIN_PCT = 0.70f;
+    public static final float BATTERY_SPAWN_MAX_PCT = 0.90f;
 
     // ==========================================
     // SECTION 3: ABILITY COST TIERS
@@ -116,18 +128,18 @@ public class TeenyBalance {
         };
     }
 
-    public static final float RAYCAST_DELAY_0 = 0.1f;
-    public static final float RAYCAST_DELAY_1 = 0.2f;
-    public static final float RAYCAST_DELAY_2 = 0.3f;
-    public static final float RAYCAST_DELAY_3 = 0.4f;
-    public static final float RAYCAST_DELAY_4 = 0.5f;
-    public static final float RAYCAST_DELAY_5 = 0.6f;
-    public static final float RAYCAST_DELAY_6 = 0.7f;
-    public static final float RAYCAST_DELAY_7 = 0.8f;
-    public static final float RAYCAST_DELAY_8 = 0.9f;
-    public static final float RAYCAST_DELAY_9 = 1.0f;
-    public static final float RAYCAST_DELAY_10 = 1.1f;
-    public static final float RAYCAST_DELAY_11 = 1.2f;
+    public static final float RAYCAST_DELAY_0 = 0.0f;
+    public static final float RAYCAST_DELAY_1 = 0.25f;
+    public static final float RAYCAST_DELAY_2 = 0.5f;
+    public static final float RAYCAST_DELAY_3 = 0.75f;
+    public static final float RAYCAST_DELAY_4 = 1.0f;
+    public static final float RAYCAST_DELAY_5 = 1.25f;
+    public static final float RAYCAST_DELAY_6 = 1.5f;
+    public static final float RAYCAST_DELAY_7 = 2.0f;
+    public static final float RAYCAST_DELAY_8 = 2.5f;
+    public static final float RAYCAST_DELAY_9 = 3.0f;
+    public static final float RAYCAST_DELAY_10 = 3.5f;
+    public static final float RAYCAST_DELAY_11 = 4.0f;
 
     public static float getRaycastDelay(int tier) {
         return switch (tier) {
@@ -251,6 +263,14 @@ public class TeenyBalance {
     public static final float RADIO_INTERVAL_PERLUCK = 0.005f;
 
     public static final int BASE_CHARGE_DELAY = 20; // 1 second base
+    public static final float INSTANT_CAST_CHANCE_PERCENTAGE = 0.5f;
+    public static final float SURPRISE_DAMAGE_VARIANCE = 0.1f;
+
+    public static final float BLUE_TICKS_PER_MANA = 0.15f;
+    public static final int BLUE_TICKS_FLAT = 4;
+    public static final float BLUE_DAMAGE_MULT = 1.5f;
+    public static final int BLUE_BASE_INTERVAL = 15;
+
     public static final boolean CHARGE_CANCEL_ON_STUN = true;
     public static final boolean CHARGE_LOCK_TARGET_ON_START = false;
 
@@ -295,6 +315,12 @@ public class TeenyBalance {
     public static final float KISS_DURATION_PERMANA = 0.35f;
     public static final float KISS_DURATION_PERLUCK = 0.006f;
 
+    public static final float FLIGHT_DURATION_PERMANA = 0.5f;
+    public static final float FLIGHT_DURATION_PERLUCK = 0.005f;
+    public static final double FLIGHT_VERTICAL_BOOST = 1.2;
+    public static final int FLIGHT_APEX_TICK_DELAY = 14;
+    public static final double FLIGHT_HORIZONTAL_DRAG = 0.1;
+
 
 
     public static final float TOFU_CHANCE_HIT_PERMANA = 1.0F;
@@ -327,8 +353,24 @@ public class TeenyBalance {
     // Effects - Reflect
     public static final float REFLECT_DURATION_PERMANA = 0.05f;
     public static final float REFLECT_DURATION_PERLUCK = 0.0005f;
-    public static final float REFLECT_DEFENSE_PERMANA = 0.008f; // 10% reduction per mana?
-    public static final float REFLECT_DAMAGE_PERMANA = 0.2f; // 5% power-scaled reflection per mana
+    public static final float REFLECT_DEFENSE_PERMANA = 0.1f; // 10% reduction per mana?
+    public static final float REFLECT_DAMAGE_PERMANA = 0.05f; // 5% power-scaled reflection per mana
+
+    // Effects - Pets
+    public static final int PET_FIRE_COOLDOWN = 60; // 3 seconds
+    public static final float PET_DAMAGE_PERMANA = 0.5f; // Flat damage scaling
+    public static final float PET_DURATION_PERMANA = 10.0f;
+    public static final float PET_DURATION_PERLUCK = 0.005f;
+
+    // Effects - Remote Mine
+    public static final float REMOTE_MINE_START_PCT = 0.3f;
+    public static final int REMOTE_MINE_STAGES = 10;
+    public static final int REMOTE_MINE_STAGE_INTERVAL = 60; // 3 seconds per stage
+    public static final float REMOTE_MINE_DAMAGE_MULT = 2.5f;
+
+    // Traits - Modifiers
+    public static final float ACTIVATE_DAMAGE_MULT = 1.1f;
+    public static final float CHARGE_UP_MULT_PER_SEC = 1.5f;
 
     // Death Swap
     public static final int DEATH_SWAP_RESET_TICKS = 60; // 3 seconds

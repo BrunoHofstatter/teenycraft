@@ -1,0 +1,24 @@
+{
+  "id": "raspberry",
+  "name": "Raspberry",
+  "texture_index": 150,
+  "particle": "minecraft:spit",
+  "particle_count": 10,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 0,
+  "effects_on_opponent": [
+    {
+      "id": "stun",
+      "params": [2.0]
+    },
+    {
+      "id": "power_down",
+      "params": [2.0]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["self:waffle_chance:0.5"]
+}

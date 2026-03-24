@@ -83,9 +83,12 @@ public class EffectCalculator {
     public static int calculateKissDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
         return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.KISS_DURATION_PERMANA, TeenyBalance.KISS_DURATION_PERLUCK);
     }
-    
-    public static int calculateShieldDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
-        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.SHIELD_DURATION_PERMANA, TeenyBalance.SHIELD_DURATION_PERLUCK);
+
+    public static int calculateFlightDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.FLIGHT_DURATION_PERMANA, TeenyBalance.FLIGHT_DURATION_PERLUCK);
+    }
+
+    public static int calculateShieldDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.SHIELD_DURATION_PERMANA, TeenyBalance.SHIELD_DURATION_PERLUCK);
     }
     
     public static int calculateDodgeSmokeDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
@@ -197,6 +200,25 @@ public class EffectCalculator {
     public static int calculateReflectDamage(BattleFigure caster, int manaCost, float paramMultiplier) {
         float value = manaCost * caster.getPowerStat() * TeenyBalance.REFLECT_DAMAGE_PERMANA * paramMultiplier;
         return Math.round(value);
+    }
+
+    public static int calculatePetDuration(BattleFigure caster, IBattleState state, int manaCost, float paramMultiplier) {
+        return calculateEffectDuration(caster, state, manaCost, paramMultiplier, TeenyBalance.PET_DURATION_PERMANA, TeenyBalance.PET_DURATION_PERLUCK);
+    }
+
+    public static int calculatePetDamage(int manaCost, float paramMultiplier) {
+        float value = manaCost * TeenyBalance.PET_DAMAGE_PERMANA * paramMultiplier;
+        return Math.round(value);
+    }
+
+    public static int calculateRemoteMineMaxDamage(BattleFigure caster, IBattleState state, int manaCost, int damageTier, float paramMultiplier) {
+        float tierMult = TeenyBalance.getDamageMultiplier(damageTier);
+        int power = caster.getEffectiveStat(bruhof.teenycraft.battle.StatType.POWER, state);
+        float base = power * manaCost * TeenyBalance.BASE_DAMAGE_PERMANA * TeenyBalance.REMOTE_MINE_DAMAGE_MULT * paramMultiplier * tierMult;
+        
+        // Add current flat power mods from the state (Snapshot)
+        float flat = caster.getEffectiveStat(bruhof.teenycraft.battle.StatType.FLAT_DAMAGE, state);
+        return Math.round(base + flat);
     }
 
     public static int calculateDefenseMagnitude(int manaCost, float paramMultiplier) {

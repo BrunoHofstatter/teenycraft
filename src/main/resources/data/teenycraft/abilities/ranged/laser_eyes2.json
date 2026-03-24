@@ -1,0 +1,20 @@
+{
+  "id": "laser_eyes2",
+  "name": "Laser Eyes",
+  "texture_index": 121,
+  "particle": "minecraft:glow",
+  "particle_count": 10,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 1,
+  "range_tier": 6,
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "charge_up",
+      "params": [1.0]
+    }
+  ],
+  "golden_bonus": ["trait:instant_cast_chance"]
+}

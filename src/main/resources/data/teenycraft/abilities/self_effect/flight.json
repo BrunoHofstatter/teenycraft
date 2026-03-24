@@ -1,0 +1,19 @@
+{
+  "id": "flight",
+  "name": "Flight",
+  "texture_index": 110,
+  "particle": "minecraft:cloud",
+  "particle_count": 5,
+  "hit_type": "none",
+  "raycast_delay_tier": 0,
+  "damage_tier": 0,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    {
+      "id": "flight",
+      "params": [1.0]
+    }
+  ],
+  "traits": [],
+  "golden_bonus": ["self:flight:1.3"]
+}

@@ -66,6 +66,10 @@ public class DamagePipeline {
      * Does NOT apply mitigation (Defense/Shield) yet, as that depends on the victim.
      */
     public static DamageResult calculateOutput(IBattleState attackerState, BattleFigure attacker, int slotIndex) {
+        return calculateOutput(attackerState, attacker, slotIndex, false);
+    }
+
+    public static DamageResult calculateOutput(IBattleState attackerState, BattleFigure attacker, int slotIndex, boolean isGolden) {
         // 1. Get Ability Data
         java.util.ArrayList<String> order = ItemFigure.getAbilityOrder(attacker.getOriginalStack());
         if (slotIndex >= order.size()) return new DamageResult(0);
@@ -79,10 +83,14 @@ public class DamagePipeline {
         String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
         int manaCost = TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
         
-        return calculateOutput(attackerState, attacker, data, manaCost);
+        return calculateOutput(attackerState, attacker, data, manaCost, isGolden);
     }
 
     public static DamageResult calculateOutput(IBattleState attackerState, BattleFigure attacker, AbilityData data, int manaCost) {
+        return calculateOutput(attackerState, attacker, data, manaCost, false);
+    }
+
+    public static DamageResult calculateOutput(IBattleState attackerState, BattleFigure attacker, AbilityData data, int manaCost, boolean isGolden) {
         // 1. If damageTier is 0, it's a pure utility move.
         // We skip calculation to preserve Power Up/Down and Luck bags for real hits.
         if (data.damageTier == 0) {
@@ -97,6 +105,43 @@ public class DamagePipeline {
         // Calculate Raw Damage
         float rawDamage = power * manaCost * TeenyBalance.BASE_DAMAGE_PERMANA * damageMultiplier;
         
+        // --- TRAIT MODIFIERS (Activate & Charge Up) ---
+        if (data.traits != null) {
+            for (TraitData t : data.traits) {
+                if ("activate".equals(t.id)) {
+                    float required = t.params.isEmpty() ? 2.0f : t.params.get(0);
+                    rawDamage *= (required * TeenyBalance.ACTIVATE_DAMAGE_MULT);
+                } else if ("charge_up".equals(t.id)) {
+                    float seconds = t.params.isEmpty() ? 1.0f : t.params.get(0);
+                    rawDamage *= (seconds * TeenyBalance.CHARGE_UP_MULT_PER_SEC);
+                }
+            }
+        }
+
+        // --- SURPRISE LOGIC ---
+        boolean hasSurprise = false;
+        if (isGolden && data.goldenBonus != null && data.goldenBonus.contains("trait:surprise")) {
+            hasSurprise = true;
+        } else if (data.traits != null) {
+            for (AbilityLoader.TraitData t : data.traits) {
+                if ("surprise".equals(t.id)) {
+                    hasSurprise = true;
+                    break;
+                }
+            }
+        }
+        
+        if (hasSurprise) {
+            int baseInt = Math.round(rawDamage);
+            int variance = Math.round(baseInt * TeenyBalance.SURPRISE_DAMAGE_VARIANCE);
+            if (variance > 0) {
+                // Pick a random integer offset in [-variance, variance]
+                // For variance 2, this gives: random(5) - 2 -> {-2, -1, 0, 1, 2}
+                int offset = (int)(Math.random() * (variance * 2 + 1)) - variance;
+                rawDamage = baseInt + offset;
+            }
+        }
+
         // Add Flat Damage Modifications (Effects from State)
         rawDamage += attacker.getEffectiveStat(StatType.FLAT_DAMAGE, attackerState);
         
@@ -127,6 +172,14 @@ public class DamagePipeline {
         }
         
         MitigationResult res = calculateMitigationInternal(victimState, victim, initialDmg, incoming.undodgeable, data, isGolden);
+        
+        // 2. Flight Evasion Check
+        if (victimState != null && victimState.hasEffect("flight") && !incoming.isGroupDamage) {
+            res.isDodged = true;
+            res.dodgeReduction = res.finalDamage;
+            res.finalDamage = 0;
+        }
+
         return new MitigationResult(res.finalDamage, res.isDodged, res.isBlocked, isCrit, res.dodgeReduction, critBonus);
     }
 

@@ -1,0 +1,23 @@
+{
+  "id": "jiu_jitsu",
+  "name": "Jiu Jitsu",
+  "texture_index": 102,
+  "particle": "minecraft:sweep_attack",
+  "particle_count": 3,
+  "hit_type": "melee",
+  "raycast_delay_tier": 0,
+  "damage_tier": 8,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "multi_hit",
+      "params": [3.0]
+    },
+    {
+      "id": "group_damage",
+      "params": []
+    }
+  ],
+  "golden_bonus": ["trait:undodgeable"]
+}

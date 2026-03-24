@@ -39,6 +39,46 @@
     { "predicate": { "teenycraft:ability_id": 17.0 }, "model": "teenycraft:item/ability_tofu" },
     { "predicate": { "teenycraft:ability_id": 17.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_tofu_golden" },
     { "predicate": { "teenycraft:ability_id": 18.0 }, "model": "teenycraft:item/ability_whale_drop" },
-    { "predicate": { "teenycraft:ability_id": 18.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_whale_drop_golden" }
+    { "predicate": { "teenycraft:ability_id": 18.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_whale_drop_golden" },
+    
+    { "predicate": { "teenycraft:ability_id": 100.0 }, "model": "teenycraft:item/ability_bat_mine" },
+    { "predicate": { "teenycraft:ability_id": 100.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_bat_mine_golden" },
+    { "predicate": { "teenycraft:ability_id": 101.0 }, "model": "teenycraft:item/ability_grappling_hook" },
+    { "predicate": { "teenycraft:ability_id": 101.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_grappling_hook_golden" },
+    { "predicate": { "teenycraft:ability_id": 102.0 }, "model": "teenycraft:item/ability_jiu_jitsu" },
+    { "predicate": { "teenycraft:ability_id": 102.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_jiu_jitsu_golden" },
+    
+    { "predicate": { "teenycraft:ability_id": 110.0 }, "model": "teenycraft:item/ability_flight" },
+    { "predicate": { "teenycraft:ability_id": 110.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_flight_golden" },
+    { "predicate": { "teenycraft:ability_id": 111.0 }, "model": "teenycraft:item/ability_super_sockem" },
+    { "predicate": { "teenycraft:ability_id": 111.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_super_sockem_golden" },
+    { "predicate": { "teenycraft:ability_id": 112.0 }, "model": "teenycraft:item/ability_heat_vision" },
+    { "predicate": { "teenycraft:ability_id": 112.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_heat_vision_golden" },
+    
+    { "predicate": { "teenycraft:ability_id": 120.0 }, "model": "teenycraft:item/ability_nuh_uh" },
+    { "predicate": { "teenycraft:ability_id": 120.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_nuh_uh_golden" },
+    { "predicate": { "teenycraft:ability_id": 121.0 }, "model": "teenycraft:item/ability_laser_eyes2" },
+    { "predicate": { "teenycraft:ability_id": 121.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_laser_eyes2_golden" },
+    
+    { "predicate": { "teenycraft:ability_id": 130.0 }, "model": "teenycraft:item/ability_harleys_mallet" },
+    { "predicate": { "teenycraft:ability_id": 130.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_harleys_mallet_golden" },
+    { "predicate": { "teenycraft:ability_id": 131.0 }, "model": "teenycraft:item/ability_puddin_pucker" },
+    { "predicate": { "teenycraft:ability_id": 131.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_puddin_pucker_golden" },
+    { "predicate": { "teenycraft:ability_id": 132.0 }, "model": "teenycraft:item/ability_bang" },
+    { "predicate": { "teenycraft:ability_id": 132.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_bang_golden" },
+    
+    { "predicate": { "teenycraft:ability_id": 140.0 }, "model": "teenycraft:item/ability_chattering_teeth" },
+    { "predicate": { "teenycraft:ability_id": 140.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_chattering_teeth_golden" },
+    { "predicate": { "teenycraft:ability_id": 141.0 }, "model": "teenycraft:item/ability_evil_laugh" },
+    { "predicate": { "teenycraft:ability_id": 141.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_evil_laugh_golden" },
+    { "predicate": { "teenycraft:ability_id": 142.0 }, "model": "teenycraft:item/ability_jokers_mallet" },
+    { "predicate": { "teenycraft:ability_id": 142.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_jokers_mallet_golden" },
+    
+    { "predicate": { "teenycraft:ability_id": 150.0 }, "model": "teenycraft:item/ability_raspberry" },
+    { "predicate": { "teenycraft:ability_id": 150.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_raspberry_golden" },
+    { "predicate": { "teenycraft:ability_id": 151.0 }, "model": "teenycraft:item/ability_punchies" },
+    { "predicate": { "teenycraft:ability_id": 151.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_punchies_golden" },
+    { "predicate": { "teenycraft:ability_id": 152.0 }, "model": "teenycraft:item/ability_quick_punch" },
+    { "predicate": { "teenycraft:ability_id": 152.0, "teenycraft:is_golden": 1.0 }, "model": "teenycraft:item/ability_quick_punch_golden" }
   ]
 }

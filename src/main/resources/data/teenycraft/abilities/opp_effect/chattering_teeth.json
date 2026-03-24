@@ -1,0 +1,25 @@
+{
+  "id": "chattering_teeth",
+  "name": "Chattering Teeth",
+  "texture_index": 140,
+  "particle": "minecraft:crit",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 3,
+  "range_tier": 6,
+  "damage_tier": 8,
+  "effects_on_opponent": [
+    {
+      "id": "poison",
+      "params": [1.0]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "charge_up",
+      "params": [1.2]
+    }
+  ],
+  "golden_bonus": ["opponent:poison:1.3"]
+}

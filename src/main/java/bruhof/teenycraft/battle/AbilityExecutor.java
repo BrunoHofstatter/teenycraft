@@ -62,7 +62,7 @@ public class AbilityExecutor {
             String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
             int manaCost = TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
 
-            if (state.hasEffect("stun") || state.isCharging()) {
+            if (state.hasEffect("stun") || state.isCharging() || state.isBlueChanneling()) {
                 if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§cCannot attack right now!"));
                 return;
             }
@@ -108,7 +108,7 @@ public class AbilityExecutor {
             String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
             int manaCost = TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
 
-            if (state.hasEffect("stun") || state.isCharging()) {
+            if (state.hasEffect("stun") || state.isCharging() || state.isBlueChanneling()) {
                 if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§cCannot attack right now!"));
                 return;
             }
@@ -126,24 +126,113 @@ public class AbilityExecutor {
                 return;
             }
 
+            // --- REMOTE MINE STAGE 2 (DETONATE) ---
+            if (data.effectsOnOpponent != null) {
+                boolean isRemoteMine = data.effectsOnOpponent.stream().anyMatch(e -> "remote_mine".equals(e.id));
+                if (isRemoteMine) {
+                    LivingEntity target = findNearestOpponent(attacker);
+                    if (target != null) {
+                        IBattleState ts = target.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null);
+                        if (ts != null && ts.hasEffect("remote_mine_" + slotIndex)) {
+                            bruhof.teenycraft.battle.effect.EffectInstance mine = ts.getEffectInstance("remote_mine_" + slotIndex);
+                            if (attacker.getUUID().equals(mine.casterUUID)) {
+                                state.consumeMana(manaCost);
+                                detonateMine(attacker, state, target, ts, slotIndex, mine);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
             LivingEntity target = null;
             boolean isRanged = "raycasting".equalsIgnoreCase(data.hitType) || "ranged".equalsIgnoreCase(data.hitType);
 
             if (isRanged) {
                  target = getConeTarget(attacker, data);
-                 state.consumeMana(manaCost);
                  
-                 if (target == null) {
-                     if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§cNo target found! (-" + manaCost + " Mana)"));
+                 // --- REMOTE MINE RANGED DETONATE ---
+                 if (data.effectsOnOpponent != null) {
+                    boolean isRemoteMine = data.effectsOnOpponent.stream().anyMatch(e -> "remote_mine".equals(e.id));
+                    if (isRemoteMine && target != null) {
+                        IBattleState ts = target.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null);
+                        if (ts != null && ts.hasEffect("remote_mine_" + slotIndex)) {
+                            bruhof.teenycraft.battle.effect.EffectInstance mine = ts.getEffectInstance("remote_mine_" + slotIndex);
+                            if (attacker.getUUID().equals(mine.casterUUID)) {
+                                state.consumeMana(manaCost);
+                                detonateMine(attacker, state, target, ts, slotIndex, mine);
+                                return;
+                            }
+                        }
+                    }
+                 }
+
+                 boolean hasCharge = data.traits != null && data.traits.stream().anyMatch(t -> "charge_up".equals(t.id));
+
+                 if (target == null && !hasCharge) {
+                     state.consumeMana(manaCost);
+                     if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§cNo target found!"));
+                     return;
+                 }
+                 
+                 boolean isGolden = ItemFigure.isAbilityGolden(figure.getOriginalStack(), data.id);
+                 if (data.raycastDelayTier > 0) {
+                     if (target == null) {
+                         state.consumeMana(manaCost);
+                         if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§cNo target found!"));
+                         return;
+                     }
+                     state.consumeMana(manaCost);
+                     double distance = attacker.getEyePosition().distanceTo(target.getEyePosition());
+                     int delayTicks = (int) (distance * TeenyBalance.getRaycastDelay(data.raycastDelayTier));
+                     
+                     // Ensure minimum 1 tick if it's supposed to have a delay, even if point-blank
+                     if (delayTicks < 1) delayTicks = 1;
+
+                     state.addProjectile(new IBattleState.PendingProjectile(data, slotIndex, isGolden, manaCost, target.getUUID(), attacker.getEyePosition(), delayTicks, figure));
+                     
+                     if (attacker instanceof ServerPlayer sp) {
+                         sp.sendSystemMessage(Component.literal("§eProjectile fired! (" + (delayTicks/20.0f) + "s)"));
+                     }
+                     executeSelfEffectsOnly(state, attacker, figure, data, manaCost, isGolden);
                      return;
                  }
             } else {
                  target = attacker; 
-                 state.consumeMana(manaCost);
             }
 
-            executeCommon(state, attacker, figure, slotIndex, data, target, false);
+            executeCommon(state, attacker, figure, slotIndex, data, target, true);
         });
+    }
+
+    private static void executeSelfEffectsOnly(IBattleState attackerState, LivingEntity attacker, BattleFigure figure, AbilityLoader.AbilityData data, int manaCost, boolean isGolden) {
+        if ("none".equalsIgnoreCase(data.hitType)) {
+            if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§d[Effect] Casting Buffs..."));
+            for (AbilityLoader.TraitData trait : data.traits) {
+                EffectApplierRegistry.get(trait.id).apply(attackerState, attacker, figure, data, manaCost, trait.params, attacker);
+            }
+        }
+
+        for (AbilityLoader.EffectData effect : data.effectsOnSelf) {
+            EffectApplierRegistry.get(effect.id).apply(attackerState, attacker, figure, data, manaCost, effect.params, attacker);
+        }
+
+        if (isGolden) {
+            if ("none".equalsIgnoreCase(data.hitType) && attacker instanceof ServerPlayer sp) {
+                sp.sendSystemMessage(Component.literal("§6[Golden] Bonus Activated!"));
+            }
+            for (String bonus : data.goldenBonus) {
+                String[] parts = bonus.split(":");
+                if (parts.length >= 3 && "self".equalsIgnoreCase(parts[0])) {
+                    java.util.ArrayList<Float> params = new java.util.ArrayList<>();
+                    params.add(Float.parseFloat(parts[2]));
+                    EffectApplierRegistry.get(parts[1]).apply(attackerState, attacker, figure, data, manaCost, params, attacker);
+                }
+            }
+        }
+        
+        if (attacker instanceof Player p) p.resetAttackStrengthTicker();
+        if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§aUsed " + data.name + "!"));
     }
     
     public static void executeDebugCast(IBattleState casterState, LivingEntity caster, BattleFigure figure, AbilityLoader.AbilityData data, int manaCost, boolean isGolden, LivingEntity enemy) {
@@ -213,6 +302,12 @@ public class AbilityExecutor {
         int manaCost = TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
         boolean isGolden = ItemFigure.isAbilityGolden(figure.getOriginalStack(), data.id);
         
+        // Flight recast block
+        if (state.hasEffect("flight") && data.effectsOnSelf != null && data.effectsOnSelf.stream().anyMatch(e -> "flight".equals(e.id))) {
+            if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§cYou are already flying!"));
+            return;
+        }
+
         if (!bruhof.teenycraft.battle.trait.TraitRegistry.triggerExecutionHooks(state, attacker, figure, slotIndex, data, target, isGolden)) {
             return;
         }
@@ -258,8 +353,93 @@ public class AbilityExecutor {
         executeCommon(state, attacker, figure, data, manaCost, target, false, isGolden);
     }
 
+    public static void tickBlueChannel(IBattleState state, LivingEntity attacker) {
+        int ticks = state.getBlueChannelTicks();
+        if (ticks <= 0 || state.getCurrentMana() <= 0 || state.hasEffect("stun") || state.hasEffect("reset_lock")) {
+            state.cancelBlueChannel();
+            if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§b§lCHANNEL ENDED."));
+            return;
+        }
+
+        int interval = state.getBlueChannelInterval();
+        float totalMana = state.getBlueChannelTotalMana();
+        int originalTotalTicks = state.getBlueChannelTotalTicks();
+        
+        float tickRate = totalMana / originalTotalTicks;
+        state.consumeMana(tickRate);
+
+        int ticksActive = originalTotalTicks - ticks;
+
+        if (ticksActive % interval == 0) {
+            AbilityLoader.AbilityData data = state.getBlueChannelAbility();
+            int slot = state.getBlueChannelSlot();
+            boolean isGolden = state.isBlueChannelGolden();
+            float totalDamage = state.getBlueChannelTotalDamage();
+            float totalHeal = state.getBlueChannelTotalHeal();
+            BattleFigure figure = state.getActiveFigure();
+
+            if (figure != null && data != null) {
+                int numberOfIntervals = ((originalTotalTicks - 1) / interval) + 1;
+                if (numberOfIntervals <= 0) numberOfIntervals = 1;
+
+                int currentIntervalIndex = ticksActive / interval;
+                
+                int totalCalculatedDamage = Math.round(totalDamage * TeenyBalance.BLUE_DAMAGE_MULT);
+                int[] damageSplits = bruhof.teenycraft.battle.damage.DistributionHelper.split(totalCalculatedDamage, numberOfIntervals);
+                int damagePerInterval = (currentIntervalIndex < damageSplits.length) ? damageSplits[currentIntervalIndex] : 0;
+                
+                int totalCalculatedHeal = Math.round(totalHeal * TeenyBalance.BLUE_DAMAGE_MULT);
+                int[] healSplits = bruhof.teenycraft.battle.damage.DistributionHelper.split(totalCalculatedHeal, numberOfIntervals);
+                int healPerInterval = (currentIntervalIndex < healSplits.length) ? healSplits[currentIntervalIndex] : 0;
+
+                LivingEntity target = null;
+                boolean isRanged = "raycasting".equalsIgnoreCase(data.hitType) || "ranged".equalsIgnoreCase(data.hitType);
+                if (isRanged) {
+                    target = getConeTarget(attacker, data);
+                } else if ("melee".equalsIgnoreCase(data.hitType)) {
+                    target = findNearestOpponent(attacker); 
+                } else {
+                    target = attacker;
+                }
+
+                if (target != null) {
+                    if (damagePerInterval > 0 && target != attacker) {
+                        IBattleState targetState = target.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null);
+                        BattleFigure targetFigure = (targetState != null) ? targetState.getActiveFigure() : null;
+                        DamagePipeline.DamageResult result = new DamagePipeline.DamageResult(damagePerInterval, 1, false, true);
+                        applyDamageToFigure(state, attacker, target, targetState, targetFigure, result, data, 0, isGolden, false, false);
+                    }
+                    if (healPerInterval > 0) {
+                        state.applyEffect("heal", 0, healPerInterval);
+                    }
+                }
+            }
+        }
+
+        state.decrementBlueChannelTicks();
+        
+        if (state.getBlueChannelTicks() <= 0 || state.getCurrentMana() <= 0) {
+            state.cancelBlueChannel();
+            if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§b§lCHANNEL ENDED."));
+        }
+    }
+
     private static void executeCommon(IBattleState attackerState, LivingEntity attacker, BattleFigure figure, AbilityLoader.AbilityData data, int manaCost, LivingEntity target, boolean consumeMana, boolean isGolden) {
-        DamageResult result = DamagePipeline.calculateOutput(attackerState, figure, data, manaCost);
+        executeCommon(attackerState, attacker, figure, data, manaCost, target, consumeMana, isGolden, false);
+    }
+
+    private static void executeCommon(IBattleState attackerState, LivingEntity attacker, BattleFigure figure, AbilityLoader.AbilityData data, int manaCost, LivingEntity target, boolean consumeMana, boolean isGolden, boolean skipSelfEffects) {
+        DamageResult result = DamagePipeline.calculateOutput(attackerState, figure, data, manaCost, isGolden);
+        
+        if (data.effectsOnOpponent != null) {
+            for (AbilityLoader.EffectData e : data.effectsOnOpponent) {
+                if ("remote_mine".equals(e.id)) {
+                    result.baseDamagePerHit = 0;
+                    break;
+                }
+            }
+        }
+
         if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§7[Debug] Raw Damage: " + result.baseDamagePerHit));
 
         if (data.particleId != null && !data.particleId.isEmpty()) {
@@ -275,6 +455,12 @@ public class AbilityExecutor {
         }
 
         if (!"none".equalsIgnoreCase(data.hitType)) {
+            // Strip flight on attack
+            if (attackerState.hasEffect("flight")) {
+                attackerState.removeEffect("flight");
+                if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§eFlight cancelled by attacking!"));
+            }
+
             attackerState.triggerOnAttack(figure);
             
             int totalDamageDealt = 0;
@@ -298,13 +484,13 @@ public class AbilityExecutor {
                              for (int j = 0; j < alive.size(); j++) {
                                  DamageResult enemyHit = new DamageResult(groupSplits[j], 1, false, result.canCrit);
                                  enemyHit.undodgeable = singleHit.undodgeable;
-                                 damageSum += applyDamageToFigure(attackerState, attacker, target, targetState, alive.get(j), enemyHit, data, manaCost, isGolden, false);
+                                 damageSum += applyDamageToFigure(attackerState, attacker, target, targetState, alive.get(j), enemyHit, data, manaCost, isGolden, false, false);
                              }
                          }
                          return damageSum;
                      }).orElse(0);
                  } else {
-                     totalDamageDealt += applyDamage(attackerState, attacker, target, singleHit, data, manaCost, isGolden);
+                     totalDamageDealt += applyDamage(attackerState, attacker, target, singleHit, data, manaCost, isGolden, false);
                  }
             }
 
@@ -313,18 +499,23 @@ public class AbilityExecutor {
                 bruhof.teenycraft.battle.trait.TraitRegistry.triggerHitHooks(attackerState, attacker, figure, data, manaCost, target, totalDamageDealt, isGolden);
             }
         } else {
-            if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§d[Effect] Casting Buffs..."));
-            
-            for (AbilityLoader.TraitData trait : data.traits) {
-                EffectApplierRegistry.get(trait.id).apply(attackerState, attacker, figure, data, manaCost, trait.params, attacker);
+            if (!skipSelfEffects) {
+                if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§d[Effect] Casting Buffs..."));
+                for (AbilityLoader.TraitData trait : data.traits) {
+                    EffectApplierRegistry.get(trait.id).apply(attackerState, attacker, figure, data, manaCost, trait.params, attacker);
+                }
             }
-            
+        }
+
+        if (!skipSelfEffects) {
             for (AbilityLoader.EffectData effect : data.effectsOnSelf) {
                 EffectApplierRegistry.get(effect.id).apply(attackerState, attacker, figure, data, manaCost, effect.params, attacker);
             }
-            
+
             if (isGolden) {
-                if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§6[Golden] Bonus Activated!"));
+                if ("none".equalsIgnoreCase(data.hitType) && attacker instanceof ServerPlayer sp) {
+                    sp.sendSystemMessage(Component.literal("§6[Golden] Bonus Activated!"));
+                }
                 for (String bonus : data.goldenBonus) {
                     String[] parts = bonus.split(":");
                     if (parts.length >= 3 && "self".equalsIgnoreCase(parts[0])) {
@@ -335,13 +526,47 @@ public class AbilityExecutor {
                 }
             }
         }
-
-        if (consumeMana) {
+        
+        if (consumeMana && !skipSelfEffects) {
             attackerState.consumeMana(manaCost);
+            attackerState.addBatteryCharge(manaCost * bruhof.teenycraft.TeenyBalance.ABILITY_BATTERY_CHARGE_MULT);
         }
         
         if (attacker instanceof Player p) p.resetAttackStrengthTicker();
-        if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§aUsed " + data.name + "!"));
+        if (attacker instanceof ServerPlayer sp && !skipSelfEffects) sp.sendSystemMessage(Component.literal("§aUsed " + data.name + "!"));
+    }
+
+    public static void resolveProjectile(IBattleState state, LivingEntity caster, IBattleState.PendingProjectile proj) {
+        if (proj.attackerFigure == null || proj.data == null || proj.targetUUID == null) return;
+        
+        Entity targetEntity = ((ServerLevel)caster.level()).getEntity(proj.targetUUID);
+        if (!(targetEntity instanceof LivingEntity target)) return;
+
+        // Perform line of sight check from castPosition to target.getEyePosition()
+        net.minecraft.world.phys.HitResult hit = caster.level().clip(new net.minecraft.world.level.ClipContext(
+            proj.castPosition, 
+            target.getEyePosition(), 
+            net.minecraft.world.level.ClipContext.Block.COLLIDER, 
+            net.minecraft.world.level.ClipContext.Fluid.NONE, 
+            caster
+        ));
+
+        if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+            if (caster instanceof ServerPlayer sp) {
+                sp.sendSystemMessage(Component.literal("§c" + proj.data.name + " hit a wall and missed!"));
+            }
+            return; // Blocked by wall
+        }
+
+        // Hit! We now execute ONLY the damage and opponent effects. 
+        // Self-effects and mana were consumed when the projectile was fired.
+        executeCommon(state, caster, proj.attackerFigure, proj.data, proj.manaCost, target, false, proj.isGolden, true); 
+    }
+
+    private static LivingEntity findNearestOpponent(LivingEntity attacker) {
+        return attacker.level().getEntitiesOfClass(LivingEntity.class, attacker.getBoundingBox().inflate(20), 
+            e -> e != attacker && e.getCapability(BattleStateProvider.BATTLE_STATE).isPresent())
+            .stream().findFirst().orElse(null);
     }
 
     private static AbilityLoader.AbilityData getAbilityData(BattleFigure figure, int slotIndex) {
@@ -426,15 +651,32 @@ public class AbilityExecutor {
         }
     }
 
+    private static void detonateMine(LivingEntity attacker, IBattleState attackerState, LivingEntity target, IBattleState victimState, int slot, bruhof.teenycraft.battle.effect.EffectInstance mine) {
+        float maxSnapshot = mine.power;
+        int stages = mine.magnitude;
+        
+        float initial = maxSnapshot * TeenyBalance.REMOTE_MINE_START_PCT;
+        float pool = maxSnapshot - initial;
+        float weight = pool / TeenyBalance.REMOTE_MINE_STAGES;
+        
+        int detDmg = Math.round(initial + (stages * weight));
+        
+        DamageResult result = new DamageResult(detDmg, 1, false, true);
+        if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§b§lDETONATING! §fBoom for " + detDmg + " damage."));
+        
+        applyDamageToFigure(attackerState, attacker, target, victimState, victimState.getActiveFigure(), result, null, 0, false, false, false);
+        victimState.removeEffect("remote_mine_" + slot);
+    }
+
     private static double clamp(double val, double min, double max) {
         return Math.max(min, Math.min(max, val));
     }
 
-    private static int applyDamage(IBattleState attackerState, LivingEntity attacker, LivingEntity target, DamageResult result, AbilityLoader.AbilityData data, int manaCost, boolean isGolden) {
+    private static int applyDamage(IBattleState attackerState, LivingEntity attacker, LivingEntity target, DamageResult result, AbilityLoader.AbilityData data, int manaCost, boolean isGolden, boolean isPetFire) {
         IBattleState victimState = target.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null);
         
         if (victimState != null && victimState.isBattling()) {
-            return applyDamageToFigure(attackerState, attacker, target, victimState, victimState.getActiveFigure(), result, data, manaCost, isGolden, false);
+            return applyDamageToFigure(attackerState, attacker, target, victimState, victimState.getActiveFigure(), result, data, manaCost, isGolden, false, isPetFire);
         }
         
         target.hurt(attacker.damageSources().mobAttack(attacker), (float) result.baseDamagePerHit);
@@ -442,14 +684,20 @@ public class AbilityExecutor {
         return result.baseDamagePerHit;
     }
 
-    private static int applyDamageToFigure(IBattleState attackerState, LivingEntity attacker, LivingEntity targetEntity, IBattleState victimState, BattleFigure victimFigure, DamageResult result, AbilityLoader.AbilityData data, int manaCost, boolean isGolden, boolean isReflected) {
+    public static int applyDamageToFigure(IBattleState attackerState, LivingEntity attacker, LivingEntity targetEntity, IBattleState victimState, BattleFigure victimFigure, DamageResult result, AbilityLoader.AbilityData data, int manaCost, boolean isGolden, boolean isReflected, boolean isPetFire) {
         BattleFigure attackerFig = attackerState.getActiveFigure();
         if (victimFigure == null) return 0;
         
+        // Strip flight if it's group damage
+        if (result.isGroupDamage && victimState != null && victimState.hasEffect("flight")) {
+            victimState.removeEffect("flight");
+            if (targetEntity instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§bFlight broken by Group Damage!"));
+        }
+
         DamagePipeline.MitigationResult mitigation = DamagePipeline.calculateMitigation(victimState, victimFigure, attackerState, attackerFig, result, data, isGolden);
         
         int instantDmg = mitigation.finalDamage;
-        if (data != null) {
+        if (data != null && data.effectsOnOpponent != null) {
             for (AbilityLoader.EffectData e : data.effectsOnOpponent) {
                 if ("poison".equals(e.id)) {
                     instantDmg = 0;
@@ -470,6 +718,32 @@ public class AbilityExecutor {
         if (instantDmg > 0) {
             victimFigure.modifyHp(-instantDmg);
 
+            // --- PETS LOGIC ---
+            if (!isPetFire) {
+                // Check Pet Slot 1
+                if (attackerState != null && attackerState.hasEffect("pet_slot_1")) {
+                    int icd = attackerState.getInternalCooldown("pet_fire_1");
+                    if (icd <= 0) {
+                        int petMag = attackerState.getEffectMagnitude("pet_slot_1");
+                        DamageResult petResult = new DamageResult(petMag, 1, false, false);
+                        if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§b§lPET 1! §fFired for " + petMag));
+                        applyDamageToFigure(attackerState, attacker, targetEntity, victimState, victimFigure, petResult, null, 0, false, false, true);
+                        attackerState.setInternalCooldown("pet_fire_1", TeenyBalance.PET_FIRE_COOLDOWN);
+                    }
+                }
+                // Check Pet Slot 2
+                if (attackerState != null && attackerState.hasEffect("pet_slot_2")) {
+                    int icd = attackerState.getInternalCooldown("pet_fire_2");
+                    if (icd <= 0) {
+                        int petMag = attackerState.getEffectMagnitude("pet_slot_2");
+                        DamageResult petResult = new DamageResult(petMag, 1, false, false);
+                        if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§b§lPET 2! §fFired for " + petMag));
+                        applyDamageToFigure(attackerState, attacker, targetEntity, victimState, victimFigure, petResult, null, 0, false, false, true);
+                        attackerState.setInternalCooldown("pet_fire_2", TeenyBalance.PET_FIRE_COOLDOWN);
+                    }
+                }
+            }
+
             // --- REFLECTION LOGIC (Cuteness & Reflect) ---
             if (!isReflected) {
                 // 1. Cuteness (Standard)
@@ -480,7 +754,7 @@ public class AbilityExecutor {
                         DamageResult reflectResult = new DamageResult(reflectedBase);
                         reflectResult.canCrit = true;
                         if (targetEntity instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§d§lREFLECTED! §fDealt " + reflectedBase + " back!"));
-                        applyDamageToFigure(victimState, targetEntity, attacker, attackerState, attackerFig, reflectResult, null, 0, false, true);
+                        applyDamageToFigure(victimState, targetEntity, attacker, attackerState, attackerFig, reflectResult, null, 0, false, true, false);
                     }
                 }
 
@@ -499,7 +773,7 @@ public class AbilityExecutor {
                             DamageResult reflectResult = new DamageResult(reflectedBase);
                             reflectResult.canCrit = true;
                             if (targetEntity instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§b§lREFLECTED! §fDealt " + reflectedBase + " back!"));
-                            applyDamageToFigure(victimState, targetEntity, attacker, attackerState, attackerFig, reflectResult, null, 0, false, true);
+                            applyDamageToFigure(victimState, targetEntity, attacker, attackerState, attackerFig, reflectResult, null, 0, false, true, false);
                             victimState.removeEffect("reflect");
                         }
                     }
@@ -507,7 +781,9 @@ public class AbilityExecutor {
             }
         }
 
-        announceDamage(attacker, targetEntity, victimFigure, mitigation, (data != null) ? data.name : "Attack");
+        if (instantDmg > 0 || mitigation.isDodged || mitigation.isBlocked) {
+            announceDamage(attacker, targetEntity, victimFigure, mitigation, (data != null) ? data.name : "Attack");
+        }
 
         // Faint Check
         victimState.checkFaint(targetEntity);

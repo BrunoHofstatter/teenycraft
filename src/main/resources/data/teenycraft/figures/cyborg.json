@@ -5,6 +5,7 @@
   "class": "Tech",
   "groups": [ "Cyborg", "Robot", "Titans"],
   "price": 150,
+  "model_type": "default",
   "attributes": {
     "hp_scale": 3.0,
     "power_scale": 2.5,

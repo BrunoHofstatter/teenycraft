@@ -36,6 +36,24 @@ public class ModItems {
     public static final RegistryObject<Item> CYBORG = ITEMS.register("figure_cyborg",
             () -> new ItemFigure(new Item.Properties()));
 
+    public static final RegistryObject<Item> BATMAN = ITEMS.register("figure_batman",
+            () -> new ItemFigure(new Item.Properties()));
+
+    public static final RegistryObject<Item> SUPERMAN = ITEMS.register("figure_superman",
+            () -> new ItemFigure(new Item.Properties()));
+
+    public static final RegistryObject<Item> SEE_MORE = ITEMS.register("figure_see_more",
+            () -> new ItemFigure(new Item.Properties()));
+
+    public static final RegistryObject<Item> HARLEY_QUINN = ITEMS.register("figure_harley_quinn",
+            () -> new ItemFigure(new Item.Properties()));
+
+    public static final RegistryObject<Item> JOKER = ITEMS.register("figure_joker",
+            () -> new ItemFigure(new Item.Properties()));
+
+    public static final RegistryObject<Item> BILLY_NUMEROUS = ITEMS.register("figure_billy_numerous",
+            () -> new ItemFigure(new Item.Properties()));
+
     public static final RegistryObject<Item> TITAN_PAD = ITEMS.register("titan_pad",
             () -> new bruhof.teenycraft.item.custom.ItemTitanPad(new Item.Properties()));
 

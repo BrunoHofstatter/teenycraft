@@ -1,0 +1,14 @@
+{
+  "id": "super_sockem",
+  "name": "Super Sock'em",
+  "texture_index": 111,
+  "particle": "minecraft:explosion",
+  "particle_count": 1,
+  "hit_type": "melee",
+  "raycast_delay_tier": 0,
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["trait:undodgeable"]
+}

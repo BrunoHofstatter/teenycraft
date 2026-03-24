@@ -1,0 +1,20 @@
+{
+  "id": "bat_mine",
+  "name": "Bat-Mine",
+  "texture_index": 100,
+  "particle": "minecraft:smoke",
+  "particle_count": 8,
+  "hit_type": "ranged",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 8,
+  "effects_on_opponent": [
+    {
+      "id": "remote_mine",
+      "params": [1.0]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["opponent:remote_mine:1.3"]
+}

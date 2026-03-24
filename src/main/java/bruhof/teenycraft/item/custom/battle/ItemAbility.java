@@ -40,21 +40,19 @@ public class ItemAbility extends Item {
     @Override
     public Component getName(ItemStack pStack) {
         if (!pStack.hasTag()) return super.getName(pStack);
-        
+
         var tag = pStack.getTag();
         String name = tag.getString(TAG_NAME);
-        int damage = tag.getInt(TAG_DAMAGE);
         boolean golden = tag.getBoolean(TAG_GOLDEN);
-        
+
         String color = golden ? "§6" : "§9";
-        String displayName = color + name;
-        if (damage > 0) {
-            displayName += " - " + damage;
-        }
-        
-        return Component.literal(displayName);
+        return Component.literal(color + name);
     }
-    
+
+    @Override
+    public boolean isFoil(ItemStack pStack) {
+        return pStack.hasTag() && pStack.getTag().getBoolean(TAG_GOLDEN);
+    }    
     public int getSlotIndex() { return slotIndex; }
 
     @Override

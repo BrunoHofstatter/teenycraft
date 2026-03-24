@@ -1,0 +1,20 @@
+{
+  "id": "puddin_pucker",
+  "name": "Puddin' Pucker",
+  "texture_index": 131,
+  "particle": "minecraft:heart",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 7,
+  "range_tier": 4,
+  "damage_tier": 4,
+  "effects_on_opponent": [
+    {
+      "id": "kiss",
+      "params": [1.0]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["self:heal:0.3"]
+}
