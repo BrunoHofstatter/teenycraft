@@ -113,6 +113,10 @@ public class BattleState implements IBattleState {
         this.currentMana = 0;
         this.activeEffects.clear();
         
+        this.batteryCharge = 0;
+        this.batterySpawnPct = -1.0f;
+        this.batterySpawnTimer = TeenyBalance.BATTERY_SPAWN_MIN_TICKS;
+        
         // Reset Victory
         this.battleWon = false;
         this.victoryTimer = 0;
@@ -336,6 +340,7 @@ public class BattleState implements IBattleState {
             } else {
                 float range = TeenyBalance.BATTERY_SPAWN_MAX_PCT - TeenyBalance.BATTERY_SPAWN_MIN_PCT;
                 batterySpawnPct = TeenyBalance.BATTERY_SPAWN_MIN_PCT + (float)(Math.random() * range);
+                checkBatteryCollection();
             }
         }
 
@@ -671,6 +676,14 @@ public class BattleState implements IBattleState {
         } else {
             activeEffects.put(effectId, new EffectInstance(duration, magnitude, power, caster));
         }
+        
+        if (this.player != null && "flight".equals(effectId)) {
+            this.player.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, duration, 7, false, false));
+        }
+        
+        if (this.player != null) {
+            updatePlayerSpeed(this.player);
+        }
     }
     
     @Override
@@ -698,6 +711,14 @@ public class BattleState implements IBattleState {
                 }
             } finally {
                 isRemovingEffect = false;
+            }
+            
+            if (this.player != null && "flight".equals(effectId)) {
+                this.player.removeEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);
+            }
+            
+            if (this.player != null) {
+                updatePlayerSpeed(this.player);
             }
         }
     }
@@ -941,5 +962,9 @@ public class BattleState implements IBattleState {
         this.currentMana = 0;
         this.currentTofuMana = 0;
         this.activeEffects.clear();
+        
+        this.batteryCharge = 0;
+        this.batterySpawnPct = -1.0f;
+        this.batterySpawnTimer = TeenyBalance.BATTERY_SPAWN_MIN_TICKS;
     }
 }

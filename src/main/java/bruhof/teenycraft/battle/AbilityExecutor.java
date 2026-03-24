@@ -308,6 +308,18 @@ public class AbilityExecutor {
             return;
         }
 
+        // ==========================================
+        // FLIGHT CANCELLATION LOGIC
+        // If you want to change it so ANY ability (including buffs) cancels flight, 
+        // just remove the `!"none".equalsIgnoreCase(data.hitType)` check here!
+        // ==========================================
+        if (!"none".equalsIgnoreCase(data.hitType)) {
+            if (state.hasEffect("flight")) {
+                state.removeEffect("flight");
+                if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§eFlight cancelled by attacking!"));
+            }
+        }
+
         if (!bruhof.teenycraft.battle.trait.TraitRegistry.triggerExecutionHooks(state, attacker, figure, slotIndex, data, target, isGolden)) {
             return;
         }
@@ -495,6 +507,11 @@ public class AbilityExecutor {
             }
 
             if (totalDamageDealt > 0) {
+                // Charge Battery on successful damage
+                if (consumeMana) {
+                    attackerState.addBatteryCharge(manaCost * bruhof.teenycraft.TeenyBalance.ABILITY_BATTERY_CHARGE_MULT);
+                }
+                
                 rollTofu(attackerState, attacker, figure, data, manaCost, target, isGolden);
                 bruhof.teenycraft.battle.trait.TraitRegistry.triggerHitHooks(attackerState, attacker, figure, data, manaCost, target, totalDamageDealt, isGolden);
             }
@@ -503,6 +520,11 @@ public class AbilityExecutor {
                 if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§d[Effect] Casting Buffs..."));
                 for (AbilityLoader.TraitData trait : data.traits) {
                     EffectApplierRegistry.get(trait.id).apply(attackerState, attacker, figure, data, manaCost, trait.params, attacker);
+                }
+                
+                // Charge Battery on successful self-buff
+                if (consumeMana) {
+                    attackerState.addBatteryCharge(manaCost * bruhof.teenycraft.TeenyBalance.ABILITY_BATTERY_CHARGE_MULT);
                 }
             }
         }
@@ -529,7 +551,6 @@ public class AbilityExecutor {
         
         if (consumeMana && !skipSelfEffects) {
             attackerState.consumeMana(manaCost);
-            attackerState.addBatteryCharge(manaCost * bruhof.teenycraft.TeenyBalance.ABILITY_BATTERY_CHARGE_MULT);
         }
         
         if (attacker instanceof Player p) p.resetAttackStrengthTicker();
