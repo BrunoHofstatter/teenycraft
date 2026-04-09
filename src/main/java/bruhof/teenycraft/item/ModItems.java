@@ -2,6 +2,7 @@ package bruhof.teenycraft.item;
 
 import bruhof.teenycraft.TeenyCraft;
 import bruhof.teenycraft.item.custom.ItemFigure;
+import bruhof.teenycraft.item.custom.ItemAccessory;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -59,6 +60,29 @@ public class ModItems {
 
     public static final RegistryObject<Item> TOFU = ITEMS.register("tofu",
             () -> new bruhof.teenycraft.item.custom.battle.ItemTofu(new Item.Properties().stacksTo(1)));
+
+    public static final RegistryObject<Item> ACCESSORY_TITANS_COIN = ITEMS.register("accessory_titans_coin",
+            () -> new ItemAccessory(new Item.Properties(), "titans_coin"));
+    public static final RegistryObject<Item> ACCESSORY_MOTHER_BOX = ITEMS.register("accessory_mother_box",
+            () -> new ItemAccessory(new Item.Properties(), "mother_box"));
+    public static final RegistryObject<Item> ACCESSORY_BAT_SIGNAL = ITEMS.register("accessory_bat_signal",
+            () -> new ItemAccessory(new Item.Properties(), "bat_signal"));
+    public static final RegistryObject<Item> ACCESSORY_RED_LANTERN_BATTERY = ITEMS.register("accessory_red_lantern_battery",
+            () -> new ItemAccessory(new Item.Properties(), "red_lantern_battery"));
+    public static final RegistryObject<Item> ACCESSORY_GREEN_LANTERN_BATTERY = ITEMS.register("accessory_green_lantern_battery",
+            () -> new ItemAccessory(new Item.Properties(), "green_lantern_battery"));
+    public static final RegistryObject<Item> ACCESSORY_VIOLET_LANTERN_BATTERY = ITEMS.register("accessory_violet_lantern_battery",
+            () -> new ItemAccessory(new Item.Properties(), "violet_lantern_battery"));
+    public static final RegistryObject<Item> ACCESSORY_RAVENS_SPELLBOOK = ITEMS.register("accessory_ravens_spellbook",
+            () -> new ItemAccessory(new Item.Properties(), "ravens_spellbook"));
+    public static final RegistryObject<Item> ACCESSORY_CYBORGS_WAFFLE_SHOOTER = ITEMS.register("accessory_cyborgs_waffle_shooter",
+            () -> new ItemAccessory(new Item.Properties(), "cyborgs_waffle_shooter"));
+    public static final RegistryObject<Item> ACCESSORY_LIL_PENGUIN = ITEMS.register("accessory_lil_penguin",
+            () -> new ItemAccessory(new Item.Properties(), "lil_penguin"));
+    public static final RegistryObject<Item> ACCESSORY_KRYPTONITE = ITEMS.register("accessory_kryptonite",
+            () -> new ItemAccessory(new Item.Properties(), "kryptonite"));
+    public static final RegistryObject<Item> ACCESSORY_JUSTICE_LEAGUE_COIN = ITEMS.register("accessory_justice_league_coin",
+            () -> new ItemAccessory(new Item.Properties(), "justice_league_coin"));
 
     // BATTLE ITEMS (Not in creative tabs, given by code)
     public static final RegistryObject<Item> ABILITY_1 = ITEMS.register("ability_1",

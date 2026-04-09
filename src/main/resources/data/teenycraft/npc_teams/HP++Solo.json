@@ -1,0 +1,12 @@
+{
+  "id": "teenycraft:HP++Solo",
+  "figures": [
+    {
+      "figure_id": "superman",
+      "level": 20,
+      "upgrades": "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHPPPPPPPLLL",
+      "ability_order": [0, 1, 2],
+      "golden_abilities": []
+    }
+  ]
+}

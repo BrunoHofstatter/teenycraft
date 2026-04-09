@@ -1,6 +1,7 @@
 package bruhof.teenycraft.capability;
 
 import bruhof.teenycraft.item.custom.ItemFigure;
+import bruhof.teenycraft.item.custom.ItemAccessory;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.ItemStackHandler;
@@ -34,11 +35,10 @@ public class TitanManager implements ITitanManager {
                 return true;
             }
             if (slot == SLOT_ACCESSORY) {
-                // TODO: Check for ItemAccessory when implemented
-                return true; 
+                return stack.getItem() instanceof ItemAccessory;
             }
             // Storage accepts figures and accessories
-            return stack.getItem() instanceof ItemFigure || true; // Allow all for now, filter later
+            return stack.getItem() instanceof ItemFigure || stack.getItem() instanceof ItemAccessory;
         }
 
         @Override

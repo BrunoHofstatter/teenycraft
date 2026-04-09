@@ -42,6 +42,18 @@ public class ModCreativeTabs {
                         pOutput.accept(ModItems.JOKER.get());
                         pOutput.accept(ModItems.BILLY_NUMEROUS.get());
 
+                        pOutput.accept(ModItems.ACCESSORY_TITANS_COIN.get());
+                        pOutput.accept(ModItems.ACCESSORY_MOTHER_BOX.get());
+                        pOutput.accept(ModItems.ACCESSORY_BAT_SIGNAL.get());
+                        pOutput.accept(ModItems.ACCESSORY_RED_LANTERN_BATTERY.get());
+                        pOutput.accept(ModItems.ACCESSORY_GREEN_LANTERN_BATTERY.get());
+                        pOutput.accept(ModItems.ACCESSORY_VIOLET_LANTERN_BATTERY.get());
+                        pOutput.accept(ModItems.ACCESSORY_RAVENS_SPELLBOOK.get());
+                        pOutput.accept(ModItems.ACCESSORY_CYBORGS_WAFFLE_SHOOTER.get());
+                        pOutput.accept(ModItems.ACCESSORY_LIL_PENGUIN.get());
+                        pOutput.accept(ModItems.ACCESSORY_KRYPTONITE.get());
+                        pOutput.accept(ModItems.ACCESSORY_JUSTICE_LEAGUE_COIN.get());
+
                         pOutput.accept(ModItems.TOFU.get());
                     })
                     .build());

@@ -1,11 +1,15 @@
 package bruhof.teenycraft.capability;
 
+import bruhof.teenycraft.accessory.AccessoryExecutor;
+import bruhof.teenycraft.accessory.AccessoryRegistry;
+import bruhof.teenycraft.accessory.AccessorySpec;
 import bruhof.teenycraft.battle.effect.EffectInstance;
 import bruhof.teenycraft.battle.effect.EffectRegistry;
 import bruhof.teenycraft.battle.BattleFigure;
 import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.entity.custom.EntityTeenyDummy;
 import bruhof.teenycraft.item.ModItems;
+import bruhof.teenycraft.item.custom.ItemAccessory;
 import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.networking.ModMessages;
 import bruhof.teenycraft.networking.PacketSyncBattleData;
@@ -34,6 +38,7 @@ import java.util.UUID;
 public class BattleState implements IBattleState {
 
     private static final UUID DODGE_SPEED_UUID = UUID.fromString("6f6c94a5-6a5e-4c7b-8b9a-7a5d1b6e2f4c");
+    private static final int BATTLE_ACCESSORY_SLOT = 5;
 
     private boolean isBattling = false;
     private final List<BattleFigure> team = new ArrayList<>();
@@ -50,6 +55,9 @@ public class BattleState implements IBattleState {
     private float batteryCharge = 0;
     private float batterySpawnPct = -1.0f;
     private int batterySpawnTimer = TeenyBalance.BATTERY_SPAWN_MIN_TICKS;
+    private boolean accessoryActive = false;
+    private int accessoryActiveTicks = 0;
+    private String activeAccessoryId = null;
     
     private final Map<String, EffectInstance> activeEffects = new HashMap<>();
     private final Map<String, Integer> internalCooldowns = new HashMap<>();
@@ -116,6 +124,9 @@ public class BattleState implements IBattleState {
         this.batteryCharge = 0;
         this.batterySpawnPct = -1.0f;
         this.batterySpawnTimer = TeenyBalance.BATTERY_SPAWN_MIN_TICKS;
+        this.accessoryActive = false;
+        this.accessoryActiveTicks = 0;
+        this.activeAccessoryId = null;
         
         // Reset Victory
         this.battleWon = false;
@@ -139,6 +150,7 @@ public class BattleState implements IBattleState {
     public void setActiveFigure(int index) {
         if (index >= 0 && index < team.size()) {
             this.activeFigureIndex = index;
+            onActiveFigureChanged();
         }
     }
 
@@ -176,6 +188,7 @@ public class BattleState implements IBattleState {
         }
 
         this.activeFigureIndex = newIndex;
+        onActiveFigureChanged();
         this.swapCooldown = TeenyBalance.SWAP_COOLDOWN * 20;
 
         BattleFigure newActive = getActiveFigure();
@@ -222,6 +235,7 @@ public class BattleState implements IBattleState {
 
             if (nextIndex != -1) {
                 this.activeFigureIndex = nextIndex;
+                onActiveFigureChanged();
                 this.swapCooldown = TeenyBalance.SWAP_COOLDOWN * 20;
                 if (player != null) {
                     refreshPlayerInventory(player);
@@ -295,6 +309,13 @@ public class BattleState implements IBattleState {
         if (currentTofuMana > 0) {
             player.getInventory().setItem(4, new ItemStack(ModItems.TOFU.get()));
         }
+
+        ItemStack accessoryStack = getEquippedAccessoryStack();
+        if (!accessoryStack.isEmpty() && accessoryStack.getItem() instanceof ItemAccessory) {
+            ItemStack battleAccessory = accessoryStack.copy();
+            battleAccessory.getOrCreateTag().putBoolean(ItemAccessory.TAG_BATTLE_ACTIVE, accessoryActive);
+            player.getInventory().setItem(BATTLE_ACCESSORY_SLOT, battleAccessory);
+        }
         
         player.inventoryMenu.broadcastChanges();
     }
@@ -341,6 +362,19 @@ public class BattleState implements IBattleState {
                 float range = TeenyBalance.BATTERY_SPAWN_MAX_PCT - TeenyBalance.BATTERY_SPAWN_MIN_PCT;
                 batterySpawnPct = TeenyBalance.BATTERY_SPAWN_MIN_PCT + (float)(Math.random() * range);
                 checkBatteryCollection();
+            }
+        }
+
+        AccessorySpec equippedAccessory = getEquippedAccessorySpec();
+        if (accessoryActive && (equippedAccessory == null || !equippedAccessory.getId().equals(activeAccessoryId))) {
+            deactivateAccessory();
+        }
+        if (accessoryActive && equippedAccessory != null) {
+            accessoryActiveTicks++;
+            AccessoryExecutor.onTick(this, player, equippedAccessory, accessoryActiveTicks);
+            addBatteryCharge(-TeenyBalance.ACCESSORY_DRAIN_PER_TICK);
+            if (batteryCharge <= 0) {
+                deactivateAccessory();
             }
         }
 
@@ -517,6 +551,25 @@ public class BattleState implements IBattleState {
     
     @Override
     public int getBatterySpawnTimer() { return batterySpawnTimer; }
+
+    @Override
+    public boolean isAccessoryActive() {
+        return accessoryActive;
+    }
+
+    @Override
+    public boolean tryActivateAccessory() {
+        AccessorySpec equippedAccessory = getEquippedAccessorySpec();
+        if (equippedAccessory == null || accessoryActive) {
+            return false;
+        }
+        if (batteryCharge < TeenyBalance.ACCESSORY_ACTIVATION_MIN_CHARGE) {
+            return false;
+        }
+
+        activateAccessory(equippedAccessory);
+        return true;
+    }
 
     @Override
     public boolean isBlueChanneling() { return blueChannelTicks > 0; }
@@ -966,5 +1019,52 @@ public class BattleState implements IBattleState {
         this.batteryCharge = 0;
         this.batterySpawnPct = -1.0f;
         this.batterySpawnTimer = TeenyBalance.BATTERY_SPAWN_MIN_TICKS;
+        deactivateAccessory();
+    }
+
+    private AccessorySpec getEquippedAccessorySpec() {
+        if (player == null) return null;
+        return player.getCapability(TitanManagerProvider.TITAN_MANAGER)
+                .map(manager -> AccessoryRegistry.get(manager.getInventory().getStackInSlot(TitanManager.SLOT_ACCESSORY)))
+                .orElse(null);
+    }
+
+    private ItemStack getEquippedAccessoryStack() {
+        if (player == null) return ItemStack.EMPTY;
+        return player.getCapability(TitanManagerProvider.TITAN_MANAGER)
+                .map(manager -> manager.getInventory().getStackInSlot(TitanManager.SLOT_ACCESSORY))
+                .orElse(ItemStack.EMPTY);
+    }
+
+    private void activateAccessory(AccessorySpec spec) {
+        accessoryActive = true;
+        accessoryActiveTicks = 0;
+        activeAccessoryId = spec.getId();
+        AccessoryExecutor.onActivated(this, player, spec, getEquippedAccessoryStack().getHoverName());
+        if (player != null && isBattling && !team.isEmpty()) {
+            refreshPlayerInventory(player);
+        }
+    }
+
+    private void deactivateAccessory() {
+        if (!accessoryActive) return;
+        AccessorySpec currentSpec = AccessoryRegistry.get(activeAccessoryId);
+        Component accessoryName = getEquippedAccessoryStack().isEmpty() ? null : getEquippedAccessoryStack().getHoverName();
+        AccessoryExecutor.onDeactivated(this, player, currentSpec, accessoryName);
+        accessoryActive = false;
+        accessoryActiveTicks = 0;
+        activeAccessoryId = null;
+        if (player != null && isBattling && !team.isEmpty()) {
+            refreshPlayerInventory(player);
+        }
+    }
+
+    private void onActiveFigureChanged() {
+        if (!accessoryActive) return;
+
+        AccessorySpec currentSpec = AccessoryRegistry.get(activeAccessoryId);
+        if (currentSpec != null) {
+            AccessoryExecutor.onActiveFigureChanged(this, currentSpec);
+        }
     }
 }

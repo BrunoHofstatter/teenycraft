@@ -53,7 +53,9 @@ public interface IBattleState {
     void addBatteryCharge(float amount);
     float getBatterySpawnPct();
     int getBatterySpawnTimer();
-    
+    boolean isAccessoryActive();
+    boolean tryActivateAccessory();
+
     int getLockedSlot();
     void setLockedSlot(int slot);
     

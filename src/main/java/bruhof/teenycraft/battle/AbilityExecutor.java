@@ -80,7 +80,7 @@ public class AbilityExecutor {
                 return;
             }
 
-            executeCommon(state, attacker, figure, slotIndex, data, livingTarget, true);
+            executeCommon(state, attacker, figure, slotIndex, data, livingTarget, true, true);
         });
     }
 
@@ -137,7 +137,9 @@ public class AbilityExecutor {
                             bruhof.teenycraft.battle.effect.EffectInstance mine = ts.getEffectInstance("remote_mine_" + slotIndex);
                             if (attacker.getUUID().equals(mine.casterUUID)) {
                                 state.consumeMana(manaCost);
-                                detonateMine(attacker, state, target, ts, slotIndex, mine);
+                                if (detonateMine(attacker, state, target, ts, slotIndex, mine) > 0) {
+                                    awardBatteryFromManaSpent(state, manaCost);
+                                }
                                 return;
                             }
                         }
@@ -160,7 +162,9 @@ public class AbilityExecutor {
                             bruhof.teenycraft.battle.effect.EffectInstance mine = ts.getEffectInstance("remote_mine_" + slotIndex);
                             if (attacker.getUUID().equals(mine.casterUUID)) {
                                 state.consumeMana(manaCost);
-                                detonateMine(attacker, state, target, ts, slotIndex, mine);
+                                if (detonateMine(attacker, state, target, ts, slotIndex, mine) > 0) {
+                                    awardBatteryFromManaSpent(state, manaCost);
+                                }
                                 return;
                             }
                         }
@@ -201,7 +205,7 @@ public class AbilityExecutor {
                  target = attacker; 
             }
 
-            executeCommon(state, attacker, figure, slotIndex, data, target, true);
+            executeCommon(state, attacker, figure, slotIndex, data, target, true, true);
         });
     }
 
@@ -248,7 +252,7 @@ public class AbilityExecutor {
             return;
         }
         
-        executeCommon(casterState, caster, figure, data, manaCost, finalTarget, false, isGolden);
+        executeCommon(casterState, caster, figure, data, manaCost, finalTarget, false, false, isGolden);
     }
 
     public static void executeTofu(LivingEntity caster, IBattleState state) {
@@ -296,7 +300,7 @@ public class AbilityExecutor {
         }
     }
 
-    private static void executeCommon(IBattleState state, LivingEntity attacker, BattleFigure figure, int slotIndex, AbilityLoader.AbilityData data, LivingEntity target, boolean consumeMana) {
+    private static void executeCommon(IBattleState state, LivingEntity attacker, BattleFigure figure, int slotIndex, AbilityLoader.AbilityData data, LivingEntity target, boolean consumeManaNow, boolean awardBatteryOnSuccess) {
         java.util.ArrayList<String> tiers = ItemFigure.getAbilityTiers(figure.getOriginalStack());
         String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
         int manaCost = TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
@@ -324,7 +328,7 @@ public class AbilityExecutor {
             return;
         }
 
-        executeCommon(state, attacker, figure, data, manaCost, target, consumeMana, isGolden);
+        executeCommon(state, attacker, figure, data, manaCost, target, consumeManaNow, awardBatteryOnSuccess, isGolden);
     }
 
     public static void finishCharge(IBattleState state, LivingEntity attacker) {
@@ -362,7 +366,7 @@ public class AbilityExecutor {
         String tierLetter = (slot < tiers.size()) ? tiers.get(slot) : "a";
         int manaCost = TeenyBalance.getManaCost(slot + 1, tierLetter);
 
-        executeCommon(state, attacker, figure, data, manaCost, target, false, isGolden);
+        executeCommon(state, attacker, figure, data, manaCost, target, false, true, isGolden);
     }
 
     public static void tickBlueChannel(IBattleState state, LivingEntity attacker) {
@@ -415,14 +419,22 @@ public class AbilityExecutor {
                 }
 
                 if (target != null) {
+                    boolean awardedBatteryThisInterval = false;
                     if (damagePerInterval > 0 && target != attacker) {
                         IBattleState targetState = target.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null);
                         BattleFigure targetFigure = (targetState != null) ? targetState.getActiveFigure() : null;
                         DamagePipeline.DamageResult result = new DamagePipeline.DamageResult(damagePerInterval, 1, false, true);
-                        applyDamageToFigure(state, attacker, target, targetState, targetFigure, result, data, 0, isGolden, false, false);
+                        int damageDealt = applyDamageToFigure(state, attacker, target, targetState, targetFigure, result, data, 0, isGolden, false, false);
+                        if (damageDealt > 0) {
+                            awardBatteryFromManaSpent(state, tickRate * interval);
+                            awardedBatteryThisInterval = true;
+                        }
                     }
                     if (healPerInterval > 0) {
                         state.applyEffect("heal", 0, healPerInterval);
+                        if (!awardedBatteryThisInterval) {
+                            awardBatteryFromManaSpent(state, tickRate * interval);
+                        }
                     }
                 }
             }
@@ -436,11 +448,11 @@ public class AbilityExecutor {
         }
     }
 
-    private static void executeCommon(IBattleState attackerState, LivingEntity attacker, BattleFigure figure, AbilityLoader.AbilityData data, int manaCost, LivingEntity target, boolean consumeMana, boolean isGolden) {
-        executeCommon(attackerState, attacker, figure, data, manaCost, target, consumeMana, isGolden, false);
+    private static void executeCommon(IBattleState attackerState, LivingEntity attacker, BattleFigure figure, AbilityLoader.AbilityData data, int manaCost, LivingEntity target, boolean consumeManaNow, boolean awardBatteryOnSuccess, boolean isGolden) {
+        executeCommon(attackerState, attacker, figure, data, manaCost, target, consumeManaNow, awardBatteryOnSuccess, isGolden, false);
     }
 
-    private static void executeCommon(IBattleState attackerState, LivingEntity attacker, BattleFigure figure, AbilityLoader.AbilityData data, int manaCost, LivingEntity target, boolean consumeMana, boolean isGolden, boolean skipSelfEffects) {
+    private static void executeCommon(IBattleState attackerState, LivingEntity attacker, BattleFigure figure, AbilityLoader.AbilityData data, int manaCost, LivingEntity target, boolean consumeManaNow, boolean awardBatteryOnSuccess, boolean isGolden, boolean skipSelfEffects) {
         DamageResult result = DamagePipeline.calculateOutput(attackerState, figure, data, manaCost, isGolden);
         
         if (data.effectsOnOpponent != null) {
@@ -507,11 +519,10 @@ public class AbilityExecutor {
             }
 
             if (totalDamageDealt > 0) {
-                // Charge Battery on successful damage
-                if (consumeMana) {
-                    attackerState.addBatteryCharge(manaCost * bruhof.teenycraft.TeenyBalance.ABILITY_BATTERY_CHARGE_MULT);
+                if (awardBatteryOnSuccess) {
+                    awardBatteryFromManaSpent(attackerState, manaCost);
                 }
-                
+
                 rollTofu(attackerState, attacker, figure, data, manaCost, target, isGolden);
                 bruhof.teenycraft.battle.trait.TraitRegistry.triggerHitHooks(attackerState, attacker, figure, data, manaCost, target, totalDamageDealt, isGolden);
             }
@@ -521,10 +532,9 @@ public class AbilityExecutor {
                 for (AbilityLoader.TraitData trait : data.traits) {
                     EffectApplierRegistry.get(trait.id).apply(attackerState, attacker, figure, data, manaCost, trait.params, attacker);
                 }
-                
-                // Charge Battery on successful self-buff
-                if (consumeMana) {
-                    attackerState.addBatteryCharge(manaCost * bruhof.teenycraft.TeenyBalance.ABILITY_BATTERY_CHARGE_MULT);
+
+                if (awardBatteryOnSuccess) {
+                    awardBatteryFromManaSpent(attackerState, manaCost);
                 }
             }
         }
@@ -549,7 +559,7 @@ public class AbilityExecutor {
             }
         }
         
-        if (consumeMana && !skipSelfEffects) {
+        if (consumeManaNow && !skipSelfEffects) {
             attackerState.consumeMana(manaCost);
         }
         
@@ -581,7 +591,7 @@ public class AbilityExecutor {
 
         // Hit! We now execute ONLY the damage and opponent effects. 
         // Self-effects and mana were consumed when the projectile was fired.
-        executeCommon(state, caster, proj.attackerFigure, proj.data, proj.manaCost, target, false, proj.isGolden, true); 
+        executeCommon(state, caster, proj.attackerFigure, proj.data, proj.manaCost, target, false, true, proj.isGolden, true);
     }
 
     private static LivingEntity findNearestOpponent(LivingEntity attacker) {
@@ -672,7 +682,12 @@ public class AbilityExecutor {
         }
     }
 
-    private static void detonateMine(LivingEntity attacker, IBattleState attackerState, LivingEntity target, IBattleState victimState, int slot, bruhof.teenycraft.battle.effect.EffectInstance mine) {
+    private static void awardBatteryFromManaSpent(IBattleState state, float manaSpent) {
+        if (manaSpent <= 0) return;
+        state.addBatteryCharge(manaSpent * TeenyBalance.ABILITY_BATTERY_CHARGE_MULT);
+    }
+
+    private static int detonateMine(LivingEntity attacker, IBattleState attackerState, LivingEntity target, IBattleState victimState, int slot, bruhof.teenycraft.battle.effect.EffectInstance mine) {
         float maxSnapshot = mine.power;
         int stages = mine.magnitude;
         
@@ -685,8 +700,9 @@ public class AbilityExecutor {
         DamageResult result = new DamageResult(detDmg, 1, false, true);
         if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§b§lDETONATING! §fBoom for " + detDmg + " damage."));
         
-        applyDamageToFigure(attackerState, attacker, target, victimState, victimState.getActiveFigure(), result, null, 0, false, false, false);
+        int damageDealt = applyDamageToFigure(attackerState, attacker, target, victimState, victimState.getActiveFigure(), result, null, 0, false, false, false);
         victimState.removeEffect("remote_mine_" + slot);
+        return damageDealt;
     }
 
     private static double clamp(double val, double min, double max) {

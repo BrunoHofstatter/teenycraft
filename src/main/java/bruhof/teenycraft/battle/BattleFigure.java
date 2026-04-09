@@ -27,6 +27,7 @@ public class BattleFigure {
 
     // Volatile State
     private int currentHp;
+    private int accessoryMaxHpBonus = 0;
     private final int[] abilityCooldowns = new int[3]; // Slots 0, 1, 2
     
     // Shuffle Bags
@@ -77,7 +78,8 @@ public class BattleFigure {
     public String getNickname() { return nickname; }
 
     public int getCurrentHp() { return currentHp; }
-    public int getMaxHp() { return maxHp; }
+    public int getMaxHp() { return maxHp + accessoryMaxHpBonus; }
+    public int getBaseMaxHp() { return maxHp; }
     
     public int getPowerStat() { return this.power; }
     public int getDodgeStat() { return this.dodge; }
@@ -120,7 +122,19 @@ public class BattleFigure {
 
     public void modifyHp(int amount) {
         this.currentHp += amount;
-        if (this.currentHp > this.maxHp) this.currentHp = this.maxHp;
+        if (this.currentHp > getMaxHp()) this.currentHp = getMaxHp();
+        if (this.currentHp < 0) this.currentHp = 0;
+    }
+
+    public void setAccessoryMaxHpBonus(int bonus) {
+        int sanitizedBonus = Math.max(0, bonus);
+        if (this.accessoryMaxHpBonus == sanitizedBonus) return;
+
+        int oldMaxHp = getMaxHp();
+        this.accessoryMaxHpBonus = sanitizedBonus;
+        int newMaxHp = getMaxHp();
+        this.currentHp += (newMaxHp - oldMaxHp);
+        if (this.currentHp > newMaxHp) this.currentHp = newMaxHp;
         if (this.currentHp < 0) this.currentHp = 0;
     }
     
