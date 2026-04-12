@@ -26,6 +26,9 @@ Accessories are implemented as real items that equip into the Titan Manager acce
 - Lil' Penguin
 - Kryptonite
 - Justice League Coin
+- Birdarang
+- Superman's Underpants
+- Krypto the Superdog
 
 ## Source Of Truth
 - [`src/main/java/bruhof/teenycraft/accessory/AccessorySpec.java`](../../src/main/java/bruhof/teenycraft/accessory/AccessorySpec.java)

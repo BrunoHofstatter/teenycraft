@@ -577,7 +577,8 @@ public class EffectApplierRegistry {
                 // 4. Send it through the standard damage pipeline (Attacker hits Attacker)
                 // This will automatically roll Dodge, apply Defense, subtract HP, and announce it!
                 bruhof.teenycraft.battle.AbilityExecutor.applyDamageToFigure(
-                    state, attacker, attacker, state, figure, recoilResult, null, 0, false, true, false
+                    state, attacker, attacker, state, figure, recoilResult, null, 0, false, true, false,
+                    bruhof.teenycraft.battle.AbilityExecutor.nextAccessoryReactionId(), false
                 );
             }
         });

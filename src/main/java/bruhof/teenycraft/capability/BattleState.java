@@ -558,6 +558,11 @@ public class BattleState implements IBattleState {
     }
 
     @Override
+    public String getActiveAccessoryId() {
+        return activeAccessoryId;
+    }
+
+    @Override
     public boolean tryActivateAccessory() {
         AccessorySpec equippedAccessory = getEquippedAccessorySpec();
         if (equippedAccessory == null || accessoryActive) {
@@ -569,6 +574,11 @@ public class BattleState implements IBattleState {
 
         activateAccessory(equippedAccessory);
         return true;
+    }
+
+    @Override
+    public void forceDeactivateAccessory() {
+        deactivateAccessory();
     }
 
     @Override

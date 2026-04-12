@@ -53,6 +53,9 @@ public class ModCreativeTabs {
                         pOutput.accept(ModItems.ACCESSORY_LIL_PENGUIN.get());
                         pOutput.accept(ModItems.ACCESSORY_KRYPTONITE.get());
                         pOutput.accept(ModItems.ACCESSORY_JUSTICE_LEAGUE_COIN.get());
+                        pOutput.accept(ModItems.ACCESSORY_BIRDARANG.get());
+                        pOutput.accept(ModItems.ACCESSORY_SUPERMANS_UNDERPANTS.get());
+                        pOutput.accept(ModItems.ACCESSORY_KRYPTO_THE_SUPERDOG.get());
 
                         pOutput.accept(ModItems.TOFU.get());
                     })

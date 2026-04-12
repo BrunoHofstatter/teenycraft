@@ -1,5 +1,5 @@
 {
-  "id": "teenycraft:HP++Solo",
+  "id": "teenycraft:hp_solo",
   "figures": [
     {
       "figure_id": "superman",
@@ -8,5 +8,5 @@
       "ability_order": [0, 1, 2],
       "golden_abilities": []
     }
-  ]
+]
 }

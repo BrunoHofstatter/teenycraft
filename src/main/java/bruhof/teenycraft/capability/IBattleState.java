@@ -54,7 +54,9 @@ public interface IBattleState {
     float getBatterySpawnPct();
     int getBatterySpawnTimer();
     boolean isAccessoryActive();
+    String getActiveAccessoryId();
     boolean tryActivateAccessory();
+    void forceDeactivateAccessory();
 
     int getLockedSlot();
     void setLockedSlot(int slot);

@@ -83,6 +83,12 @@ public class ModItems {
             () -> new ItemAccessory(new Item.Properties(), "kryptonite"));
     public static final RegistryObject<Item> ACCESSORY_JUSTICE_LEAGUE_COIN = ITEMS.register("accessory_justice_league_coin",
             () -> new ItemAccessory(new Item.Properties(), "justice_league_coin"));
+    public static final RegistryObject<Item> ACCESSORY_BIRDARANG = ITEMS.register("accessory_birdarang",
+            () -> new ItemAccessory(new Item.Properties(), "birdarang"));
+    public static final RegistryObject<Item> ACCESSORY_SUPERMANS_UNDERPANTS = ITEMS.register("accessory_supermans_underpants",
+            () -> new ItemAccessory(new Item.Properties(), "supermans_underpants"));
+    public static final RegistryObject<Item> ACCESSORY_KRYPTO_THE_SUPERDOG = ITEMS.register("accessory_krypto_the_superdog",
+            () -> new ItemAccessory(new Item.Properties(), "krypto_the_superdog"));
 
     // BATTLE ITEMS (Not in creative tabs, given by code)
     public static final RegistryObject<Item> ABILITY_1 = ITEMS.register("ability_1",

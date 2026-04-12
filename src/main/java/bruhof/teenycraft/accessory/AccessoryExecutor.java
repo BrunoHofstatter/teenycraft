@@ -12,9 +12,14 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 public class AccessoryExecutor {
+    private static final Map<IBattleState, Integer> LAST_BIRDARANG_REACTION = Collections.synchronizedMap(new WeakHashMap<>());
+
     public static void onActivated(IBattleState ownerState, ServerPlayer owner, AccessorySpec spec, Component accessoryName) {
         if (owner != null) {
             owner.sendSystemMessage(Component.literal("§6Accessory Activated: ").append(accessoryName));
@@ -30,6 +35,13 @@ public class AccessoryExecutor {
         if ("bat_signal".equals(spec.getId())) {
             if (activeTicks == spec.getIntervalTicks()) {
                 applyPeriodicDamage(ownerState, owner, spec);
+            }
+            return;
+        }
+
+        if ("krypto_the_superdog".equals(spec.getId())) {
+            if (shouldPulse(spec, activeTicks)) {
+                applyKryptoEffect(ownerState, owner);
             }
             return;
         }
@@ -64,6 +76,34 @@ public class AccessoryExecutor {
         if (owner != null && accessoryName != null) {
             owner.sendSystemMessage(Component.literal("§7Accessory Deactivated: ").append(accessoryName));
         }
+    }
+
+    public static int onIncomingDamage(IBattleState victimState, LivingEntity victimEntity, BattleFigure victimFigure, LivingEntity attackerEntity,
+                                       int incomingDamage, int accessoryReactionId, boolean canTriggerBirdarang) {
+        if (victimState == null || victimEntity == null || victimFigure == null || incomingDamage <= 0 || !victimState.isAccessoryActive()) {
+            return incomingDamage;
+        }
+
+        String accessoryId = victimState.getActiveAccessoryId();
+        if (accessoryId == null) {
+            return incomingDamage;
+        }
+
+        int adjustedDamage = incomingDamage;
+
+        if ("supermans_underpants".equals(accessoryId)) {
+            victimState.addBatteryCharge(-(incomingDamage * bruhof.teenycraft.TeenyBalance.ACCESSORY_SUPERMANS_UNDERPANTS_BATTERY_DRAIN_MULT));
+            if (victimState.getBatteryCharge() <= 0) {
+                victimState.forceDeactivateAccessory();
+            }
+            adjustedDamage = 0;
+        }
+
+        if (canTriggerBirdarang && "birdarang".equals(accessoryId) && victimFigure == victimState.getActiveFigure() && shouldTriggerBirdarang(victimState, accessoryReactionId)) {
+            triggerBirdarangRetaliation(victimState, victimEntity, attackerEntity);
+        }
+
+        return adjustedDamage;
     }
 
     private static boolean shouldPulse(AccessorySpec spec, int activeTicks) {
@@ -107,15 +147,16 @@ public class AccessoryExecutor {
                 if (alive.isEmpty()) return;
 
                 int[] groupSplits = DistributionHelper.split(hitDamage, alive.size());
+                int reactionId = AbilityExecutor.nextAccessoryReactionId();
                 for (int i = 0; i < alive.size(); i++) {
                     DamagePipeline.DamageResult result = new DamagePipeline.DamageResult(groupSplits[i], 1, false, false);
-                    AbilityExecutor.applyDamageToFigure(ownerState, owner, opponent, opponentState, alive.get(i), result, null, 0, false, false, false);
+                    AbilityExecutor.applyDamageToFigure(ownerState, owner, opponent, opponentState, alive.get(i), result, null, 0, false, false, false, reactionId, true);
                 }
             } else {
                 BattleFigure victim = opponentState.getActiveFigure();
                 if (victim == null) return;
                 DamagePipeline.DamageResult result = new DamagePipeline.DamageResult(hitDamage, 1, false, false);
-                AbilityExecutor.applyDamageToFigure(ownerState, owner, opponent, opponentState, victim, result, null, 0, false, false, false);
+                AbilityExecutor.applyDamageToFigure(ownerState, owner, opponent, opponentState, victim, result, null, 0, false, false, false, AbilityExecutor.nextAccessoryReactionId(), true);
             }
         }
     }
@@ -132,6 +173,41 @@ public class AccessoryExecutor {
         targetState.removeEffect("waffle");
         int blockedSlot = (int) (Math.random() * 3);
         targetState.applyEffect("waffle", spec.getEffectDurationTicks(), blockedSlot);
+    }
+
+    private static void applyKryptoEffect(IBattleState ownerState, ServerPlayer owner) {
+        int roll = (int) (Math.random() * 3);
+        switch (roll) {
+            case 0 -> ownerState.applyEffect("power_up", -1, bruhof.teenycraft.TeenyBalance.ACCESSORY_KRYPTO_POWER_UP);
+            case 1 -> ownerState.applyEffect("heal", 0, bruhof.teenycraft.TeenyBalance.ACCESSORY_KRYPTO_HEAL);
+            default -> {
+                ownerState.spawnTofu(bruhof.teenycraft.TeenyBalance.ACCESSORY_KRYPTO_TOFU_POWER);
+                ownerState.refreshPlayerInventory(owner);
+            }
+        }
+    }
+
+    private static boolean shouldTriggerBirdarang(IBattleState victimState, int accessoryReactionId) {
+        Integer lastReaction = LAST_BIRDARANG_REACTION.get(victimState);
+        if (lastReaction != null && lastReaction == accessoryReactionId) {
+            return false;
+        }
+        LAST_BIRDARANG_REACTION.put(victimState, accessoryReactionId);
+        return true;
+    }
+
+    private static void triggerBirdarangRetaliation(IBattleState victimState, LivingEntity victimEntity, LivingEntity attackerEntity) {
+        if (attackerEntity == null) return;
+
+        IBattleState attackerState = attackerEntity.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null);
+        if (attackerState == null || !attackerState.isBattling()) return;
+
+        BattleFigure attackerFigure = attackerState.getActiveFigure();
+        if (attackerFigure == null || attackerFigure.getCurrentHp() <= 0) return;
+
+        DamagePipeline.DamageResult result = new DamagePipeline.DamageResult(bruhof.teenycraft.TeenyBalance.ACCESSORY_BIRDARANG_DAMAGE, 1, false, false);
+        AbilityExecutor.applyDamageToFigure(victimState, victimEntity, attackerEntity, attackerState, attackerFigure, result, null, 0, false, false, false,
+                AbilityExecutor.nextAccessoryReactionId(), false);
     }
 
     private static void clearTitansCoin(IBattleState ownerState) {

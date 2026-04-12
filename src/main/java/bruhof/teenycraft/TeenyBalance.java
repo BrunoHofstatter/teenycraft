@@ -100,6 +100,16 @@ public class TeenyBalance {
     public static final int ACCESSORY_JUSTICE_LEAGUE_COIN_LUCK_UP_DURATION_TICKS = 40;
     public static final int ACCESSORY_JUSTICE_LEAGUE_COIN_LUCK_UP_MAGNITUDE = 35;
 
+    public static final int ACCESSORY_BIRDARANG_DAMAGE = 10;
+
+    public static final float ACCESSORY_SUPERMANS_UNDERPANTS_BATTERY_DRAIN_MULT = 0.3f;
+
+    public static final int ACCESSORY_KRYPTO_INTERVAL_TICKS = 40;
+    public static final int ACCESSORY_KRYPTO_POWER_UP_DURATION_TICKS = 40;
+    public static final int ACCESSORY_KRYPTO_POWER_UP = 6;
+    public static final int ACCESSORY_KRYPTO_HEAL = 8;
+    public static final float ACCESSORY_KRYPTO_TOFU_POWER = 30.0f;
+
     // ==========================================
     // SECTION 3: DAMAGE AND CORE COMBAT RULES
     // ==========================================

@@ -30,6 +30,9 @@ public class AccessoryRegistry {
                 TeenyBalance.ACCESSORY_KRYPTONITE_INTERVAL_TICKS, TeenyBalance.ACCESSORY_KRYPTONITE_DEFENSE_DOWN_DURATION_TICKS, TeenyBalance.ACCESSORY_KRYPTONITE_DEFENSE_DOWN_MAGNITUDE));
         register(AccessorySpec.periodicEffect("justice_league_coin", AccessorySpec.Target.SELF, "luck_up",
                 TeenyBalance.ACCESSORY_JUSTICE_LEAGUE_COIN_INTERVAL_TICKS, TeenyBalance.ACCESSORY_JUSTICE_LEAGUE_COIN_LUCK_UP_DURATION_TICKS, TeenyBalance.ACCESSORY_JUSTICE_LEAGUE_COIN_LUCK_UP_MAGNITUDE));
+        register(AccessorySpec.periodicDamage("birdarang", 0, TeenyBalance.ACCESSORY_BIRDARANG_DAMAGE, 1, false));
+        register(AccessorySpec.periodicEffect("supermans_underpants", AccessorySpec.Target.SELF, "supermans_underpants", 0, 0, 0));
+        register(AccessorySpec.periodicEffect("krypto_the_superdog", AccessorySpec.Target.SELF, "krypto_random", TeenyBalance.ACCESSORY_KRYPTO_INTERVAL_TICKS, 0, 0));
     }
 
     private static void register(AccessorySpec spec) {

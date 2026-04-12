@@ -21,7 +21,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import bruhof.teenycraft.accessory.AccessoryExecutor;
 import bruhof.teenycraft.battle.damage.DamagePipeline;
 import bruhof.teenycraft.battle.damage.DamagePipeline.DamageResult;
 import bruhof.teenycraft.battle.effect.EffectApplierRegistry;
@@ -36,6 +38,11 @@ import java.util.Set;
 import bruhof.teenycraft.capability.IBattleState;
 
 public class AbilityExecutor {
+    private static final AtomicInteger ACCESSORY_REACTION_ID = new AtomicInteger(1);
+
+    public static int nextAccessoryReactionId() {
+        return ACCESSORY_REACTION_ID.getAndIncrement();
+    }
 
     /**
      * Triggered by Left-Click (Attack). Only works for MELEE abilities.
@@ -424,7 +431,7 @@ public class AbilityExecutor {
                         IBattleState targetState = target.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null);
                         BattleFigure targetFigure = (targetState != null) ? targetState.getActiveFigure() : null;
                         DamagePipeline.DamageResult result = new DamagePipeline.DamageResult(damagePerInterval, 1, false, true);
-                        int damageDealt = applyDamageToFigure(state, attacker, target, targetState, targetFigure, result, data, 0, isGolden, false, false);
+                        int damageDealt = applyDamageToFigure(state, attacker, target, targetState, targetFigure, result, data, 0, isGolden, false, false, nextAccessoryReactionId(), true);
                         if (damageDealt > 0) {
                             awardBatteryFromManaSpent(state, tickRate * interval);
                             awardedBatteryThisInterval = true;
@@ -489,6 +496,7 @@ public class AbilityExecutor {
             
             int totalDamageDealt = 0;
             int[] hitSplits = bruhof.teenycraft.battle.damage.DistributionHelper.split(result.baseDamagePerHit, result.hitCount);
+            int accessoryReactionId = nextAccessoryReactionId();
             
             for (int damagePart : hitSplits) {
                  DamageResult singleHit = new DamageResult(damagePart, 1, result.isGroupDamage, result.canCrit);
@@ -503,20 +511,20 @@ public class AbilityExecutor {
                          }
                          
                          int damageSum = 0;
-                         if (!alive.isEmpty()) {
-                             int[] groupSplits = bruhof.teenycraft.battle.damage.DistributionHelper.split(damagePart, alive.size());
-                             for (int j = 0; j < alive.size(); j++) {
-                                 DamageResult enemyHit = new DamageResult(groupSplits[j], 1, false, result.canCrit);
-                                 enemyHit.undodgeable = singleHit.undodgeable;
-                                 damageSum += applyDamageToFigure(attackerState, attacker, target, targetState, alive.get(j), enemyHit, data, manaCost, isGolden, false, false);
-                             }
-                         }
-                         return damageSum;
-                     }).orElse(0);
-                 } else {
-                     totalDamageDealt += applyDamage(attackerState, attacker, target, singleHit, data, manaCost, isGolden, false);
-                 }
-            }
+                          if (!alive.isEmpty()) {
+                              int[] groupSplits = bruhof.teenycraft.battle.damage.DistributionHelper.split(damagePart, alive.size());
+                              for (int j = 0; j < alive.size(); j++) {
+                                  DamageResult enemyHit = new DamageResult(groupSplits[j], 1, false, result.canCrit);
+                                  enemyHit.undodgeable = singleHit.undodgeable;
+                                  damageSum += applyDamageToFigure(attackerState, attacker, target, targetState, alive.get(j), enemyHit, data, manaCost, isGolden, false, false, accessoryReactionId, true);
+                              }
+                          }
+                          return damageSum;
+                      }).orElse(0);
+                  } else {
+                      totalDamageDealt += applyDamage(attackerState, attacker, target, singleHit, data, manaCost, isGolden, false, accessoryReactionId, true);
+                  }
+             }
 
             if (totalDamageDealt > 0) {
                 if (awardBatteryOnSuccess) {
@@ -700,7 +708,7 @@ public class AbilityExecutor {
         DamageResult result = new DamageResult(detDmg, 1, false, true);
         if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§b§lDETONATING! §fBoom for " + detDmg + " damage."));
         
-        int damageDealt = applyDamageToFigure(attackerState, attacker, target, victimState, victimState.getActiveFigure(), result, null, 0, false, false, false);
+        int damageDealt = applyDamageToFigure(attackerState, attacker, target, victimState, victimState.getActiveFigure(), result, null, 0, false, false, false, nextAccessoryReactionId(), true);
         victimState.removeEffect("remote_mine_" + slot);
         return damageDealt;
     }
@@ -709,11 +717,13 @@ public class AbilityExecutor {
         return Math.max(min, Math.min(max, val));
     }
 
-    private static int applyDamage(IBattleState attackerState, LivingEntity attacker, LivingEntity target, DamageResult result, AbilityLoader.AbilityData data, int manaCost, boolean isGolden, boolean isPetFire) {
+    private static int applyDamage(IBattleState attackerState, LivingEntity attacker, LivingEntity target, DamageResult result, AbilityLoader.AbilityData data,
+                                   int manaCost, boolean isGolden, boolean isPetFire, int accessoryReactionId, boolean canTriggerBirdarang) {
         IBattleState victimState = target.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null);
         
         if (victimState != null && victimState.isBattling()) {
-            return applyDamageToFigure(attackerState, attacker, target, victimState, victimState.getActiveFigure(), result, data, manaCost, isGolden, false, isPetFire);
+            return applyDamageToFigure(attackerState, attacker, target, victimState, victimState.getActiveFigure(), result, data, manaCost, isGolden, false, isPetFire,
+                    accessoryReactionId, canTriggerBirdarang);
         }
         
         target.hurt(attacker.damageSources().mobAttack(attacker), (float) result.baseDamagePerHit);
@@ -721,7 +731,9 @@ public class AbilityExecutor {
         return result.baseDamagePerHit;
     }
 
-    public static int applyDamageToFigure(IBattleState attackerState, LivingEntity attacker, LivingEntity targetEntity, IBattleState victimState, BattleFigure victimFigure, DamageResult result, AbilityLoader.AbilityData data, int manaCost, boolean isGolden, boolean isReflected, boolean isPetFire) {
+    public static int applyDamageToFigure(IBattleState attackerState, LivingEntity attacker, LivingEntity targetEntity, IBattleState victimState, BattleFigure victimFigure,
+                                          DamageResult result, AbilityLoader.AbilityData data, int manaCost, boolean isGolden, boolean isReflected, boolean isPetFire,
+                                          int accessoryReactionId, boolean canTriggerBirdarang) {
         BattleFigure attackerFig = attackerState.getActiveFigure();
         if (victimFigure == null) return 0;
         
@@ -753,6 +765,7 @@ public class AbilityExecutor {
         }
         
         if (instantDmg > 0) {
+            instantDmg = AccessoryExecutor.onIncomingDamage(victimState, targetEntity, victimFigure, attacker, instantDmg, accessoryReactionId, canTriggerBirdarang);
             victimFigure.modifyHp(-instantDmg);
 
             // --- PETS LOGIC ---
@@ -764,7 +777,8 @@ public class AbilityExecutor {
                         int petMag = attackerState.getEffectMagnitude("pet_slot_1");
                         DamageResult petResult = new DamageResult(petMag, 1, false, false);
                         if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§b§lPET 1! §fFired for " + petMag));
-                        applyDamageToFigure(attackerState, attacker, targetEntity, victimState, victimFigure, petResult, null, 0, false, false, true);
+                        applyDamageToFigure(attackerState, attacker, targetEntity, victimState, victimFigure, petResult, null, 0, false, false, true,
+                                accessoryReactionId, false);
                         attackerState.setInternalCooldown("pet_fire_1", TeenyBalance.PET_FIRE_COOLDOWN);
                     }
                 }
@@ -775,7 +789,8 @@ public class AbilityExecutor {
                         int petMag = attackerState.getEffectMagnitude("pet_slot_2");
                         DamageResult petResult = new DamageResult(petMag, 1, false, false);
                         if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§b§lPET 2! §fFired for " + petMag));
-                        applyDamageToFigure(attackerState, attacker, targetEntity, victimState, victimFigure, petResult, null, 0, false, false, true);
+                        applyDamageToFigure(attackerState, attacker, targetEntity, victimState, victimFigure, petResult, null, 0, false, false, true,
+                                accessoryReactionId, false);
                         attackerState.setInternalCooldown("pet_fire_2", TeenyBalance.PET_FIRE_COOLDOWN);
                     }
                 }
@@ -791,7 +806,8 @@ public class AbilityExecutor {
                         DamageResult reflectResult = new DamageResult(reflectedBase);
                         reflectResult.canCrit = true;
                         if (targetEntity instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§d§lREFLECTED! §fDealt " + reflectedBase + " back!"));
-                        applyDamageToFigure(victimState, targetEntity, attacker, attackerState, attackerFig, reflectResult, null, 0, false, true, false);
+                        applyDamageToFigure(victimState, targetEntity, attacker, attackerState, attackerFig, reflectResult, null, 0, false, true, false,
+                                accessoryReactionId, false);
                     }
                 }
 
@@ -810,7 +826,8 @@ public class AbilityExecutor {
                             DamageResult reflectResult = new DamageResult(reflectedBase);
                             reflectResult.canCrit = true;
                             if (targetEntity instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§b§lREFLECTED! §fDealt " + reflectedBase + " back!"));
-                            applyDamageToFigure(victimState, targetEntity, attacker, attackerState, attackerFig, reflectResult, null, 0, false, true, false);
+                            applyDamageToFigure(victimState, targetEntity, attacker, attackerState, attackerFig, reflectResult, null, 0, false, true, false,
+                                    accessoryReactionId, false);
                             victimState.removeEffect("reflect");
                         }
                     }

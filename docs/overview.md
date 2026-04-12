@@ -46,6 +46,7 @@ The player-facing loop is:
   - [content/figures.md](content/figures.md)
   - [content/attributes.md](content/attributes.md)
   - [content/abilities.md](content/abilities.md)
+  - [content/traits.md](content/traits.md)
   - [content/effects.md](content/effects.md)
   - [content/accessories.md](content/accessories.md)
   - [content/chips.md](content/chips.md)
