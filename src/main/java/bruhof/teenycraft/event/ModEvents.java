@@ -2,6 +2,9 @@ package bruhof.teenycraft.event;
 
 import bruhof.teenycraft.TeenyCraft;
 import bruhof.teenycraft.capability.ITitanManager;
+import bruhof.teenycraft.capability.ITeenyCoins;
+import bruhof.teenycraft.capability.BattleState;
+import bruhof.teenycraft.capability.TeenyCoinsProvider;
 import bruhof.teenycraft.capability.TitanManagerProvider;
 import bruhof.teenycraft.capability.BattleStateProvider;
 import bruhof.teenycraft.capability.IBattleState;
@@ -21,6 +24,7 @@ import bruhof.teenycraft.world.dimension.ModDimensions;
 import net.minecraft.resources.ResourceLocation;
 import bruhof.teenycraft.networking.ModMessages;
 import bruhof.teenycraft.networking.PacketSyncTitanData;
+import bruhof.teenycraft.networking.PacketSyncTeenyCoins;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -52,6 +56,9 @@ public class ModEvents {
             if (!event.getObject().getCapability(TitanManagerProvider.TITAN_MANAGER).isPresent()) {
                 event.addCapability(new ResourceLocation(TeenyCraft.MOD_ID, "titan_manager"), new TitanManagerProvider());
             }
+            if (!event.getObject().getCapability(TeenyCoinsProvider.TEENY_COINS).isPresent()) {
+                event.addCapability(new ResourceLocation(TeenyCraft.MOD_ID, "teeny_coins"), new TeenyCoinsProvider());
+            }
         }
         
         if (event.getObject() instanceof LivingEntity) {
@@ -73,6 +80,12 @@ public class ModEvents {
             });
         });
 
+        event.getOriginal().getCapability(TeenyCoinsProvider.TEENY_COINS).ifPresent(oldStore -> {
+            event.getEntity().getCapability(TeenyCoinsProvider.TEENY_COINS).ifPresent(newStore -> {
+                newStore.copyFrom(oldStore);
+            });
+        });
+
         if (event.isWasDeath()) {
             event.getOriginal().invalidateCaps();
         }
@@ -86,6 +99,7 @@ public class ModEvents {
                 handler.saveNBTData(nbt);
                 ModMessages.sendToPlayer(new PacketSyncTitanData(nbt), player);
             });
+            syncTeenyCoins(player);
         }
     }
 
@@ -103,6 +117,7 @@ public class ModEvents {
                 handler.saveNBTData(nbt);
                 ModMessages.sendToPlayer(new PacketSyncTitanData(nbt), player);
             });
+            syncTeenyCoins(player);
         }
     }
 
@@ -114,7 +129,14 @@ public class ModEvents {
                 handler.saveNBTData(nbt);
                 ModMessages.sendToPlayer(new PacketSyncTitanData(nbt), player);
             });
+            syncTeenyCoins(player);
         }
+    }
+
+    private static void syncTeenyCoins(ServerPlayer player) {
+        player.getCapability(TeenyCoinsProvider.TEENY_COINS).ifPresent(handler -> {
+            ModMessages.sendToPlayer(new PacketSyncTeenyCoins(handler.getCoins()), player);
+        });
     }
 
     @SubscribeEvent
@@ -122,6 +144,9 @@ public class ModEvents {
         LivingEntity entity = event.getEntity();
         if (!entity.level().isClientSide) {
             entity.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(state -> {
+                if (state instanceof BattleState battleState) {
+                    battleState.setOwnerEntity(entity);
+                }
                 boolean wasCharging = state.isCharging();
                 state.tick();
 
@@ -280,6 +305,7 @@ public class ModEvents {
         @SubscribeEvent
         public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
             event.register(ITitanManager.class);
+            event.register(ITeenyCoins.class);
             event.register(IBattleState.class);
         }
 

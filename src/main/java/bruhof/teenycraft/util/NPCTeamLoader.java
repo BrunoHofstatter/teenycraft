@@ -48,6 +48,13 @@ public class NPCTeamLoader extends SimplePreparableReloadListener<Map<String, Li
                     if (figJson.has("golden_abilities")) {
                         figJson.getAsJsonArray("golden_abilities").forEach(e -> data.goldenAbilities.add(e.getAsString()));
                     }
+
+                    if (figJson.has("chip_id")) {
+                        data.chipId = figJson.get("chip_id").getAsString();
+                    }
+                    if (figJson.has("chip_rank")) {
+                        data.chipRank = figJson.get("chip_rank").getAsInt();
+                    }
                     
                     figures.add(data);
                 }

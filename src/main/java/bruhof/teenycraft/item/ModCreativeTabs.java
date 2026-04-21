@@ -1,6 +1,7 @@
 package bruhof.teenycraft.item;
 
 import bruhof.teenycraft.TeenyCraft;
+import bruhof.teenycraft.item.custom.ItemChip;
 import bruhof.teenycraft.util.FigureLoader;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -28,6 +29,7 @@ public class ModCreativeTabs {
                         
                         // Also add base items for reference
                         pOutput.accept(ModItems.TITAN_PAD.get());
+                        pOutput.accept(ModItems.CHIP_FUSER.get());
                         pOutput.accept(ModItems.ROBIN.get());
                         pOutput.accept(ModItems.CYBORG.get());
                         pOutput.accept(ModItems.RAVEN.get());
@@ -56,6 +58,18 @@ public class ModCreativeTabs {
                         pOutput.accept(ModItems.ACCESSORY_BIRDARANG.get());
                         pOutput.accept(ModItems.ACCESSORY_SUPERMANS_UNDERPANTS.get());
                         pOutput.accept(ModItems.ACCESSORY_KRYPTO_THE_SUPERDOG.get());
+
+                        pOutput.accept(ItemChip.createStack(ModItems.CHIP_TOUGH_GUY.get(), 1));
+                        pOutput.accept(ItemChip.createStack(ModItems.CHIP_SMOKESCREEN.get(), 1));
+                        pOutput.accept(ItemChip.createStack(ModItems.CHIP_TOUGH_SMOKESCREEN.get(), 1));
+                        pOutput.accept(ItemChip.createStack(ModItems.CHIP_LUCKY_HEARTS.get(), 1));
+                        pOutput.accept(ItemChip.createStack(ModItems.CHIP_INSTA_CAST_CHANCE.get(), 1));
+                        pOutput.accept(ItemChip.createStack(ModItems.CHIP_DANCE_ENTRY.get(), 1));
+                        pOutput.accept(ItemChip.createStack(ModItems.CHIP_MANA_BOOST.get(), 1));
+                        pOutput.accept(ItemChip.createStack(ModItems.CHIP_DEATH_ENERGY.get(), 1));
+                        pOutput.accept(ItemChip.createStack(ModItems.CHIP_SELF_EXPLOSION.get(), 1));
+                        pOutput.accept(ItemChip.createStack(ModItems.CHIP_NECROMANCER.get(), 1));
+                        pOutput.accept(ItemChip.createStack(ModItems.CHIP_VAMPIRE.get(), 1));
 
                         pOutput.accept(ModItems.TOFU.get());
                     })

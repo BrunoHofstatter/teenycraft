@@ -45,7 +45,7 @@ When a fresh figure is created, `ItemFigure.initializeFigure` writes the long-te
 Implemented persistent fields:
 
 - Identity: figure id, display name, description, class, groups, and price
-- Progression: level, XP, and `LastUpgrade`
+- Progression: level, XP, `PendingUpgradePoints`, and `LastUpgrade`
 - Stats: health, power, dodge, and luck inside a nested `Stats` tag
 - Abilities: the figure's ability pool, current ability order, and per-slot cost tiers
 - Golden progression: a compound mapping ability id to a `0.0` to `1.0` progress value
@@ -56,6 +56,10 @@ Important current behavior:
 - Fresh figures start at level 1 with 0 XP.
 - The default nickname is written, but runtime battle code still reads the base figure name rather than a separate editable nickname field.
 - `resetToFactory` rebuilds the figure from the JSON default for that figure id.
+- Right-clicking a held figure outside battle now opens the dedicated figure screen.
+- The figure screen exposes stat inspection, pending level-up choices, chip installation, and ability reorder.
+- The figure screen now shows class beside the figure name and uses hover tooltips for longer ability descriptions.
+- Installing a new chip from the figure screen destroys the previously installed chip.
 
 ## Base Stats From JSON
 Figure JSON does not store final battle stats directly. It stores stat scales under `attributes`.
@@ -82,6 +86,9 @@ Current rules:
 - Reordering is persistent and battle uses the reordered list.
 - Slot order changes do not delete abilities. Missing entries are appended back to the end.
 - Cost tiers come from figure JSON and are read when calculating mana cost and preview damage.
+- The figure screen only allows reorder once the figure reaches level `7`.
+- Reorder is charged as a single `250` Teeny Coin confirmation, not per slot swap.
+- The figure screen shows ability icons in the reorder list and keeps longer move descriptions in hover tooltips instead of inline row text.
 
 ## Golden Ability State
 Golden is currently tracked per ability, not as a whole-figure rarity flag.
@@ -133,4 +140,4 @@ The original `ItemStack` is still kept on the `BattleFigure`, so battle systems 
 ## Planned Additions
 - add a dedicated figure JSON schema reference if the content library grows
 - document collectible acquisition once the drop or shop loop is more stable
-- expand the progression cross-links once normal XP, upgrade choice, and golden earning flows are implemented
+- expand the progression cross-links once normal battle XP rewards and golden earning flows are implemented

@@ -1,7 +1,12 @@
 package bruhof.teenycraft.util;
 
+import bruhof.teenycraft.TeenyCraft;
+import bruhof.teenycraft.item.custom.ItemChip;
 import bruhof.teenycraft.item.custom.ItemFigure;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +19,8 @@ public class NPCFigureBuilder {
         public String upgrades = "";
         public List<Integer> abilityOrder = new ArrayList<>(); // Indices 0, 1, 2
         public List<String> goldenAbilities = new ArrayList<>(); // Ability IDs
+        public String chipId = "";
+        public int chipRank = 1;
     }
 
     public static ItemStack build(NPCFigureData data) {
@@ -46,6 +53,13 @@ public class NPCFigureBuilder {
         if (data.goldenAbilities != null) {
             for (String abilityId : data.goldenAbilities) {
                 ItemFigure.setGoldenProgress(stack, abilityId, 1.0f);
+            }
+        }
+
+        if (data.chipId != null && !data.chipId.isBlank()) {
+            Item chipItem = ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(TeenyCraft.MOD_ID + ":chip_" + data.chipId));
+            if (chipItem instanceof ItemChip) {
+                ItemFigure.installChip(stack, ItemChip.createStack(chipItem, data.chipRank));
             }
         }
 

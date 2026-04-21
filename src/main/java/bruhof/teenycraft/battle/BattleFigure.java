@@ -1,6 +1,7 @@
 package bruhof.teenycraft.battle;
 
 import bruhof.teenycraft.TeenyBalance;
+import bruhof.teenycraft.chip.ChipExecutor;
 import bruhof.teenycraft.item.custom.ItemFigure;
 import net.minecraft.world.item.ItemStack;
 
@@ -16,6 +17,7 @@ public class BattleFigure {
 
     // Identity
     private final ItemStack originalStack; // Keep reference to write back XP later
+    private final ItemStack equippedChip;
     private final String figureId;
     private final String nickname;
 
@@ -29,6 +31,7 @@ public class BattleFigure {
     private int currentHp;
     private int accessoryMaxHpBonus = 0;
     private final int[] abilityCooldowns = new int[3]; // Slots 0, 1, 2
+    private boolean appearedThisBattle = false;
     
     // Shuffle Bags
     private final bruhof.teenycraft.util.ShuffleBag dodgeBag;
@@ -36,14 +39,15 @@ public class BattleFigure {
 
     public BattleFigure(ItemStack stack) {
         this.originalStack = stack;
+        this.equippedChip = ItemFigure.getEquippedChip(stack).copy();
         this.figureId = ItemFigure.getFigureID(stack);
         this.nickname = ItemFigure.getFigureName(stack); // Todo: Get actual nickname if implemented
 
-        // Snapshot Stats
-        this.maxHp = ItemFigure.getHealth(stack);
-        this.power = ItemFigure.getPower(stack);
-        this.dodge = ItemFigure.getDodge(stack);
-        this.luck = ItemFigure.getLuck(stack);
+        ChipExecutor.ResolvedBattleStats resolvedStats = ChipExecutor.resolveBattleStats(stack);
+        this.maxHp = resolvedStats.maxHp;
+        this.power = resolvedStats.power;
+        this.dodge = resolvedStats.dodge;
+        this.luck = resolvedStats.luck;
         
         // Initialize Bags
         int dodgeDeck = TeenyBalance.getBagSize(this.dodge);
@@ -74,6 +78,7 @@ public class BattleFigure {
     // ==========================================
 
     public ItemStack getOriginalStack() { return originalStack; }
+    public ItemStack getEquippedChip() { return equippedChip; }
     public String getFigureId() { return figureId; }
     public String getNickname() { return nickname; }
 
@@ -142,6 +147,18 @@ public class BattleFigure {
         if (slotIndex >= 0 && slotIndex < 3) {
             this.abilityCooldowns[slotIndex] = ticks;
         }
+    }
+
+    public boolean markAppearedThisBattle() {
+        if (appearedThisBattle) {
+            return false;
+        }
+        appearedThisBattle = true;
+        return true;
+    }
+
+    public boolean hasAppearedThisBattle() {
+        return appearedThisBattle;
     }
     
     // ==========================================

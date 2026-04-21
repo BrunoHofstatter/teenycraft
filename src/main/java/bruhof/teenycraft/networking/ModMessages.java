@@ -32,28 +32,22 @@ public class ModMessages {
                 .consumerMainThread(PacketSyncTitanData::handle)
                 .add();
 
-        net.messageBuilder(PacketChangeBox.class, id(), NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketChangeBox::new)
-                .encoder(PacketChangeBox::toBytes)
-                .consumerMainThread(PacketChangeBox::handle)
+        net.messageBuilder(PacketSyncTeenyCoins.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(PacketSyncTeenyCoins::new)
+                .encoder(PacketSyncTeenyCoins::toBytes)
+                .consumerMainThread(PacketSyncTeenyCoins::handle)
                 .add();
 
-        net.messageBuilder(PacketSearchTitanManager.class, id(), NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketSearchTitanManager::new)
-                .encoder(PacketSearchTitanManager::toBytes)
-                .consumerMainThread(PacketSearchTitanManager::handle)
+        net.messageBuilder(PacketTitanManagerAction.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(PacketTitanManagerAction::new)
+                .encoder(PacketTitanManagerAction::toBytes)
+                .consumerMainThread(PacketTitanManagerAction::handle)
                 .add();
 
-        net.messageBuilder(PacketSyncSearchResults.class, id(), NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(PacketSyncSearchResults::new)
-                .encoder(PacketSyncSearchResults::toBytes)
-                .consumerMainThread(PacketSyncSearchResults::handle)
-                .add();
-
-        net.messageBuilder(PacketSortTitanManager.class, id(), NetworkDirection.PLAY_TO_SERVER)
-                .decoder(PacketSortTitanManager::new)
-                .encoder(PacketSortTitanManager::toBytes)
-                .consumerMainThread(PacketSortTitanManager::handle)
+        net.messageBuilder(PacketSyncTitanManagerView.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(PacketSyncTitanManagerView::new)
+                .encoder(PacketSyncTitanManagerView::toBytes)
+                .consumerMainThread(PacketSyncTitanManagerView::handle)
                 .add();
 
         net.messageBuilder(PacketSyncBattleData.class, id(), NetworkDirection.PLAY_TO_CLIENT)

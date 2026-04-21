@@ -17,6 +17,11 @@ public class ModMenuTypes {
     public static final RegistryObject<MenuType<TitanManagerMenu>> TITAN_MANAGER_MENU =
             registerMenuType("titan_manager_menu", TitanManagerMenu::new);
 
+    public static final RegistryObject<MenuType<ChipFuserMenu>> CHIP_FUSER_MENU =
+            registerMenuType("chip_fuser_menu", ChipFuserMenu::new);
+
+    public static final RegistryObject<MenuType<FigureScreenMenu>> FIGURE_SCREEN_MENU =
+            registerMenuType("figure_screen_menu", FigureScreenMenu::new);
 
     private static <T extends AbstractContainerMenu> RegistryObject<MenuType<T>> registerMenuType(String name, IContainerFactory<T> factory) {
         return MENUS.register(name, () -> IForgeMenuType.create(factory));

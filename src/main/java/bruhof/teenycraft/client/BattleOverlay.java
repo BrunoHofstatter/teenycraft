@@ -65,7 +65,7 @@ public class BattleOverlay implements IGuiOverlay {
         if (!isEnemy) {
             var titanCap = mc.player.getCapability(TitanManagerProvider.TITAN_MANAGER).resolve();
             if (titanCap.isPresent()) {
-                activeStack = titanCap.get().getInventory().getStackInSlot(activeIdx);
+                activeStack = titanCap.get().getTeamStack(activeIdx);
             }
         } else {
             activeStack = createTempFigureStack(activeId);
@@ -228,7 +228,7 @@ public class BattleOverlay implements IGuiOverlay {
             if (!isEnemy) {
                 var titanCap = mc.player.getCapability(TitanManagerProvider.TITAN_MANAGER).resolve();
                 if (titanCap.isPresent()) {
-                    bStack = titanCap.get().getInventory().getStackInSlot(benchIndices.get(i));
+                    bStack = titanCap.get().getTeamStack(benchIndices.get(i));
                 }
             } else if (i < benchIds.size()) {
                 bStack = createTempFigureStack(benchIds.get(i));

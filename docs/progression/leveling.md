@@ -4,11 +4,12 @@
 Document the figure growth loop and related upgrade/mastery systems.
 
 ## Current Status
-Figure items already store level, XP, upgrades, and golden ability state. However, the full player-facing progression loop is only partially implemented. The underlying data model exists, but battle rewards, level-up choice flow, and golden earning are not fully wired into a normal gameplay path yet.
+Figure items now have an implemented player-facing level-up choice flow through the figure screen. XP rewards from normal battles are still not wired into the live PvE loop yet, but the item-side progression path, pending stat choices, and debug command support are in place.
 
 ## Player-Facing Behavior
 - Figures have a persistent level and XP value on the item.
-- Figures can be leveled, upgraded, reordered, and marked golden through current helper code such as commands and NPC team builders.
+- Figures can bank XP across multiple level-ups and spend pending upgrade points later in the figure screen.
+- Figures can be leveled, upgraded, reordered, and marked golden through current helper code such as commands, the figure screen, and NPC team builders.
 - Upgrades permanently increase the figure's stored stats.
 - Golden state is tracked per ability and changes battle behavior when active.
 
@@ -29,18 +30,24 @@ Figure items already store level, XP, upgrades, and golden ability state. Howeve
 ## Implemented Now
 - Level is clamped between 1 and `MAX_LEVEL`.
 - `setLevel` resets the figure's XP to 0.
-- `addXp` uses a simple `currentLevel * 100` threshold.
-- `addXp` only processes one level-up per call.
+- `addXp` reads XP thresholds from `TeenyBalance.FIGURE_XP_REQUIRED_BY_LEVEL`.
+- `addXp` can process multiple level-ups in one call.
 - Reaching max level blocks additional XP gain.
-- Leveling up does not automatically add stat points.
+- Leveling up grants `PendingUpgradePoints` instead of automatically changing stats.
+- The figure screen opens by right-clicking a held figure outside battle.
+- Pending upgrades are spent manually in the figure screen on `Health`, `Power`, `Dodge`, or `Luck`.
+- The previously chosen stat is blocked for the next pending upgrade choice by `LastUpgrade`.
+- Ability reorder is now part of the figure screen and costs `250` Teeny Coins per confirmed reorder.
+- Ability reorder requires figure level `7`.
+- Ability descriptions are now shown in figure-screen hover tooltips instead of inline ability rows.
 - `applyUpgrades` directly increases HP, Power, Dodge, or Luck using the `H`, `P`, `D`, and `L` code letters.
 - `LastUpgrade` is stored on the item when upgrades are applied.
 - NPC team data can spawn figures with predefined level, upgrades, ability order, and golden abilities.
 
 ## Not Fully Wired Yet
 - I did not find battle victory code that writes XP back into player figures.
-- The level-up GUI and player choice flow mentioned in code comments are not part of the normal implemented runtime yet.
 - Golden progress can be stored and read, but the normal loop for earning that progress is not yet documented in code as a complete system.
+- Ability descriptions and golden descriptions are now supported in ability JSON, but the current content library may still use screen fallbacks until those fields are authored per move.
 
 ## Open Questions
 - what the normal post-battle XP reward flow should be
@@ -48,6 +55,6 @@ Figure items already store level, XP, upgrades, and golden ability state. Howeve
 - what the intended distinction is between "golden", "mastery", and any future duplicate-figure progression loop
 
 ## Planned Additions
-- replace the placeholder XP curve if progression moves beyond `level * 100`
-- document the final upgrade-choice UI once implemented
+- tune or expand the XP curve array if the level cap changes
+- wire battle reward XP into the normal player loop
 - document the final golden earning loop once it exists outside commands and NPC presets

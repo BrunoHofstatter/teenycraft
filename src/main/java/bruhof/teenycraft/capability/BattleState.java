@@ -6,13 +6,13 @@ import bruhof.teenycraft.accessory.AccessorySpec;
 import bruhof.teenycraft.battle.effect.EffectInstance;
 import bruhof.teenycraft.battle.effect.EffectRegistry;
 import bruhof.teenycraft.battle.BattleFigure;
+import bruhof.teenycraft.chip.ChipExecutor;
 import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.entity.custom.EntityTeenyDummy;
 import bruhof.teenycraft.item.ModItems;
 import bruhof.teenycraft.item.custom.ItemAccessory;
 import bruhof.teenycraft.item.custom.ItemFigure;
-import bruhof.teenycraft.networking.ModMessages;
-import bruhof.teenycraft.networking.PacketSyncBattleData;
+import bruhof.teenycraft.world.arena.ArenaBattleManager;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 
 public class BattleState implements IBattleState {
@@ -46,6 +46,7 @@ public class BattleState implements IBattleState {
     private int swapCooldown = 0;
     private int lockedSlot = -1;
     private ServerPlayer player;
+    private LivingEntity ownerEntity;
     
     // Participant State
     private float currentMana = 0;
@@ -64,6 +65,13 @@ public class BattleState implements IBattleState {
     private final int[] slotProgress = new int[3];
 
     public ServerPlayer getPlayer() { return this.player; }
+
+    public void setOwnerEntity(LivingEntity ownerEntity) {
+        this.ownerEntity = ownerEntity;
+        if (ownerEntity instanceof ServerPlayer serverPlayer) {
+            this.player = serverPlayer;
+        }
+    }
 
     // Charge Up Data
     private int chargeTicks = 0;
@@ -109,6 +117,7 @@ public class BattleState implements IBattleState {
     @Override
     public void initializeBattle(List<ItemStack> teamStacks, ServerPlayer player) {
         this.player = player;
+        this.ownerEntity = player;
         this.team.clear();
         for (ItemStack stack : teamStacks) {
             if (!stack.isEmpty()) {
@@ -132,6 +141,10 @@ public class BattleState implements IBattleState {
         this.battleWon = false;
         this.victoryTimer = 0;
         this.winnerPlayer = null;
+
+        if (!this.team.isEmpty()) {
+            activateFigureInternal(0);
+        }
     }
 
     @Override
@@ -149,8 +162,7 @@ public class BattleState implements IBattleState {
     @Override
     public void setActiveFigure(int index) {
         if (index >= 0 && index < team.size()) {
-            this.activeFigureIndex = index;
-            onActiveFigureChanged();
+            activateFigureInternal(index);
         }
     }
 
@@ -187,8 +199,7 @@ public class BattleState implements IBattleState {
             removeEffect("flight");
         }
 
-        this.activeFigureIndex = newIndex;
-        onActiveFigureChanged();
+        activateFigureInternal(newIndex);
         this.swapCooldown = TeenyBalance.SWAP_COOLDOWN * 20;
 
         BattleFigure newActive = getActiveFigure();
@@ -234,8 +245,7 @@ public class BattleState implements IBattleState {
             }
 
             if (nextIndex != -1) {
-                this.activeFigureIndex = nextIndex;
-                onActiveFigureChanged();
+                activateFigureInternal(nextIndex);
                 this.swapCooldown = TeenyBalance.SWAP_COOLDOWN * 20;
                 if (player != null) {
                     refreshPlayerInventory(player);
@@ -324,22 +334,18 @@ public class BattleState implements IBattleState {
     public void tick() {
         if (!isBattling) return;
         
-        // Victory Timer
-        if (battleWon) {
+        // End-of-battle exit timer
+        if (winnerPlayer != null) {
             if (victoryTimer > 0) {
                 victoryTimer--;
             } else {
-                ServerPlayer playerToTeleport = this.winnerPlayer;
-                endBattle();
-                
-                if (playerToTeleport != null) {
-                    ModMessages.sendToPlayer(PacketSyncBattleData.off(), playerToTeleport);
-                    ServerLevel overworld = playerToTeleport.serverLevel().getServer().getLevel(Level.OVERWORLD);
-                    if (overworld != null) {
-                        playerToTeleport.teleportTo(overworld, playerToTeleport.getX(), playerToTeleport.getY(), playerToTeleport.getZ(), Set.of(), playerToTeleport.getYRot(), playerToTeleport.getXRot());
-                    }
+                ServerPlayer playerToExit = this.winnerPlayer;
+                if (playerToExit != null) {
+                    ArenaBattleManager.finishBattleForPlayer(playerToExit);
+                } else {
+                    endBattle();
                 }
-                return; 
+                return;
             }
         }
 
@@ -365,13 +371,13 @@ public class BattleState implements IBattleState {
             }
         }
 
-        AccessorySpec equippedAccessory = getEquippedAccessorySpec();
-        if (accessoryActive && (equippedAccessory == null || !equippedAccessory.getId().equals(activeAccessoryId))) {
+        Optional<AccessorySpec> equippedAccessory = getEquippedAccessorySpec();
+        if (accessoryActive && (equippedAccessory.isEmpty() || !equippedAccessory.get().getId().equals(activeAccessoryId))) {
             deactivateAccessory();
         }
-        if (accessoryActive && equippedAccessory != null) {
+        if (accessoryActive && equippedAccessory.isPresent()) {
             accessoryActiveTicks++;
-            AccessoryExecutor.onTick(this, player, equippedAccessory, accessoryActiveTicks);
+            AccessoryExecutor.onTick(this, player, equippedAccessory.get(), accessoryActiveTicks);
             addBatteryCharge(-TeenyBalance.ACCESSORY_DRAIN_PER_TICK);
             if (batteryCharge <= 0) {
                 deactivateAccessory();
@@ -450,9 +456,6 @@ public class BattleState implements IBattleState {
 
         if (nextIndex != -1) {
             // SWAP CASE (Round Reset)
-            this.activeFigureIndex = nextIndex;
-            BattleFigure newActive = getActiveFigure();
-            
             // 1. Clear all effects (Fresh start)
             entity.removeEffect(net.minecraft.world.effect.MobEffects.LEVITATION);
             entity.removeEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);
@@ -460,6 +463,9 @@ public class BattleState implements IBattleState {
             
             // 2. Apply Reset Lock to self
             applyEffect("reset_lock", TeenyBalance.DEATH_SWAP_RESET_TICKS, 1);
+
+            activateFigureInternal(nextIndex);
+            BattleFigure newActive = getActiveFigure();
             
             // 3. Visuals for self
             if (entity instanceof EntityTeenyDummy dummy) {
@@ -564,15 +570,15 @@ public class BattleState implements IBattleState {
 
     @Override
     public boolean tryActivateAccessory() {
-        AccessorySpec equippedAccessory = getEquippedAccessorySpec();
-        if (equippedAccessory == null || accessoryActive) {
+        Optional<AccessorySpec> equippedAccessory = getEquippedAccessorySpec();
+        if (equippedAccessory.isEmpty() || accessoryActive) {
             return false;
         }
         if (batteryCharge < TeenyBalance.ACCESSORY_ACTIVATION_MIN_CHARGE) {
             return false;
         }
 
-        activateAccessory(equippedAccessory);
+        activateAccessory(equippedAccessory.get());
         return true;
     }
 
@@ -1017,6 +1023,9 @@ public class BattleState implements IBattleState {
         this.isBattling = false;
         this.team.clear();
         this.activeFigureIndex = 0;
+        this.ownerEntity = null;
+        this.swapCooldown = 0;
+        this.lockedSlot = -1;
         
         if (this.player != null) {
             updatePlayerSpeed(this.player);
@@ -1025,24 +1034,34 @@ public class BattleState implements IBattleState {
         this.currentMana = 0;
         this.currentTofuMana = 0;
         this.activeEffects.clear();
+        this.internalCooldowns.clear();
+        java.util.Arrays.fill(this.slotProgress, 0);
         
         this.batteryCharge = 0;
         this.batterySpawnPct = -1.0f;
         this.batterySpawnTimer = TeenyBalance.BATTERY_SPAWN_MIN_TICKS;
+        this.pendingProjectiles.clear();
+        cancelCharge();
+        cancelBlueChannel();
+        this.battleWon = false;
+        this.victoryTimer = 0;
+        this.winnerPlayer = null;
         deactivateAccessory();
     }
 
-    private AccessorySpec getEquippedAccessorySpec() {
-        if (player == null) return null;
+    private Optional<AccessorySpec> getEquippedAccessorySpec() {
+        if (player == null) return Optional.empty();
+
         return player.getCapability(TitanManagerProvider.TITAN_MANAGER)
-                .map(manager -> AccessoryRegistry.get(manager.getInventory().getStackInSlot(TitanManager.SLOT_ACCESSORY)))
-                .orElse(null);
+                .resolve()
+                .map(ITitanManager::getEquippedAccessory)
+                .flatMap(stack -> Optional.ofNullable(AccessoryRegistry.get(stack)));
     }
 
     private ItemStack getEquippedAccessoryStack() {
         if (player == null) return ItemStack.EMPTY;
         return player.getCapability(TitanManagerProvider.TITAN_MANAGER)
-                .map(manager -> manager.getInventory().getStackInSlot(TitanManager.SLOT_ACCESSORY))
+                .map(ITitanManager::getEquippedAccessory)
                 .orElse(ItemStack.EMPTY);
     }
 
@@ -1076,5 +1095,40 @@ public class BattleState implements IBattleState {
         if (currentSpec != null) {
             AccessoryExecutor.onActiveFigureChanged(this, currentSpec);
         }
+    }
+
+    private void activateFigureInternal(int index) {
+        if (index < 0 || index >= team.size()) {
+            return;
+        }
+
+        this.activeFigureIndex = index;
+        onActiveFigureChanged();
+
+        BattleFigure active = getActiveFigure();
+        if (active != null && active.markAppearedThisBattle()) {
+            LivingEntity opponentEntity = findNearbyOpponentEntity(64.0);
+            IBattleState opponentState = getBattleState(opponentEntity);
+            ChipExecutor.onFirstAppearance(this, ownerEntity, active, opponentState, opponentEntity);
+        }
+    }
+
+    private LivingEntity findNearbyOpponentEntity(double range) {
+        if (ownerEntity == null) {
+            return null;
+        }
+
+        return ownerEntity.level().getEntitiesOfClass(LivingEntity.class, ownerEntity.getBoundingBox().inflate(range),
+                entity -> entity != ownerEntity && entity.getCapability(BattleStateProvider.BATTLE_STATE).isPresent())
+                .stream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    private IBattleState getBattleState(LivingEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return entity.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null);
     }
 }

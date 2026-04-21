@@ -35,10 +35,18 @@ public class TeenyBalance {
     // SECTION 1: FIGURE PROGRESSION
     // ==========================================
     public static final int MAX_LEVEL = 20;
+    public static final int[] FIGURE_XP_REQUIRED_BY_LEVEL = {
+            100, 200, 300, 400, 500,
+            600, 700, 800, 900, 1000,
+            1100, 1200, 1300, 1400, 1500,
+            1600, 1700, 1800, 1900
+    };
     public static final int UPGRADE_GAIN_HP = 20;
     public static final int UPGRADE_GAIN_POWER = 5;
     public static final int UPGRADE_GAIN_DODGE = 8;
     public static final int UPGRADE_GAIN_LUCK = 8;
+    public static final int FIGURE_REORDER_MIN_LEVEL = 7;
+    public static final int FIGURE_REORDER_COST = 250;
 
     // ==========================================
     // SECTION 2: BATTLE CORE
@@ -109,6 +117,42 @@ public class TeenyBalance {
     public static final int ACCESSORY_KRYPTO_POWER_UP = 6;
     public static final int ACCESSORY_KRYPTO_HEAL = 8;
     public static final float ACCESSORY_KRYPTO_TOFU_POWER = 30.0f;
+
+    // Chips
+
+    public static final int[] CHIP_ONE_MAGNITUDE_BY_RANK = {1, 1, 1};
+
+    public static final int[] CHIP_TOUGH_GUY_POWER_BY_RANK = {5, 10, 15};
+    public static final int[] CHIP_TOUGH_GUY_HP_BY_RANK = {-20, -35, -50};
+    public static final int[] CHIP_TOUGH_GUY_FUSION_COST_BY_RANK = {100, 300};
+    public static final int[] CHIP_SMOKESCREEN_DODGE_BY_RANK = {8, 16, 24};
+    public static final int[] CHIP_SMOKESCREEN_FUSION_COST_BY_RANK = {100, 300};
+
+    public static final float CHIP_SPECIAL_TOUGH_SMOKESCREEN_TOUGH_GUY_SCALE = 0.6f;
+    public static final float CHIP_SPECIAL_TOUGH_SMOKESCREEN_SMOKESCREEN_SCALE = 0.6f;
+    public static final int[] CHIP_TOUGH_SMOKESCREEN_FUSION_COST_BY_RANK = {100, 300};
+    public static final int[] CHIP_SPECIAL_TOUGH_SMOKESCREEN_COST_BY_RANK = {50, 100, 300};
+
+    public static final float[] CHIP_LUCKY_HEARTS_HEAL_PCT_BY_RANK = {0.06f, 0.09f, 0.12f};
+    public static final int[] CHIP_LUCKY_HEARTS_FUSION_COST_BY_RANK = {200, 400};
+    public static final float[] CHIP_INSTA_CAST_CHANCE_BY_RANK = {0.12f, 0.18f, 0.24f};
+    public static final int[] CHIP_INSTA_CAST_CHANCE_FUSION_COST_BY_RANK = {300, 600};
+
+    public static final int[] CHIP_DANCE_DURATION_BY_RANK = {100, 130, 160};
+    public static final int[] CHIP_DANCE_ENTRY_FUSION_COST_BY_RANK = {300, 600};
+    public static final int[] CHIP_MANA_BOOST_MANA_BY_RANK = {30, 40, 50};
+    public static final int[] CHIP_MANA_BOOST_FUSION_COST_BY_RANK = {400, 800};
+
+    public static final int[] CHIP_DEATH_ENERGY_BATTERY_BY_RANK = {30, 50, 70};
+    public static final int[] CHIP_DEATH_ENERGY_FUSION_COST_BY_RANK = {1000, 2000};
+    public static final int[] CHIP_SELF_EXPLOSION_DAMAGE_BY_RANK = {20, 30, 40};
+    public static final int[] CHIP_SELF_EXPLOSION_FUSION_COST_BY_RANK = {2000, 4000};
+
+    public static final int[] CHIP_NECROMANCER_DURATION_BY_RANK = {120, 160, 200};
+    public static final int[] CHIP_NECROMANCER_DAMAGE_BY_RANK = {5, 7, 9};
+    public static final int[] CHIP_NECROMANCER_FUSION_COST_BY_RANK = {800, 1600};
+    public static final float[] CHIP_VAMPIRE_HEAL_PCT_BY_RANK = {0.20f, 0.30f, 0.40f};
+    public static final int[] CHIP_VAMPIRE_FUSION_COST_BY_RANK = {1500, 3000};
 
     // ==========================================
     // SECTION 3: DAMAGE AND CORE COMBAT RULES
@@ -321,6 +365,19 @@ public class TeenyBalance {
             }
         }
         return SHUFFLE_BAG_SIZES[0];
+    }
+
+    public static int getFigureXpRequired(int currentLevel) {
+        if (currentLevel >= MAX_LEVEL) {
+            return 0;
+        }
+
+        int index = Math.max(0, currentLevel - 1);
+        if (index >= FIGURE_XP_REQUIRED_BY_LEVEL.length) {
+            return FIGURE_XP_REQUIRED_BY_LEVEL[FIGURE_XP_REQUIRED_BY_LEVEL.length - 1];
+        }
+
+        return FIGURE_XP_REQUIRED_BY_LEVEL[index];
     }
 
     private static int getTierLetterIndex(String tier) {

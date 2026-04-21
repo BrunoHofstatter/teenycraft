@@ -7,7 +7,7 @@ Document the Teenyverse dimension, how players are expected to access it, and wh
 - Implemented:
   - The repo registers a `teenyverse` dimension and dimension type.
   - The dimension currently uses a void-like flat generator with no terrain features.
-  - Current debug battle flow can teleport the player into the Teenyverse and create a simple iron platform at the origin.
+  - Current debug battle flow can paste authored arena templates into fixed battle slots in the Teenyverse.
   - Titan Manager inventory save/restore already reacts to entering and leaving the Teenyverse.
 - Not implemented yet:
   - Overworld gateway pods
@@ -17,7 +17,7 @@ Document the Teenyverse dimension, how players are expected to access it, and wh
   - cartridge rewriter flow
   - room protection rules
   - instanced loot chests
-  - a documented fixed room grid beyond the origin debug platform
+  - a documented room grid beyond the current battle-slot layout
 
 ## Player-Facing Behavior
 - Right now, normal player access is not a finished gameplay feature.
@@ -41,8 +41,11 @@ Document the Teenyverse dimension, how players are expected to access it, and wh
 - `teenyverse` is registered under the mod namespace and has its own dimension type.
 - The dimension generator is effectively void-only, with `minecraft:the_void` biome and no configured terrain features.
 - `/teeny battle start` can teleport a player into the Teenyverse if they are not already there.
-- The current debug command creates a small iron platform around `0, 63, 0` before teleporting the player near `0.5, 64, 0.5`.
+- Arena metadata and structure templates are data-driven and can be loaded from JSON and NBT resources.
+- Current debug battle flow chooses a fixed Teenyverse battle slot, clears that slot, pastes the arena template there, and teleports the player to the arena's authored spawn point.
+- The current slot layout is a simple fixed grid of `4` battle slots spaced `256` blocks apart at `y=64`.
 - On dimension change, entering the Teenyverse triggers Titan Manager inventory save logic and leaving it triggers restore logic.
+- If a battle starts while the player is already in the Teenyverse, the current code can still save and restore vanilla inventory for that local battle flow.
 - No general-purpose player travel flow into the Teenyverse is currently exposed through world objects or progression systems.
 
 ## Planned Additions

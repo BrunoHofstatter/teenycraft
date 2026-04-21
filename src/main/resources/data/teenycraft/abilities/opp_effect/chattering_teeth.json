@@ -16,10 +16,7 @@
   ],
   "effects_on_self": [],
   "traits": [
-    {
-      "id": "charge_up",
-      "params": [1.2]
-    }
+    {"id":"charge_up", "params":[1.0]}
   ],
   "golden_bonus": ["opponent:poison:1.3"]
 }

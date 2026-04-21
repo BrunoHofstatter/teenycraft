@@ -27,6 +27,7 @@ import bruhof.teenycraft.accessory.AccessoryExecutor;
 import bruhof.teenycraft.battle.damage.DamagePipeline;
 import bruhof.teenycraft.battle.damage.DamagePipeline.DamageResult;
 import bruhof.teenycraft.battle.effect.EffectApplierRegistry;
+import bruhof.teenycraft.chip.ChipExecutor;
 import bruhof.teenycraft.capability.BattleStateProvider;
 import bruhof.teenycraft.networking.ModMessages;
 import bruhof.teenycraft.networking.PacketSyncBattleData;
@@ -736,6 +737,7 @@ public class AbilityExecutor {
                                           int accessoryReactionId, boolean canTriggerBirdarang) {
         BattleFigure attackerFig = attackerState.getActiveFigure();
         if (victimFigure == null) return 0;
+        int victimHpBeforeHit = victimFigure.getCurrentHp();
         
         // Strip flight if it's group damage
         if (result.isGroupDamage && victimState != null && victimState.hasEffect("flight")) {
@@ -767,6 +769,10 @@ public class AbilityExecutor {
         if (instantDmg > 0) {
             instantDmg = AccessoryExecutor.onIncomingDamage(victimState, targetEntity, victimFigure, attacker, instantDmg, accessoryReactionId, canTriggerBirdarang);
             victimFigure.modifyHp(-instantDmg);
+
+            if (mitigation.isCritical && attackerState != null && attacker != null && attackerFig != null) {
+                ChipExecutor.onCritHit(attackerState, attacker, attackerFig, victimState, targetEntity);
+            }
 
             // --- PETS LOGIC ---
             if (!isPetFire) {
@@ -837,6 +843,16 @@ public class AbilityExecutor {
 
         if (instantDmg > 0 || mitigation.isDodged || mitigation.isBlocked) {
             announceDamage(attacker, targetEntity, victimFigure, mitigation, (data != null) ? data.name : "Attack");
+        }
+
+        boolean victimFaintedFromThisHit = victimHpBeforeHit > 0 && victimFigure.getCurrentHp() <= 0;
+        if (victimFaintedFromThisHit) {
+            if (victimState != null && targetEntity != null) {
+                ChipExecutor.onFaint(victimState, targetEntity, victimFigure, attackerState, attacker);
+            }
+            if (attackerState != null && attacker != null && attackerFig != null) {
+                ChipExecutor.onKill(attackerState, attacker, attackerFig, victimState, targetEntity);
+            }
         }
 
         // Faint Check

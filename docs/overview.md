@@ -15,19 +15,22 @@ The player-facing loop is:
 
 ## Current Status
 ### Implemented or substantially present
-- Titan Manager capability, menu, box/search/sort flow
+- Titan Manager capability, team slots, separate figure/chip/accessory storage tabs, and server-driven search/sort/filter flow
+- Player-attached Teeny Coin currency with Titan Manager display and debug command support
+- First-pass Chip Fuser block/menu/screen for basic duplicate chip rank-up
 - Core figure item data and stat handling
 - Battle state capability on living entities
 - Real-time battle loop with mana, cooldowns, effects, and virtual HP
 - Trait/effect registries
 - JSON loading for figures, abilities, and NPC teams
+- Starter chip runtime with item-backed figure installation and NPC chip support
 - Client overlay and debug/dev commands
 - Teenyverse dimension registration foundation
 
 ### Planned or still evolving
 - Broader worldgen/room ecosystem
 - Progression loops beyond the current battle foundation
-- Shops, accessories, chips, and content expansion
+- Shops, accessories, special chip fusion expansion, and content expansion
 - More complete quest/travel/world progression structure
 
 ## Documentation Rules

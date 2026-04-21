@@ -4,15 +4,23 @@
 Collect the design and implementation notes for currency sinks, figure acquisition, and vendor behavior.
 
 ## Current Status
-Economy and shop behavior are part of the game vision, but this doc should be treated as mixed implemented/planned territory until each loop is tied to code.
+Economy and shop behavior are still mostly planned, but the base player currency layer now exists.
 
 ## Player-Facing Behavior
-- Players earn currency through battle performance and collection management.
+- Players now have a persistent Teeny Coin balance stored on the player, not as inventory items.
+- The current Titan Manager screen shows that balance in the top-right corner.
+- `/teeny coins <amount>` adds or subtracts from the player's balance for debug and setup.
+- The current Chip Fuser screen also reads that player-stored balance and shows a fusion cost placeholder.
 - Shops provide controlled access to figures, mystery boxes, and other progression items.
 - Duplicate figures may feed both economy and progression systems.
 
 ## Source Of Truth
-- Add runtime file references here as shop and economy systems become concrete.
+- [`src/main/java/bruhof/teenycraft/capability/ITeenyCoins.java`](../../src/main/java/bruhof/teenycraft/capability/ITeenyCoins.java)
+- [`src/main/java/bruhof/teenycraft/capability/TeenyCoins.java`](../../src/main/java/bruhof/teenycraft/capability/TeenyCoins.java)
+- [`src/main/java/bruhof/teenycraft/capability/TeenyCoinsProvider.java`](../../src/main/java/bruhof/teenycraft/capability/TeenyCoinsProvider.java)
+- [`src/main/java/bruhof/teenycraft/networking/PacketSyncTeenyCoins.java`](../../src/main/java/bruhof/teenycraft/networking/PacketSyncTeenyCoins.java)
+- [`src/main/java/bruhof/teenycraft/screen/TitanManagerScreen.java`](../../src/main/java/bruhof/teenycraft/screen/TitanManagerScreen.java)
+- [`src/main/java/bruhof/teenycraft/command/CommandTeeny.java`](../../src/main/java/bruhof/teenycraft/command/CommandTeeny.java)
 - Related acquisition content currently overlaps with figure items, loaders, and future NPC/world systems.
 
 ## Design Notes
@@ -21,9 +29,9 @@ Economy and shop behavior are part of the game vision, but this doc should be tr
 - Selling duplicates should not undermine other progression sinks such as sacrifice, crafting, or mastery.
 
 ## Open Questions
-- exact currency item/data format
 - current versus planned shop implementation scope
 - pricing model and refresh logic
+- player-to-player transfer flow if coins should ever be tradeable directly
 
 ## Planned Additions
 - vendor catalog

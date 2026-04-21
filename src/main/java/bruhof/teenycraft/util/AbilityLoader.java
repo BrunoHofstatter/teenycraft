@@ -24,6 +24,8 @@ public class AbilityLoader extends SimplePreparableReloadListener<Map<String, Ab
     public static class AbilityData {
         public String id;
         public String name;
+        public String description = "";
+        public String goldenDescription = "";
         public String hitType;
         public int raycastDelayTier;
         public int damageTier;
@@ -59,6 +61,8 @@ public class AbilityLoader extends SimplePreparableReloadListener<Map<String, Ab
                 AbilityData data = new AbilityData();
                 data.id = json.get("id").getAsString();
                 data.name = json.has("name") ? json.get("name").getAsString() : data.id;
+                data.description = json.has("description") ? json.get("description").getAsString() : "";
+                data.goldenDescription = json.has("golden_description") ? json.get("golden_description").getAsString() : "";
                 data.hitType = json.get("hit_type").getAsString();
                 data.raycastDelayTier = json.has("raycast_delay_tier") ? json.get("raycast_delay_tier").getAsInt() : 0;
                 data.damageTier = json.get("damage_tier").getAsInt();

@@ -19,6 +19,8 @@ public class TeenyCraft {
     public TeenyCraft() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
+        bruhof.teenycraft.block.ModBlocks.register(modEventBus);
+        bruhof.teenycraft.block.entity.ModBlockEntities.register(modEventBus);
         ModItems.register(modEventBus);
         bruhof.teenycraft.item.ModCreativeTabs.register(modEventBus);
         bruhof.teenycraft.networking.ModMessages.register();
@@ -29,6 +31,7 @@ public class TeenyCraft {
         bruhof.teenycraft.battle.effect.EffectRegistry.init();
         bruhof.teenycraft.battle.effect.EffectApplierRegistry.init();
         bruhof.teenycraft.battle.trait.TraitRegistry.init();
+        bruhof.teenycraft.chip.ChipRegistry.init();
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::clientSetup);
@@ -45,6 +48,8 @@ public class TeenyCraft {
     private void clientSetup(final net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             net.minecraft.client.gui.screens.MenuScreens.register(bruhof.teenycraft.screen.ModMenuTypes.TITAN_MANAGER_MENU.get(), bruhof.teenycraft.screen.TitanManagerScreen::new);
+            net.minecraft.client.gui.screens.MenuScreens.register(bruhof.teenycraft.screen.ModMenuTypes.CHIP_FUSER_MENU.get(), bruhof.teenycraft.screen.ChipFuserScreen::new);
+            net.minecraft.client.gui.screens.MenuScreens.register(bruhof.teenycraft.screen.ModMenuTypes.FIGURE_SCREEN_MENU.get(), bruhof.teenycraft.screen.FigureScreen::new);
         });
     }
 
@@ -52,5 +57,6 @@ public class TeenyCraft {
         event.addListener(new bruhof.teenycraft.util.FigureLoader());
         event.addListener(new bruhof.teenycraft.util.AbilityLoader());
         event.addListener(new bruhof.teenycraft.util.NPCTeamLoader());
+        event.addListener(new bruhof.teenycraft.world.arena.ArenaLoader());
     }
 }

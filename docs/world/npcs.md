@@ -25,6 +25,7 @@ Document how authored NPC battle opponents are expected to work in the world and
 - NPC teams can be authored as JSON under `data/teenycraft/npc_teams`.
 - `NPCTeamLoader` loads those teams into runtime data.
 - `/teeny battle start <npcId>` can build an opponent team from that loaded NPC team data.
+- NPC figure entries can now include `chip_id` and `chip_rank`.
 - The current battle opponent is represented by `EntityTeenyDummy`, which is a placeholder combat target rather than a real challenger NPC.
 
 ## Design Notes

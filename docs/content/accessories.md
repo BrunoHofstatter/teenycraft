@@ -8,6 +8,8 @@ Accessories are implemented as real items that equip into the Titan Manager acce
 
 ## Player-Facing Behavior
 - One accessory can be equipped in the Titan Manager accessory slot.
+- Loose accessory items can be stored in the Titan Manager `Accessories` tab.
+- The accessory slot is optional; battles still run normally when no accessory is equipped.
 - During battle, the equipped accessory is copied into hotbar slot `5` as an activation button.
 - Accessories do not auto-activate anymore.
 - The player can activate the equipped accessory once battery charge reaches at least `50`.

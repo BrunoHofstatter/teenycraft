@@ -1,8 +1,11 @@
 package bruhof.teenycraft.item;
 
 import bruhof.teenycraft.TeenyCraft;
+import bruhof.teenycraft.block.ModBlocks;
 import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.item.custom.ItemAccessory;
+import bruhof.teenycraft.item.custom.ItemChip;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -58,6 +61,9 @@ public class ModItems {
     public static final RegistryObject<Item> TITAN_PAD = ITEMS.register("titan_pad",
             () -> new bruhof.teenycraft.item.custom.ItemTitanPad(new Item.Properties()));
 
+    public static final RegistryObject<Item> CHIP_FUSER = ITEMS.register("chip_fuser",
+            () -> new BlockItem(ModBlocks.CHIP_FUSER.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> TOFU = ITEMS.register("tofu",
             () -> new bruhof.teenycraft.item.custom.battle.ItemTofu(new Item.Properties().stacksTo(1)));
 
@@ -89,6 +95,29 @@ public class ModItems {
             () -> new ItemAccessory(new Item.Properties(), "supermans_underpants"));
     public static final RegistryObject<Item> ACCESSORY_KRYPTO_THE_SUPERDOG = ITEMS.register("accessory_krypto_the_superdog",
             () -> new ItemAccessory(new Item.Properties(), "krypto_the_superdog"));
+
+    public static final RegistryObject<Item> CHIP_TOUGH_GUY = ITEMS.register("chip_tough_guy",
+            () -> new ItemChip(new Item.Properties(), "tough_guy"));
+    public static final RegistryObject<Item> CHIP_SMOKESCREEN = ITEMS.register("chip_smokescreen",
+            () -> new ItemChip(new Item.Properties(), "smokescreen"));
+    public static final RegistryObject<Item> CHIP_TOUGH_SMOKESCREEN = ITEMS.register("chip_tough_smokescreen",
+            () -> new ItemChip(new Item.Properties(), "tough_smokescreen"));
+    public static final RegistryObject<Item> CHIP_LUCKY_HEARTS = ITEMS.register("chip_lucky_hearts",
+            () -> new ItemChip(new Item.Properties(), "lucky_hearts"));
+    public static final RegistryObject<Item> CHIP_INSTA_CAST_CHANCE = ITEMS.register("chip_insta_cast_chance",
+            () -> new ItemChip(new Item.Properties(), "insta_cast_chance"));
+    public static final RegistryObject<Item> CHIP_DANCE_ENTRY = ITEMS.register("chip_dance_entry",
+            () -> new ItemChip(new Item.Properties(), "dance_entry"));
+    public static final RegistryObject<Item> CHIP_MANA_BOOST = ITEMS.register("chip_mana_boost",
+            () -> new ItemChip(new Item.Properties(), "mana_boost"));
+    public static final RegistryObject<Item> CHIP_DEATH_ENERGY = ITEMS.register("chip_death_energy",
+            () -> new ItemChip(new Item.Properties(), "death_energy"));
+    public static final RegistryObject<Item> CHIP_SELF_EXPLOSION = ITEMS.register("chip_self_explosion",
+            () -> new ItemChip(new Item.Properties(), "self_explosion"));
+    public static final RegistryObject<Item> CHIP_NECROMANCER = ITEMS.register("chip_necromancer",
+            () -> new ItemChip(new Item.Properties(), "necromancer"));
+    public static final RegistryObject<Item> CHIP_VAMPIRE = ITEMS.register("chip_vampire",
+            () -> new ItemChip(new Item.Properties(), "vampire"));
 
     // BATTLE ITEMS (Not in creative tabs, given by code)
     public static final RegistryObject<Item> ABILITY_1 = ITEMS.register("ability_1",

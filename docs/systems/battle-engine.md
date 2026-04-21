@@ -59,16 +59,19 @@ Current implemented entry is command-driven through `/teeny battle start`.
 Current flow:
 
 1. Read the player's three team slots from the Titan Manager.
-2. Teleport the player into the Teenyverse if needed.
-3. Build the player's `BattleState` from those team `ItemStack`s.
-4. Build the opposing team either from NPC team JSON or a fallback debug boss.
-5. Spawn an `EntityTeenyDummy` and attach opponent `BattleState` data to it.
-6. Replace the player's normal inventory with battle controls.
+2. Resolve an arena id from command input or the current default arena set.
+3. Choose a free fixed battle slot in the Teenyverse and paste the arena template into that slot.
+4. Teleport the player into the Teenyverse if needed, then place them at the arena's authored player spawn.
+5. Build the player's `BattleState` from those team `ItemStack`s.
+6. Build the opposing team either from NPC team JSON or a fallback debug boss.
+7. Spawn an `EntityTeenyDummy` at the arena's authored opponent spawn and attach opponent `BattleState` data to it.
+8. Replace the player's normal inventory with battle controls.
 
 Important current details:
 
 - `BattleState` capabilities are attached to all living entities, so both players and dummy opponents use the same runtime state type.
-- The current battle start path is not yet a fully integrated world encounter system. It is still largely driven by commands and debug scaffolding.
+- Arena metadata is separate from arena structure geometry: JSON defines runtime metadata and NBT defines the authored build.
+- The current battle start path is still command-driven debug scaffolding, but it no longer depends on a hardcoded iron platform.
 - Entering the Teenyverse causes the Titan Manager capability to save and clear the player's vanilla inventory. Leaving the Teenyverse restores it.
 
 ## Battle Controls And Inventory Replacement
@@ -242,10 +245,11 @@ When no figures remain alive:
 
 After the victory timer ends:
 
-- `endBattle` clears volatile battle state
+- battle exit routes through the arena session manager
+- both participant states are cleaned up
 - the client battle overlay is turned off with `PacketSyncBattleData.off()`
-- the winner is teleported back to the overworld
-- dimension-change handling restores the player's saved vanilla inventory when leaving the Teenyverse
+- the player is returned to their pre-battle position rather than a hardcoded overworld fallback
+- the active arena slot is cleared so the next battle can reuse it cleanly
 
 ## Client Sync
 The client overlay does not inspect server battle logic directly. It receives a synced snapshot every player tick while battling.
