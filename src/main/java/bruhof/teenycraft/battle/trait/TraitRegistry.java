@@ -12,8 +12,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TraitRegistry {
     private static final Map<String, ITrait> REGISTRY = new HashMap<>();
@@ -24,6 +26,22 @@ public class TraitRegistry {
 
     public static ITrait get(String id) {
         return REGISTRY.get(id);
+    }
+
+    public static Set<String> getRegisteredIds() {
+        return new LinkedHashSet<>(REGISTRY.keySet());
+    }
+
+    public static Set<String> getSupportedAbilityTraitIds() {
+        return getRegisteredIds();
+    }
+
+    public static ITrait getValidated(String id) {
+        ITrait trait = REGISTRY.get(id);
+        if (trait == null) {
+            throw new IllegalArgumentException("Unknown validated battle trait id '" + id + "'");
+        }
+        return trait;
     }
 
     public static void init() {
@@ -94,10 +112,9 @@ public class TraitRegistry {
                 float param = params.isEmpty() ? 1.0f : params.get(0);
                 int ticks = (int) (TeenyBalance.BASE_CHARGE_DELAY * param);
 
-                boolean hasInstantChance = false;
-                if (isGolden && data.goldenBonus != null && data.goldenBonus.contains("trait:instant_cast_chance")) {
-                    hasInstantChance = true;
-                } else if (data.traits != null) {
+                boolean hasInstantChance = isGolden
+                        && data.hasGoldenBonus(AbilityLoader.GoldenBonusScope.TRAIT, "instant_cast_chance");
+                if (!hasInstantChance && data.traits != null) {
                     for (AbilityLoader.TraitData trait : data.traits) {
                         if ("instant_cast_chance".equals(trait.id)) {
                             hasInstantChance = true;
@@ -131,8 +148,20 @@ public class TraitRegistry {
             @Override public String getId() { return "instant_cast_chance"; }
         });
 
+        // Legacy data id kept explicit as a compatibility alias so validated
+        // content is no longer warning-only while gameplay remains unchanged.
+        register(new ITrait() {
+            @Override public String getId() { return "instant_cast"; }
+        });
+
         register(new ITrait() {
             @Override public String getId() { return "surprise"; }
+        });
+
+        // This trait is handled in AbilityExecutor.rollTofu rather than through
+        // the standard execution hooks, but it is still part of the live data contract.
+        register(new ITrait() {
+            @Override public String getId() { return "tofu_chance"; }
         });
 
         register(new ITrait.IPipelineTrait() {
@@ -166,7 +195,7 @@ public class TraitRegistry {
     public static void triggerPipelineHooks(List<AbilityLoader.TraitData> traits, DamagePipeline.DamageResult result) {
         if (traits == null) return;
         for (AbilityLoader.TraitData trait : traits) {
-            ITrait impl = get(trait.id);
+            ITrait impl = getValidated(trait.id);
             if (impl instanceof ITrait.IPipelineTrait pipelineTrait) {
                 pipelineTrait.modifyOutput(result, trait.params);
             }
@@ -178,23 +207,15 @@ public class TraitRegistry {
         if (data.traits != null) {
             for (AbilityLoader.TraitData trait : data.traits) {
                 List<Float> finalParams = trait.params;
-                if (isGolden && data.goldenBonus != null) {
-                    for (String bonus : data.goldenBonus) {
-                        String[] parts = bonus.split(":");
-                        if (parts.length >= 3 && "trait".equalsIgnoreCase(parts[0]) && trait.id.equals(parts[1])) {
-                            java.util.List<Float> goldenParams = new java.util.ArrayList<>();
-                            for (String part : parts[2].split(",")) {
-                                try {
-                                    goldenParams.add(Float.parseFloat(part));
-                                } catch (Exception ignored) {
-                                }
-                            }
-                            finalParams = goldenParams;
-                        }
+                if (isGolden) {
+                    AbilityLoader.GoldenBonusData goldenBonus =
+                            data.findGoldenBonus(AbilityLoader.GoldenBonusScope.TRAIT, trait.id);
+                    if (goldenBonus != null) {
+                        finalParams = goldenBonus.params();
                     }
                 }
 
-                ITrait impl = get(trait.id);
+                ITrait impl = getValidated(trait.id);
                 if (impl instanceof ITrait.IExecutionTrait executionTrait) {
                     if (!executionTrait.onExecute(state, attacker, figure, slotIndex, data, target, finalParams, isGolden)) {
                         return false;
@@ -203,38 +224,25 @@ public class TraitRegistry {
             }
         }
 
-        if (isGolden && data.goldenBonus != null) {
-            for (String bonus : data.goldenBonus) {
-                String[] parts = bonus.split(":");
-                if (parts.length >= 2 && "trait".equalsIgnoreCase(parts[0])) {
-                    String traitId = parts[1];
+        if (isGolden) {
+            for (AbilityLoader.GoldenBonusData goldenBonus : data.getGoldenBonuses(AbilityLoader.GoldenBonusScope.TRAIT)) {
+                String traitId = goldenBonus.targetId();
 
-                    boolean alreadyExecuted = false;
-                    if (data.traits != null) {
-                        for (AbilityLoader.TraitData trait : data.traits) {
-                            if (trait.id.equals(traitId)) {
-                                alreadyExecuted = true;
-                                break;
-                            }
+                boolean alreadyExecuted = false;
+                if (data.traits != null) {
+                    for (AbilityLoader.TraitData trait : data.traits) {
+                        if (trait.id.equals(traitId)) {
+                            alreadyExecuted = true;
+                            break;
                         }
                     }
+                }
 
-                    if (!alreadyExecuted) {
-                        java.util.List<Float> goldenParams = new java.util.ArrayList<>();
-                        if (parts.length >= 3) {
-                            for (String part : parts[2].split(",")) {
-                                try {
-                                    goldenParams.add(Float.parseFloat(part));
-                                } catch (Exception ignored) {
-                                }
-                            }
-                        }
-
-                        ITrait impl = get(traitId);
-                        if (impl instanceof ITrait.IExecutionTrait executionTrait) {
-                            if (!executionTrait.onExecute(state, attacker, figure, slotIndex, data, target, goldenParams, isGolden)) {
-                                return false;
-                            }
+                if (!alreadyExecuted) {
+                    ITrait impl = getValidated(traitId);
+                    if (impl instanceof ITrait.IExecutionTrait executionTrait) {
+                        if (!executionTrait.onExecute(state, attacker, figure, slotIndex, data, target, goldenBonus.params(), isGolden)) {
+                            return false;
                         }
                     }
                 }
@@ -247,7 +255,7 @@ public class TraitRegistry {
     public static void triggerMitigationHooks(List<AbilityLoader.TraitData> traits, DamagePipeline.MitigationResult result, boolean isGolden) {
         if (traits == null) return;
         for (AbilityLoader.TraitData trait : traits) {
-            ITrait impl = get(trait.id);
+            ITrait impl = getValidated(trait.id);
             if (impl instanceof ITrait.IMitigationTrait mitigationTrait) {
                 mitigationTrait.modifyMitigation(result, trait.params, isGolden);
             }
@@ -258,7 +266,7 @@ public class TraitRegistry {
                                        int manaCost, LivingEntity target, int damageDealt, boolean isGolden) {
         if (data.traits == null) return;
         for (AbilityLoader.TraitData trait : data.traits) {
-            ITrait impl = get(trait.id);
+            ITrait impl = getValidated(trait.id);
             if (impl instanceof ITrait.IHitTriggerTrait hitTriggerTrait) {
                 hitTriggerTrait.onHit(state, attacker, figure, data, manaCost, trait.params, target, damageDealt, isGolden);
             }

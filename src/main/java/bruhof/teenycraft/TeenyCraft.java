@@ -58,5 +58,6 @@ public class TeenyCraft {
         event.addListener(new bruhof.teenycraft.util.AbilityLoader());
         event.addListener(new bruhof.teenycraft.util.NPCTeamLoader());
         event.addListener(new bruhof.teenycraft.world.arena.ArenaLoader());
+        event.addListener(new bruhof.teenycraft.battle.validation.BattleContentValidator());
     }
 }

@@ -1,0 +1,113 @@
+{
+  "id": "teenycraft:arena_stone_vert",
+  "template": "teenycraft:arenas/arena_stone_vert",
+  "player_spawn": [11.5, 2.5, 8.5],
+  "player_yaw": -45.0,
+  "opponent_spawn": [21.5, 2.5, 18.5],
+  "opponent_yaw": 135.0,
+  "clear_padding": [1, 1, 1],
+  "tags": [],
+  "pickups": [
+    {
+      "id": "stone_vert_amp",
+      "spots": [
+        [16.5, 18.0, 13.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "amp",
+          "amount": 10
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 200,
+      "cooldown_ticks": 300
+    },
+    {
+      "id": "stone_vert_launch1",
+      "spots": [
+        [1.5, 2.0, 13.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "launch",
+          "destination": [6.5, 17.0, 13.5],
+          "arc_height": 10.0
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 0,
+      "cooldown_ticks": 20
+    }
+  ,
+    {
+      "id": "stone_vert_launch2",
+      "spots": [
+        [31.5, 2.0, 13.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "launch",
+          "destination": [26.5, 17.0, 13.5],
+          "arc_height": 10.0
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 0,
+      "cooldown_ticks": 20
+    },
+    {
+      "id": "stone_vert_random1",
+      "spots": [
+        [16.5, 3.0, 4.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "speed",
+          "level": 2,
+          "duration_ticks": 150
+        },
+        {
+          "type": "heal",
+          "amount": 10
+        },
+        {
+          "type": "mana",
+          "amount": 20
+        }
+      ],
+      "variant_mode": "random",
+      "first_spawn_delay_ticks": 50,
+      "cooldown_ticks": 200
+    },
+    {
+      "id": "stone_vert_random2",
+      "spots": [
+        [16.5, 3.0, 22.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "speed",
+          "level": 2,
+          "duration_ticks": 150
+        },
+        {
+          "type": "heal",
+          "amount": 10
+        },
+        {
+          "type": "mana",
+          "amount": 20
+        }
+      ],
+      "variant_mode": "random",
+      "first_spawn_delay_ticks": 50,
+      "cooldown_ticks": 200
+    }
+  ]
+}

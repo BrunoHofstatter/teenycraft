@@ -46,6 +46,9 @@ public class ModItems {
     public static final RegistryObject<Item> SUPERMAN = ITEMS.register("figure_superman",
             () -> new ItemFigure(new Item.Properties()));
 
+    public static final RegistryObject<Item> ARGYLE_TRIGON = ITEMS.register("figure_argyle_trigon",
+            () -> new ItemFigure(new Item.Properties()));
+
     public static final RegistryObject<Item> SEE_MORE = ITEMS.register("figure_see_more",
             () -> new ItemFigure(new Item.Properties()));
 

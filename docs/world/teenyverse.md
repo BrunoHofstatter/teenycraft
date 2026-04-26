@@ -8,6 +8,8 @@ Document the Teenyverse dimension, how players are expected to access it, and wh
   - The repo registers a `teenyverse` dimension and dimension type.
   - The dimension currently uses a void-like flat generator with no terrain features.
   - Current debug battle flow can paste authored arena templates into fixed battle slots in the Teenyverse.
+  - Arena templates can now be single-template or multipart.
+  - Arena pickup runtime can now run inside those battle slots during active battles.
   - Titan Manager inventory save/restore already reacts to entering and leaving the Teenyverse.
 - Not implemented yet:
   - Overworld gateway pods
@@ -42,8 +44,9 @@ Document the Teenyverse dimension, how players are expected to access it, and wh
 - The dimension generator is effectively void-only, with `minecraft:the_void` biome and no configured terrain features.
 - `/teeny battle start` can teleport a player into the Teenyverse if they are not already there.
 - Arena metadata and structure templates are data-driven and can be loaded from JSON and NBT resources.
-- Current debug battle flow chooses a fixed Teenyverse battle slot, clears that slot, pastes the arena template there, and teleports the player to the arena's authored spawn point.
+- Current debug battle flow chooses a fixed Teenyverse battle slot, clears that slot, pastes the arena template or multipart template set there, and teleports the player to the arena's authored spawn point.
 - The current slot layout is a simple fixed grid of `4` battle slots spaced `256` blocks apart at `y=64`.
+- While an arena battle is active, the slot can also host arena pickup visuals, temporary authored walls, and other per-session arena runtime state.
 - On dimension change, entering the Teenyverse triggers Titan Manager inventory save logic and leaving it triggers restore logic.
 - If a battle starts while the player is already in the Teenyverse, the current code can still save and restore vanilla inventory for that local battle flow.
 - No general-purpose player travel flow into the Teenyverse is currently exposed through world objects or progression systems.

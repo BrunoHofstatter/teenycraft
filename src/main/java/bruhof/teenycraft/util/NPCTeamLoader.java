@@ -1,5 +1,6 @@
 package bruhof.teenycraft.util;
 
+import bruhof.teenycraft.battle.ai.BattleAiProfile;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -16,13 +17,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class NPCTeamLoader extends SimplePreparableReloadListener<Map<String, List<NPCFigureBuilder.NPCFigureData>>> {
+public class NPCTeamLoader extends SimplePreparableReloadListener<Map<String, NPCTeamLoader.NPCTeamDefinition>> {
     private static final Gson GSON = new Gson();
-    private static final Map<String, List<NPCFigureBuilder.NPCFigureData>> TEAMS = new HashMap<>();
+    private static final Map<String, NPCTeamDefinition> TEAMS = new HashMap<>();
+
+    public static class NPCTeamDefinition {
+        public final String id;
+        public final List<NPCFigureBuilder.NPCFigureData> figures;
+        public final BattleAiProfile aiProfile;
+
+        public NPCTeamDefinition(String id, List<NPCFigureBuilder.NPCFigureData> figures, BattleAiProfile aiProfile) {
+            this.id = id;
+            this.figures = figures;
+            this.aiProfile = aiProfile;
+        }
+    }
 
     @Override
-    protected Map<String, List<NPCFigureBuilder.NPCFigureData>> prepare(ResourceManager resourceManager, ProfilerFiller profiler) {
-        Map<String, List<NPCFigureBuilder.NPCFigureData>> result = new HashMap<>();
+    protected Map<String, NPCTeamDefinition> prepare(ResourceManager resourceManager, ProfilerFiller profiler) {
+        Map<String, NPCTeamDefinition> result = new HashMap<>();
         Map<ResourceLocation, Resource> resources = resourceManager.listResources("npc_teams",
                 rl -> rl.getNamespace().equals("teenycraft") && rl.getPath().endsWith(".json"));
 
@@ -58,7 +71,21 @@ public class NPCTeamLoader extends SimplePreparableReloadListener<Map<String, Li
                     
                     figures.add(data);
                 }
-                result.put(id, figures);
+
+                BattleAiProfile aiProfile = BattleAiProfile.DEFAULT;
+                if (json.has("ai") && json.get("ai").isJsonObject()) {
+                    JsonObject aiJson = json.getAsJsonObject("ai");
+                    aiProfile = new BattleAiProfile(
+                            aiJson.has("difficulty") ? aiJson.get("difficulty").getAsInt() : BattleAiProfile.DEFAULT.difficulty(),
+                            aiJson.has("aggression") ? aiJson.get("aggression").getAsFloat() : BattleAiProfile.DEFAULT.aggression(),
+                            aiJson.has("swap_bias") ? aiJson.get("swap_bias").getAsFloat() : BattleAiProfile.DEFAULT.swapBias(),
+                            BattleAiProfile.PreferredRange.fromSerialized(aiJson.has("preferred_range") ? aiJson.get("preferred_range").getAsString() : null),
+                            aiJson.has("mana_discipline") ? aiJson.get("mana_discipline").getAsFloat() : BattleAiProfile.DEFAULT.manaDiscipline(),
+                            aiJson.has("risk_tolerance") ? aiJson.get("risk_tolerance").getAsFloat() : BattleAiProfile.DEFAULT.riskTolerance()
+                    );
+                }
+
+                result.put(id, new NPCTeamDefinition(id, figures, aiProfile));
                 System.out.println("Loaded NPC Team: " + id + " from " + entry.getKey());
             } catch (Exception e) {
                 System.err.println("Failed to load NPC Team: " + entry.getKey());
@@ -69,12 +96,17 @@ public class NPCTeamLoader extends SimplePreparableReloadListener<Map<String, Li
     }
 
     @Override
-    protected void apply(Map<String, List<NPCFigureBuilder.NPCFigureData>> result, ResourceManager resourceManager, ProfilerFiller profiler) {
+    protected void apply(Map<String, NPCTeamDefinition> result, ResourceManager resourceManager, ProfilerFiller profiler) {
         TEAMS.clear();
         TEAMS.putAll(result);
     }
 
     public static List<NPCFigureBuilder.NPCFigureData> getTeam(String id) {
+        NPCTeamDefinition team = TEAMS.get(id);
+        return team != null ? team.figures : null;
+    }
+
+    public static NPCTeamDefinition getTeamDefinition(String id) {
         return TEAMS.get(id);
     }
 

@@ -1,0 +1,26 @@
+{
+  "id": "teenycraft:jok_harley_seem",
+  "figures": [
+    {
+      "figure_id": "joker",
+      "level": 10,
+      "upgrades": "HHHHPPPP",
+      "ability_order": [0, 1, 2],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "harley_quinn",
+      "level": 12,
+      "upgrades": "HHPPLLLLDDDDDD",
+      "ability_order": [0, 1, 2],
+      "golden_abilities": ["harleys_mallet"]
+    },
+    {
+      "figure_id": "see_more",
+      "level": 8,
+      "upgrades": "HHHPPPLLD",
+      "ability_order": [0, 1, 2],
+      "golden_abilities": []
+    }
+  ]
+}

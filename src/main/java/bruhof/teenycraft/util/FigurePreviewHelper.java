@@ -104,9 +104,9 @@ public final class FigurePreviewHelper {
             totalHeal += calculateHealForEffect(previewFigure, manaCost, effect.id, effect.params);
         }
 
-        if (isGolden && data.goldenBonus != null) {
-            for (String bonus : data.goldenBonus) {
-                totalHeal += calculateGoldenHealBonus(previewFigure, manaCost, bonus);
+        if (isGolden) {
+            for (AbilityLoader.GoldenBonusData goldenBonus : data.parsedGoldenBonus) {
+                totalHeal += calculateGoldenHealBonus(previewFigure, manaCost, goldenBonus);
             }
         }
 
@@ -127,23 +127,11 @@ public final class FigurePreviewHelper {
         };
     }
 
-    private static int calculateGoldenHealBonus(BattleFigure previewFigure, int manaCost, String bonus) {
-        String[] parts = bonus.split(":", 3);
-        if (parts.length < 3) {
+    private static int calculateGoldenHealBonus(BattleFigure previewFigure, int manaCost, AbilityLoader.GoldenBonusData bonus) {
+        if (bonus.scope() == AbilityLoader.GoldenBonusScope.TRAIT) {
             return 0;
         }
-
-        String effectId = parts[1];
-        String[] paramParts = parts[2].split(",");
-        List<Float> params = new ArrayList<>();
-        for (String paramPart : paramParts) {
-            try {
-                params.add(Float.parseFloat(paramPart));
-            } catch (NumberFormatException ignored) {
-                return 0;
-            }
-        }
-        return calculateHealForEffect(previewFigure, manaCost, effectId, params);
+        return calculateHealForEffect(previewFigure, manaCost, bonus.targetId(), bonus.params());
     }
 
     private static List<String> sanitizeOrder(ItemStack stack, List<String> requestedOrder) {

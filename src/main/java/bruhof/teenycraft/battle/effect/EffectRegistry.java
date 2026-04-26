@@ -1,7 +1,9 @@
 package bruhof.teenycraft.battle.effect;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import bruhof.teenycraft.battle.BattleFigure;
 import bruhof.teenycraft.capability.IBattleState;
 import bruhof.teenycraft.battle.effect.BattleEffect.EffectType;
@@ -9,6 +11,7 @@ import bruhof.teenycraft.battle.effect.BattleEffect.EffectCategory;
 
 import bruhof.teenycraft.capability.BattleState;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 
 public class EffectRegistry {
     private static final Map<String, BattleEffect> REGISTRY = new HashMap<>();
@@ -19,6 +22,10 @@ public class EffectRegistry {
 
     public static BattleEffect get(String id) {
         return REGISTRY.get(id);
+    }
+
+    public static Set<String> getRegisteredIds() {
+        return new LinkedHashSet<>(REGISTRY.keySet());
     }
 
     public static void init() {
@@ -61,13 +68,16 @@ public class EffectRegistry {
         register(new BattleEffect("flight", EffectType.DURATION, EffectCategory.BUFF) {
             @Override
             public void onTick(bruhof.teenycraft.capability.IBattleState state, bruhof.teenycraft.battle.BattleFigure target, int remainingDuration) {
+                if (target != state.getActiveFigure()) {
+                    return;
+                }
                 EffectInstance inst = state.getEffectInstance("flight");
                 if (inst == null) return;
                 
                 int elapsed = (int)inst.power - remainingDuration;
                 
                 if (state instanceof bruhof.teenycraft.capability.BattleState bs) {
-                    net.minecraft.server.level.ServerPlayer player = bs.getPlayer();
+                    Player player = bs.getPlayer();
                     if (player != null) {
                         // Apply drag every tick while flying
                         net.minecraft.world.phys.Vec3 vel = player.getDeltaMovement();
@@ -90,8 +100,11 @@ public class EffectRegistry {
 
             @Override
             public void onRemove(bruhof.teenycraft.capability.IBattleState state, bruhof.teenycraft.battle.BattleFigure target) {
+                if (target != state.getActiveFigure()) {
+                    return;
+                }
                 if (state instanceof bruhof.teenycraft.capability.BattleState bs) {
-                    net.minecraft.server.level.ServerPlayer player = bs.getPlayer();
+                    Player player = bs.getPlayer();
                     if (player != null) {
                         player.setNoGravity(false);
                     }
@@ -125,7 +138,7 @@ public class EffectRegistry {
         protected void onPeriodicTick(IBattleState state, BattleFigure target, int remainingDuration, EffectInstance inst) {
             int finalTickMag = getSmartSplitValue(inst, remainingDuration);
             if (finalTickMag > 0) {
-                target.modifyHp(finalTickMag);
+                state.applyResolvedCombatFigureDelta(target, finalTickMag);
             }
         }
     }
@@ -172,7 +185,11 @@ public class EffectRegistry {
                 bruhof.teenycraft.battle.damage.DamagePipeline.calculatePoisonTick(victimState, victimFigure, attackerFigure, attackerState, inst.power);
 
             if (mit.finalDamage > 0) {
-                victimFigure.modifyHp(-mit.finalDamage);
+                victimState.applyResolvedCombatFigureDelta(
+                        victimFigure,
+                        -mit.finalDamage,
+                        victimState.resolveCombatMutationSource(inst.casterUUID, inst.casterFigureIndex)
+                );
             }
             
             // Notification logic moved to a more generic place or handled via events
@@ -265,9 +282,9 @@ public class EffectRegistry {
         public void onRemove(IBattleState state, BattleFigure target) {
             if (target == state.getActiveFigure()) {
                 state.setLockedSlot(-1);
-                state.removeEffect("stun");
-                state.removeEffect("freeze_movement");
             }
+            state.removeEffect("stun");
+            state.removeEffect("freeze_movement");
         }
     }
 
@@ -359,7 +376,7 @@ public class EffectRegistry {
         @Override
         public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
             if (state.hasEffect("kiss")) return false;
-            target.modifyHp(magnitude);
+            state.applyResolvedCombatFigureDelta(target, magnitude);
             return false;
         }
     }
@@ -368,7 +385,7 @@ public class EffectRegistry {
         public SelfShockEffect() { super("self_shock", EffectType.INSTANT, EffectCategory.DEBUFF); }
         @Override
         public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
-            target.modifyHp(-magnitude);
+            state.applyResolvedCombatFigureDelta(target, -magnitude);
             return false;
         }
     }
@@ -388,7 +405,7 @@ public class EffectRegistry {
             if (!alive.isEmpty()) {
                 int[] splits = bruhof.teenycraft.battle.damage.DistributionHelper.split(magnitude, alive.size());
                 for (int i = 0; i < alive.size(); i++) {
-                    alive.get(i).modifyHp(splits[i]);
+                    state.applyResolvedCombatFigureDelta(alive.get(i), splits[i]);
                 }
             }
             return false;

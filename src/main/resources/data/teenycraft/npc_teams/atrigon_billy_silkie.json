@@ -1,0 +1,26 @@
+{
+  "id": "teenycraft:atrigon_billy_silkie",
+  "figures": [
+    {
+      "figure_id": "argyle_trigon",
+      "level": 10,
+      "upgrades": "HHPPDDD",
+      "ability_order": [0, 1, 2],
+      "golden_abilities": ["curse"]
+    },
+    {
+      "figure_id": "billy_numerous",
+      "level": 12,
+      "upgrades": "HHPPDD",
+      "ability_order": [0, 1, 2],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "silkie",
+      "level": 8,
+      "upgrades": "HHPPDD",
+      "ability_order": [0, 1, 2],
+      "golden_abilities": []
+    }
+  ]
+}

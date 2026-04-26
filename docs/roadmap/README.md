@@ -8,6 +8,10 @@ This folder is for future planning, rough design notes, experiments, and unresol
 - If an idea becomes official, move or summarize it into the relevant canonical topic doc under `docs/systems`, `docs/content`, `docs/world`, or `docs/progression`.
 - Roadmap files should still be concrete and readable. A rough note is fine, but it should say what problem it is solving.
 
+## Current Files
+- [battle-refactor-audit.md](battle-refactor-audit.md)
+- [battle-refactor-plan.md](battle-refactor-plan.md)
+
 ## Suggested Future Files
 - `battle-ideas.md`
 - `figure-roster-expansion.md`

@@ -10,6 +10,8 @@ import bruhof.teenycraft.capability.BattleStateProvider;
 import bruhof.teenycraft.capability.IBattleState;
 import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.battle.BattleFigure;
+import bruhof.teenycraft.battle.presentation.BattleHudSnapshot;
+import bruhof.teenycraft.battle.presentation.BattleHudSnapshotBuilder;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraft.world.InteractionResult;
 import bruhof.teenycraft.networking.PacketSyncBattleData;
@@ -44,7 +46,6 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 
 @Mod.EventBusSubscriber(modid = TeenyCraft.MOD_ID)
 public class ModEvents {
-
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         CommandTeeny.register(event.getDispatcher(), event.getBuildContext());
@@ -173,7 +174,7 @@ public class ModEvents {
                 if (lockSlot >= 0 && lockSlot < 9) {
                     if (event.player.getInventory().selected != lockSlot) {
                         event.player.getInventory().selected = lockSlot;
-                        if (event.player instanceof ServerPlayer sp) {
+                        if (event.player instanceof ServerPlayer sp && ModMessages.canSendToPlayer(sp)) {
                             sp.connection.send(new ClientboundSetCarriedItemPacket(lockSlot));
                         }
                     }
@@ -181,76 +182,19 @@ public class ModEvents {
 
                 // 3. Sync
                 if (event.player instanceof ServerPlayer serverPlayer) {
-                    BattleFigure active = state.getActiveFigure();
-                    
-                    // Simple logic to find nearby battle participants for syncing opponent health
-                    LivingEntity target = serverPlayer.level().getEntitiesOfClass(LivingEntity.class, serverPlayer.getBoundingBox().inflate(64), 
-                        e -> e != serverPlayer && e.getCapability(BattleStateProvider.BATTLE_STATE).isPresent())
-                        .stream().findFirst().orElse(null);
-                    
-                    IBattleState opponentState = (target != null) ? target.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null) : null;
-                    BattleFigure opponent = (opponentState != null) ? opponentState.getActiveFigure() : null;
-                    
-                    boolean[] hasActiveMineArr = new boolean[3];
-                    boolean[] enemyHasActiveMineArr = new boolean[3];
-                    if (opponentState != null) {
-                        for(int i=0; i<3; i++) hasActiveMineArr[i] = state.hasActiveMine(i, target.getUUID());
-                    }
-                    if (opponentState != null && target != null) {
-                        for(int i=0; i<3; i++) enemyHasActiveMineArr[i] = opponentState.hasActiveMine(i, serverPlayer.getUUID());
-                    }
-
-                    if (active != null) {
-                        bruhof.teenycraft.networking.ModMessages.sendToPlayer(new bruhof.teenycraft.networking.PacketSyncBattleData(
-                            true,
-                            active.getNickname(),
-                            state.getActiveFigureId(),
-                            bruhof.teenycraft.util.FigureLoader.getModelType(state.getActiveFigureId()),
-                            state.getActiveFigureIndex(),
-                            active.getCurrentHp(),
-                            active.getMaxHp(),
-                            state.getCurrentMana(),
-                            state.getBatteryCharge(),
-                            state.getBatterySpawnPct(),
-                            state.getBasePower(),
-                            state.getEffectMagnitude("power_up"),
-                            state.getEffectMagnitude("power_down"),
-                            state.getCooldowns(),
-                            new int[]{state.getSlotProgress(0), state.getSlotProgress(1), state.getSlotProgress(2)},
-                            hasActiveMineArr,
-                            state.getAbilityIds(),
-                            state.getAbilityTiers(),
-                            state.getAbilityGoldenStatus(),
-                            state.getEffectList(),
-                            state.getBenchInfoList(),
-                            state.getBenchIndicesList(),
-                            state.getBenchFigureIds(),
-                            opponent != null ? opponent.getNickname() : "None",
-                            opponentState != null ? opponentState.getActiveFigureId() : "none",
-                            opponentState != null ? bruhof.teenycraft.util.FigureLoader.getModelType(opponentState.getActiveFigureId()) : "default",
-                            opponentState != null ? opponentState.getActiveFigureIndex() : 0,
-                            opponent != null ? opponent.getCurrentHp() : 0,
-                            opponent != null ? opponent.getMaxHp() : 100,
-                            opponentState != null ? opponentState.getCurrentMana() : 0,
-                            opponentState != null ? opponentState.getBatteryCharge() : 0,
-                            opponentState != null ? opponentState.getBatterySpawnPct() : -1.0f,
-                            opponentState != null ? opponentState.getBasePower() : 0,
-                            opponentState != null ? opponentState.getEffectMagnitude("power_up") : 0,
-                            opponentState != null ? opponentState.getEffectMagnitude("power_down") : 0,
-                            opponentState != null ? opponentState.getCooldowns() : new int[3],
-                            opponentState != null ? new int[]{opponentState.getSlotProgress(0), opponentState.getSlotProgress(1), opponentState.getSlotProgress(2)} : new int[3],
-                            enemyHasActiveMineArr,
-                            opponentState != null ? opponentState.getAbilityIds() : new java.util.ArrayList<>(),
-                            opponentState != null ? opponentState.getAbilityTiers() : new java.util.ArrayList<>(),
-                            opponentState != null ? opponentState.getAbilityGoldenStatus() : new java.util.ArrayList<>(),
-                            opponentState != null ? opponentState.getEffectList() : new java.util.ArrayList<>(),
-                            opponentState != null ? opponentState.getBenchInfoList() : new java.util.ArrayList<>(),
-                            opponentState != null ? opponentState.getBenchIndicesList() : new java.util.ArrayList<>(),
-                            opponentState != null ? opponentState.getBenchFigureIds() : new java.util.ArrayList<>()
-                        ), serverPlayer);
+                    BattleHudSnapshot snapshot = BattleHudSnapshotBuilder.buildForViewer(state, serverPlayer);
+                    if (snapshot != null) {
+                        ModMessages.sendToPlayer(new PacketSyncBattleData(snapshot), serverPlayer);
                     }
                 }
             });
+        }
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase == TickEvent.Phase.END && event.getServer() != null) {
+            bruhof.teenycraft.world.arena.ArenaBattleManager.tickSessions(event.getServer());
         }
     }
 
@@ -280,18 +224,7 @@ public class ModEvents {
         if (!event.getLevel().isClientSide() && event.getItemStack().getItem() instanceof ItemFigure) {
             event.getEntity().getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(battle -> {
                 if (battle.isBattling()) {
-                    String clickedId = ItemFigure.getFigureID(event.getItemStack());
-                    int targetIndex = -1;
-                    var team = battle.getTeam();
-                    for (int i = 0; i < team.size(); i++) {
-                        if (team.get(i).getFigureId().equals(clickedId)) {
-                            targetIndex = i;
-                            break;
-                        }
-                    }
-
-                    if (targetIndex != -1) {
-                        battle.swapFigure(targetIndex, event.getEntity());
+                    if (battle.trySwapFigureFromItem(event.getItemStack(), event.getEntity())) {
                         event.setCanceled(true);
                         event.setCancellationResult(InteractionResult.SUCCESS);
                     }

@@ -37,6 +37,27 @@ public class AbilityLoader extends SimplePreparableReloadListener<Map<String, Ab
         public List<EffectData> effectsOnSelf = new ArrayList<>();
         public List<TraitData> traits = new ArrayList<>();
         public List<String> goldenBonus = new ArrayList<>();
+        public List<GoldenBonusData> parsedGoldenBonus = new ArrayList<>();
+
+        public List<GoldenBonusData> getGoldenBonuses(GoldenBonusScope scope) {
+            return parsedGoldenBonus.stream()
+                    .filter(bonus -> bonus.scope() == scope)
+                    .toList();
+        }
+
+        public boolean hasGoldenBonus(GoldenBonusScope scope, String targetId) {
+            return findGoldenBonus(scope, targetId) != null;
+        }
+
+        public GoldenBonusData findGoldenBonus(GoldenBonusScope scope, String targetId) {
+            GoldenBonusData match = null;
+            for (GoldenBonusData bonus : parsedGoldenBonus) {
+                if (bonus.matches(scope, targetId)) {
+                    match = bonus;
+                }
+            }
+            return match;
+        }
     }
 
     public static class EffectData {
@@ -47,6 +68,37 @@ public class AbilityLoader extends SimplePreparableReloadListener<Map<String, Ab
     public static class TraitData {
         public String id;
         public List<Float> params = new ArrayList<>();
+    }
+
+    public enum GoldenBonusScope {
+        SELF("self"),
+        OPPONENT("opponent"),
+        TRAIT("trait");
+
+        private final String serializedName;
+
+        GoldenBonusScope(String serializedName) {
+            this.serializedName = serializedName;
+        }
+
+        public static GoldenBonusScope fromSerializedName(String value) {
+            for (GoldenBonusScope scope : values()) {
+                if (scope.serializedName.equalsIgnoreCase(value)) {
+                    return scope;
+                }
+            }
+            return null;
+        }
+    }
+
+    public record GoldenBonusData(String rawValue, GoldenBonusScope scope, String targetId, List<Float> params) {
+        public GoldenBonusData {
+            params = List.copyOf(params);
+        }
+
+        public boolean matches(GoldenBonusScope requestedScope, String requestedTargetId) {
+            return scope == requestedScope && targetId.equals(requestedTargetId);
+        }
     }
 
     @Override
@@ -76,7 +128,11 @@ public class AbilityLoader extends SimplePreparableReloadListener<Map<String, Ab
                 parseTraits(json.getAsJsonArray("traits"), data.traits);
 
                 if (json.has("golden_bonus")) {
-                    json.getAsJsonArray("golden_bonus").forEach(e -> data.goldenBonus.add(e.getAsString()));
+                    json.getAsJsonArray("golden_bonus").forEach(e -> {
+                        String rawBonus = e.getAsString();
+                        data.goldenBonus.add(rawBonus);
+                        data.parsedGoldenBonus.add(parseGoldenBonus(rawBonus));
+                    });
                 }
 
                 abilities.put(data.id, data);
@@ -131,5 +187,52 @@ public class AbilityLoader extends SimplePreparableReloadListener<Map<String, Ab
     public static int getTextureIndex(String id) {
         AbilityData data = CACHE.get(id);
         return data != null ? data.textureIndex : 0;
+    }
+
+    public static GoldenBonusData parseGoldenBonus(String rawBonus) {
+        String[] parts = rawBonus.split(":", 3);
+        if (parts.length < 2) {
+            throw new IllegalArgumentException("has invalid format '" + rawBonus + "'");
+        }
+
+        GoldenBonusScope scope = GoldenBonusScope.fromSerializedName(parts[0].trim());
+        if (scope == null) {
+            throw new IllegalArgumentException("uses unknown scope '" + parts[0].trim() + "'");
+        }
+
+        String targetId = parts[1].trim();
+        if (targetId.isEmpty()) {
+            throw new IllegalArgumentException("has invalid format '" + rawBonus + "'");
+        }
+
+        String paramsText = parts.length == 3 ? parts[2].trim() : "";
+        boolean paramsRequired = scope != GoldenBonusScope.TRAIT;
+        List<Float> params = parseGoldenBonusParams(rawBonus, paramsText, paramsRequired);
+        return new GoldenBonusData(rawBonus, scope, targetId, params);
+    }
+
+    private static List<Float> parseGoldenBonusParams(String rawBonus, String paramsText, boolean required) {
+        if (paramsText.isEmpty()) {
+            if (required) {
+                throw new IllegalArgumentException("is missing numeric params");
+            }
+            return List.of();
+        }
+
+        List<Float> params = new ArrayList<>();
+        String[] values = paramsText.split(",");
+        for (String value : values) {
+            String trimmed = value.trim();
+            if (trimmed.isEmpty()) {
+                throw new IllegalArgumentException("contains an empty numeric param");
+            }
+
+            try {
+                params.add(Float.parseFloat(trimmed));
+            } catch (NumberFormatException ex) {
+                throw new IllegalArgumentException("contains a non-numeric param '" + trimmed + "' in '" + rawBonus + "'");
+            }
+        }
+        return params;
     }
 }

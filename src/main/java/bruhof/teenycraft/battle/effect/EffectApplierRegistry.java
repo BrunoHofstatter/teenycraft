@@ -10,8 +10,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class EffectApplierRegistry {
     private static final Map<String, EffectApplier> REGISTRY = new HashMap<>();
@@ -34,6 +36,41 @@ public class EffectApplierRegistry {
                 }
             });
         });
+    }
+
+    public static Set<String> getRegisteredIds() {
+        return new LinkedHashSet<>(REGISTRY.keySet());
+    }
+
+    public static Set<String> getSupportedAbilityEffectIds() {
+        return getRegisteredIds();
+    }
+
+    public static EffectApplier getValidated(String id) {
+        EffectApplier applier = REGISTRY.get(id);
+        if (applier == null) {
+            throw new IllegalArgumentException("Unknown validated battle effect id '" + id + "'");
+        }
+        return applier;
+    }
+
+    public static EffectApplier getOrFallback(String id) {
+        return REGISTRY.getOrDefault(id, createFallbackApplier(id));
+    }
+
+    private static EffectApplier createFallbackApplier(String id) {
+        return (state, attacker, figure, data, manaCost, params, target) -> {
+            float paramMult = (!params.isEmpty()) ? params.get(0) : 1.0f;
+            int magnitude = (int) paramMult;
+            int duration = (params.size() > 1) ? params.get(1).intValue() : -1;
+
+            target.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(targetState -> {
+                targetState.applyEffect(id, duration, magnitude);
+                if (attacker instanceof ServerPlayer sp && target == attacker) {
+                    sp.sendSystemMessage(Component.literal("Â§dApplied " + id + " (Mag: " + magnitude + ")"));
+                }
+            });
+        };
     }
 
     public static void init() {
@@ -228,7 +265,7 @@ public class EffectApplierRegistry {
                 }
 
                 // Apply with Infinite Duration (-1)
-                targetState.applyEffect("remote_mine_" + slot, -1, 0, (float)maxDmg, attacker.getUUID());
+                    targetState.applyEffect("remote_mine_" + slot, -1, 0, (float)maxDmg, attacker.getUUID(), figure);
                 if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§b§lMINE PLACED! §7Icon turned to button."));
             });
         });
@@ -369,7 +406,7 @@ public class EffectApplierRegistry {
                 if (targetState.hasEffect("cleanse_immunity")) {
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§b§lIMMUNE! §7Poison blocked."));
                 } else {
-                    targetState.applyEffect("poison", totalDuration, interval, damagePerTick, attacker.getUUID());
+                    targetState.applyEffect("poison", totalDuration, interval, damagePerTick, attacker.getUUID(), figure);
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§2§lPOISONED! §7Taking periodic damage for " + (totalDuration/20.0) + "s"));
                     if (attacker instanceof ServerPlayer sp && target != attacker) sp.sendSystemMessage(Component.literal("§2Poisoned target for " + (totalDuration/20.0) + "s!"));
                 }
@@ -609,7 +646,7 @@ public class EffectApplierRegistry {
                 if (targetState.hasEffect("kiss")) {
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§d§lKISS! §cPositive effects blocked!"));
                 } else {
-                    targetState.applyEffect("health_radio", amount * interval, interval, totalMag, attacker.getUUID());
+                    targetState.applyEffect("health_radio", amount * interval, interval, totalMag, attacker.getUUID(), figure);
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§a§lHEALTH RADIO! §7Healing over time..."));
                     if (attacker instanceof ServerPlayer sp && target != attacker) sp.sendSystemMessage(Component.literal("§aApplied Health Radio to target!"));
                 }
@@ -629,7 +666,7 @@ public class EffectApplierRegistry {
                 if (targetState.hasEffect("kiss")) {
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§d§lKISS! §cPositive effects blocked!"));
                 } else {
-                    targetState.applyEffect("power_radio", amount * interval, interval, totalMag, attacker.getUUID());
+                    targetState.applyEffect("power_radio", amount * interval, interval, totalMag, attacker.getUUID(), figure);
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§6§lPOWER RADIO! §7Increasing power over time..."));
                     if (attacker instanceof ServerPlayer sp && target != attacker) sp.sendSystemMessage(Component.literal("§6Applied Power Radio to target!"));
                 }

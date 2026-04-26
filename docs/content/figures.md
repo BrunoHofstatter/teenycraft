@@ -4,10 +4,11 @@
 Document what a figure is in the current codebase, how figure content is loaded from JSON, what state is stored on the item itself, and how that state is converted into battle runtime data.
 
 ## Current Status
-Figures are implemented as item-backed collectibles with JSON-authored defaults, persistent NBT state, Titan Manager storage, and battle-time snapshots. Progression data exists on the item, but some progression loops are still partial.
+Figures are implemented as item-backed collectibles with JSON-authored defaults, persistent NBT state, Titan Manager storage, and battle-time snapshots. Figure class is no longer metadata-only: battle damage now uses the authored class field for class-advantage bonus damage. Progression data exists on the item, but some progression loops are still partial.
 
 ## Player-Facing Behavior
 - Figures are collectible `ItemFigure` items with identity, stats, progression state, and an ability loadout.
+- Each figure also has a class, and battle uses that class for the live advantage cycle `Cute > Dark Arts > Super > Tech > Martial Arts > Beast > Cute`.
 - The player stores figures in the Titan Manager and fields up to three of them as the active battle team.
 - Battles read the team figures from the Titan Manager, then create temporary battle snapshots from those items.
 - Golden status is tracked per ability on the figure item and changes ability behavior in battle when active.
@@ -15,6 +16,7 @@ Figures are implemented as item-backed collectibles with JSON-authored defaults,
 ## Source Of Truth
 - [`src/main/java/bruhof/teenycraft/item/custom/ItemFigure.java`](../../src/main/java/bruhof/teenycraft/item/custom/ItemFigure.java)
 - [`src/main/java/bruhof/teenycraft/battle/BattleFigure.java`](../../src/main/java/bruhof/teenycraft/battle/BattleFigure.java)
+- [`src/main/java/bruhof/teenycraft/battle/FigureClassType.java`](../../src/main/java/bruhof/teenycraft/battle/FigureClassType.java)
 - [`src/main/java/bruhof/teenycraft/util/FigureLoader.java`](../../src/main/java/bruhof/teenycraft/util/FigureLoader.java)
 - [`src/main/java/bruhof/teenycraft/capability/TitanManager.java`](../../src/main/java/bruhof/teenycraft/capability/TitanManager.java)
 - [`src/main/java/bruhof/teenycraft/capability/BattleState.java`](../../src/main/java/bruhof/teenycraft/capability/BattleState.java)
@@ -36,6 +38,16 @@ Each figure JSON currently provides:
 - `attributes`
 - `abilities`
 - `ability_cost_tiers`
+
+Current authored battle classes in shipped content are:
+
+- `Cute`
+- `Dark Arts`
+- `Super`
+- `Tech`
+- `Martial Arts`
+- `Beast`
+- `none`
 
 `FigureLoader` resolves a figure by JSON `id`, then looks up the matching registered item named `figure_<id>`. In practice, figure content is only valid when the JSON file and `ModItems` registry entry stay in sync.
 
@@ -106,10 +118,17 @@ Data copied or snapshotted from the original figure item:
 
 - figure id
 - display name currently used as nickname
+- figure class
 - max HP
 - power
 - dodge
 - luck
+
+Current class behavior:
+
+- class is read from the original figure item when the `BattleFigure` is created
+- `none` means the figure does not gain or suffer matchup advantage in the current cycle
+- matchup advantage is resolved against the specific victim figure at hit time, not once for the whole cast
 
 Runtime-only battle state stored on `BattleFigure`:
 
@@ -134,7 +153,7 @@ The original `ItemStack` is still kept on the `BattleFigure`, so battle systems 
 
 ## Open Questions
 - whether nickname editing should become a real player-facing feature rather than stored-only data
-- whether groups and class should gain gameplay meaning beyond metadata and filtering
+- whether figure groups should gain gameplay meaning beyond metadata and filtering
 - how the normal player loop should eventually unlock or advance golden progress
 
 ## Planned Additions

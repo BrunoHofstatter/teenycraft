@@ -1,0 +1,32 @@
+{
+  "id": "teenycraft:arena_brick_lanes",
+  "template": "teenycraft:arenas/arena_brick_lanes",
+  "player_spawn": [22.5, 5.0, 14.5],
+  "player_yaw": 0.0,
+  "opponent_spawn": [22.5, 5.0, 30.5],
+  "opponent_yaw": 180.0,
+  "clear_padding": [1, 1, 1],
+  "tags": [],
+  "pickups": [
+    {
+      "id": "brick_lanes_speed",
+      "spots": [
+        [22.5, 6.0, 43.5],
+        [4.5, 6.0, 22.5],
+        [40.5, 6.0, 22.5],
+        [22.5, 6.0, 1.5]
+      ],
+      "spot_mode": "random",
+      "variants": [
+        {
+          "type": "speed",
+          "level": 7,
+          "duration_ticks": 100
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 60,
+      "cooldown_ticks": 200
+    }
+  ]
+}

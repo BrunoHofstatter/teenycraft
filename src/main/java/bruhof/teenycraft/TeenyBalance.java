@@ -52,8 +52,14 @@ public class TeenyBalance {
     // SECTION 2: BATTLE CORE
     // ==========================================
     public static final int BATTLE_MANA_MAX = 100;
-    public static final int BATTLE_MANA_REGEN_PER_SEC = 10;
+    public static final int BATTLE_MANA_REGEN_PER_SEC = 5;
     public static final int SWAP_COOLDOWN = 5;
+    public static final double ARENA_PICKUP_COLLECTION_RADIUS = 1.0d;
+
+    private static final double[] ARENA_SPEED_LEVEL_MULTIPLIERS = {
+            0.10d, 0.20d, 0.30d, 0.40d, 0.50d,
+            0.60d, 0.70d, 0.80d, 0.90d, 1.00d
+    };
 
     public static final float RANGED_START_WIDTH = 1.0f;
     public static final float RANGED_CONE_ANGLE = 15.0f;
@@ -163,6 +169,7 @@ public class TeenyBalance {
     public static final float SURPRISE_DAMAGE_VARIANCE = 0.1f;
     public static final float LUCK_BALANCE_MULTIPLIER = 1.0f;
     public static final float BASE_LUCK_MULTIPLIER = 1.1f;
+    public static final float CLASS_ADVANTAGE_BONUS_MULT = 0.20f;
 
     // ==========================================
     // SECTION 4: EFFECT FORMULAS
@@ -378,6 +385,15 @@ public class TeenyBalance {
         }
 
         return FIGURE_XP_REQUIRED_BY_LEVEL[index];
+    }
+
+    public static double getArenaSpeedMultiplier(int level) {
+        if (level <= 0) {
+            return 0.0d;
+        }
+
+        int index = Math.min(level, ARENA_SPEED_LEVEL_MULTIPLIERS.length) - 1;
+        return ARENA_SPEED_LEVEL_MULTIPLIERS[index];
     }
 
     private static int getTierLetterIndex(String tier) {

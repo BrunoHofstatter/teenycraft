@@ -7,9 +7,9 @@ import bruhof.teenycraft.battle.damage.DistributionHelper;
 import bruhof.teenycraft.capability.BattleStateProvider;
 import bruhof.teenycraft.capability.IBattleState;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,7 +20,7 @@ import java.util.WeakHashMap;
 public class AccessoryExecutor {
     private static final Map<IBattleState, Integer> LAST_BIRDARANG_REACTION = Collections.synchronizedMap(new WeakHashMap<>());
 
-    public static void onActivated(IBattleState ownerState, ServerPlayer owner, AccessorySpec spec, Component accessoryName) {
+    public static void onActivated(IBattleState ownerState, Player owner, AccessorySpec spec, Component accessoryName) {
         if (owner != null) {
             owner.sendSystemMessage(Component.literal("§6Accessory Activated: ").append(accessoryName));
         }
@@ -29,7 +29,7 @@ public class AccessoryExecutor {
         }
     }
 
-    public static void onTick(IBattleState ownerState, ServerPlayer owner, AccessorySpec spec, int activeTicks) {
+    public static void onTick(IBattleState ownerState, Player owner, AccessorySpec spec, int activeTicks) {
         if (owner == null || spec == null) return;
 
         if ("bat_signal".equals(spec.getId())) {
@@ -69,7 +69,7 @@ public class AccessoryExecutor {
         }
     }
 
-    public static void onDeactivated(IBattleState ownerState, ServerPlayer owner, AccessorySpec spec, Component accessoryName) {
+    public static void onDeactivated(IBattleState ownerState, Player owner, AccessorySpec spec, Component accessoryName) {
         if (spec != null && spec.getType() == AccessorySpec.Type.TITANS_COIN) {
             clearTitansCoin(ownerState);
         }
@@ -110,17 +110,17 @@ public class AccessoryExecutor {
         return spec.getIntervalTicks() > 0 && activeTicks > 0 && activeTicks % spec.getIntervalTicks() == 0;
     }
 
-    private static void applyPeriodicEffect(IBattleState ownerState, ServerPlayer owner, AccessorySpec spec) {
+    private static void applyPeriodicEffect(IBattleState ownerState, Player owner, AccessorySpec spec) {
         if (spec.getTarget() == AccessorySpec.Target.SELF) {
             ownerState.applyEffect(spec.getEffectId(), spec.getEffectDurationTicks(), spec.getEffectMagnitude());
             return;
         }
 
-        LivingEntity opponent = findNearestOpponent(owner);
+        LivingEntity opponent = ownerState.getOpponentEntity();
         if (opponent == null) return;
 
-        IBattleState opponentState = opponent.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null);
-        if (opponentState == null || !opponentState.isBattling()) return;
+        IBattleState opponentState = ownerState.getOpponentBattleState();
+        if (opponentState == null) return;
         if ("waffle".equals(spec.getEffectId())) {
             applyWaffleEffect(opponentState, spec);
             return;
@@ -128,12 +128,12 @@ public class AccessoryExecutor {
         opponentState.applyEffect(spec.getEffectId(), spec.getEffectDurationTicks(), spec.getEffectMagnitude());
     }
 
-    private static void applyPeriodicDamage(IBattleState ownerState, ServerPlayer owner, AccessorySpec spec) {
-        LivingEntity opponent = findNearestOpponent(owner);
+    private static void applyPeriodicDamage(IBattleState ownerState, Player owner, AccessorySpec spec) {
+        LivingEntity opponent = ownerState.getOpponentEntity();
         if (opponent == null) return;
 
-        IBattleState opponentState = opponent.getCapability(BattleStateProvider.BATTLE_STATE).orElse(null);
-        if (opponentState == null || !opponentState.isBattling()) return;
+        IBattleState opponentState = ownerState.getOpponentBattleState();
+        if (opponentState == null) return;
 
         int[] hitSplits = DistributionHelper.split(spec.getDamage(), Math.max(1, spec.getHitCount()));
         for (int hitDamage : hitSplits) {
@@ -175,7 +175,7 @@ public class AccessoryExecutor {
         targetState.applyEffect("waffle", spec.getEffectDurationTicks(), blockedSlot);
     }
 
-    private static void applyKryptoEffect(IBattleState ownerState, ServerPlayer owner) {
+    private static void applyKryptoEffect(IBattleState ownerState, Player owner) {
         int roll = (int) (Math.random() * 3);
         switch (roll) {
             case 0 -> ownerState.applyEffect("power_up", -1, bruhof.teenycraft.TeenyBalance.ACCESSORY_KRYPTO_POWER_UP);
@@ -214,14 +214,5 @@ public class AccessoryExecutor {
         for (BattleFigure figure : ownerState.getTeam()) {
             figure.setAccessoryMaxHpBonus(0);
         }
-    }
-
-    private static LivingEntity findNearestOpponent(LivingEntity owner) {
-        return owner.level().getEntitiesOfClass(LivingEntity.class, owner.getBoundingBox().inflate(64),
-                entity -> entity != owner && entity.getCapability(BattleStateProvider.BATTLE_STATE).isPresent())
-                .stream()
-                .filter(entity -> entity.getCapability(BattleStateProvider.BATTLE_STATE).map(IBattleState::isBattling).orElse(false))
-                .findFirst()
-                .orElse(null);
     }
 }

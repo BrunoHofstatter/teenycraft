@@ -1,0 +1,81 @@
+{
+  "id": "teenycraft:arena_white_mint",
+  "template": [
+    "teenycraft:arenas/arena_white_mint_x0z0",
+    "teenycraft:arenas/arena_white_mint_x0z1",
+    "teenycraft:arenas/arena_white_mint_x1z0",
+    "teenycraft:arenas/arena_white_mint_x1z1"
+  ],
+  "player_spawn": [15.5, 1.5, 25.5],
+  "player_yaw": -90.0,
+  "opponent_spawn": [35.5, 1.5, 25.5],
+  "opponent_yaw": 90.0,
+  "clear_padding": [1, 1, 1],
+  "tags": [],
+  "pickups": [
+    {
+      "id": "white_mint_heal1",
+      "spots": [
+        [25.5, 3.0, 11.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "heal",
+          "amount": 5
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 60,
+      "cooldown_ticks": 300
+    },
+    {
+      "id": "white_mint_heal2",
+      "spots": [
+        [25.5, 3.0, 39.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "heal",
+          "amount": 5
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 60,
+      "cooldown_ticks": 300
+    },
+    {
+      "id": "white_mint_mana1",
+      "spots": [
+        [6.5, 4.0, 25.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "mana",
+          "amount": 20
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 80,
+      "cooldown_ticks": 300
+    },
+    {
+      "id": "white_mint_mana2",
+      "spots": [
+        [44.5, 4.0, 25.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "mana",
+          "amount": 20
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 80,
+      "cooldown_ticks": 300
+    }
+  ]
+}

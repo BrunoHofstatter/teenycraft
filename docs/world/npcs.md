@@ -8,6 +8,7 @@ Document how authored NPC battle opponents are expected to work in the world and
 - NPC challenger entities, dialogue flow, and progression gating are not implemented yet.
 - The repo does already support JSON-loaded NPC team definitions.
 - Debug battle flow can start a fight against a loaded NPC team and represent that opponent through the current dummy battle entity.
+- NPC team JSON can now also include a small optional AI profile for battle behavior tuning.
 
 ## Player-Facing Behavior
 - The intended long-term flow is to find or unlock challengers in the world, interact with them, and trigger authored battles.
@@ -26,7 +27,8 @@ Document how authored NPC battle opponents are expected to work in the world and
 - `NPCTeamLoader` loads those teams into runtime data.
 - `/teeny battle start <npcId>` can build an opponent team from that loaded NPC team data.
 - NPC figure entries can now include `chip_id` and `chip_rank`.
-- The current battle opponent is represented by `EntityTeenyDummy`, which is a placeholder combat target rather than a real challenger NPC.
+- Team JSON can optionally include an `ai` object with fields such as `difficulty`, `aggression`, `swap_bias`, `preferred_range`, `mana_discipline`, and `risk_tolerance`.
+- The current battle opponent is still represented by `EntityTeenyDummy`, but that dummy now runs a first-pass battle AI instead of only acting as an idle target.
 
 ## Design Notes
 - World challengers should own authored teams, encounter identity, and progression requirements.

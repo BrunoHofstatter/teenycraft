@@ -21,6 +21,7 @@ The player-facing loop is:
 - Core figure item data and stat handling
 - Battle state capability on living entities
 - Real-time battle loop with mana, cooldowns, effects, and virtual HP
+- Command-driven arena battle startup in the Teenyverse with JSON arena metadata, structure templates, multipart arena support, first-pass arena pickups, and first-pass opponent battle AI
 - Trait/effect registries
 - JSON loading for figures, abilities, and NPC teams
 - Starter chip runtime with item-backed figure installation and NPC chip support

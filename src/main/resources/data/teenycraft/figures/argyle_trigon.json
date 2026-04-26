@@ -1,0 +1,17 @@
+{
+  "id": "argyle_trigon",
+  "name": "Argyle Trigon",
+  "description": "The feared Lord of the dark arts, father of Raven",
+  "class": "Dark Arts",
+  "groups": ["Demon Family", "Trigon", "Villain"],
+  "price": 1300,
+  "model_type": "default",
+  "attributes": {
+    "hp_scale": 2.5,
+    "power_scale": 2.5,
+    "dodge_scale": 2.5,
+    "luck_scale": 2.5
+  },
+  "abilities": ["curse", "soul_punch", "tofu"],
+  "ability_cost_tiers": ["c", "d", "c"]
+}

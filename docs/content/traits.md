@@ -219,16 +219,15 @@ Important current detail:
 - I did not find any base ability JSON currently declaring `tofu_chance` as a normal trait
 - it is currently used through golden bonuses on `mighty_punch` and `burp_surprise`
 
-## Trait Ids Present In Data But Not Confirmed As Implemented
+## Trait Ids Kept As Compatibility Aliases
 ### `instant_cast`
 I found `trait:instant_cast` in multiple golden bonus entries, especially on utility abilities such as `freeze`, `kiss`, `root`, `shock`, `poison`, `bar_deplete`, `defense_down`, `multi_hit`, `remote_mine`, and `waffle`.
 
-However:
+Current contract:
 
-- `TraitRegistry` does not register `instant_cast`
-- I did not find another runtime handler for `trait:instant_cast`
-
-So the current code suggests that `instant_cast` is data-authored but not actually implemented at runtime.
+- `TraitRegistry` now registers `instant_cast` explicitly as a validated compatibility alias
+- it remains behavior-neutral, so Phase 7 does not silently add new mechanics to shipped data
+- the actual charge-skip mechanic is still `instant_cast_chance`
 
 ## Names That Are Not Trait Ids
 These names can be confused with traits, but they are not trait ids in the current code:
@@ -257,7 +256,7 @@ Pipeline-side golden handling is not fully uniform:
 - `undodgeable` and `surprise` have direct golden handling in `DamagePipeline`
 - execution traits are handled through `TraitRegistry.triggerExecutionHooks`
 - `tofu_chance` is handled manually in `AbilityExecutor.rollTofu`
-- `instant_cast` currently appears data-only and unresolved
+- `instant_cast` is a compatibility alias, not a live mechanic
 
 ## Current Ability Coverage
 Traits currently appear on a relatively small subset of abilities.

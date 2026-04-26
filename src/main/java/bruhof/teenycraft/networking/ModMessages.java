@@ -2,6 +2,7 @@ package bruhof.teenycraft.networking;
 
 import bruhof.teenycraft.TeenyCraft;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
@@ -62,10 +63,25 @@ public class ModMessages {
     }
 
     public static <MSG> void sendToPlayer(MSG message, ServerPlayer player) {
+        if (!canSendToPlayer(player)) {
+            return;
+        }
         INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), message);
     }
 
     public static <MSG> void sendToClients(MSG message) {
         INSTANCE.send(PacketDistributor.ALL.noArg(), message);
+    }
+
+    public static boolean canSendToPlayer(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+
+        ServerGamePacketListenerImpl listener = player.connection;
+        return listener != null
+                && listener.connection != null
+                && listener.connection.channel() != null
+                && listener.connection.isConnected();
     }
 }

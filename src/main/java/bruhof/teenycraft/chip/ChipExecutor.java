@@ -126,7 +126,7 @@ public class ChipExecutor {
                 case ADD_BATTERY_SELF -> ownerState.addBatteryCharge(action.getAmount(rank));
                 case HEAL_SELF_MAX_HP_PCT -> {
                     int healAmount = Math.max(1, Math.round(ownerFigure.getMaxHp() * action.getPercent(rank)));
-                    ownerFigure.modifyHp(healAmount);
+                    ownerState.applyResolvedCombatFigureDelta(ownerFigure, healAmount);
                 }
                 case DEAL_DAMAGE_OPPONENT -> dealFixedChipDamage(ownerState, ownerEntity, opponentState, opponentEntity,
                         action.getAmount(rank), action.isGroupDamage());

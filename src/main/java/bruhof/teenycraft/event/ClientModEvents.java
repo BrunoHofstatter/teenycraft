@@ -52,7 +52,7 @@ public class ClientModEvents {
         @SubscribeEvent
         public static void onMovementInput(MovementInputUpdateEvent event) {
              if (ClientBattleData.isBattling()) {
-                 if (ClientBattleData.hasEffect("freeze_movement")) {
+                 if (ClientBattleData.hasEffect("freeze_movement") || ClientBattleData.hasEffect("arena_launch_movement_lock")) {
                      event.getInput().forwardImpulse = 0;
                      event.getInput().leftImpulse = 0;
                      event.getInput().jumping = false;

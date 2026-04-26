@@ -5,6 +5,8 @@ Document the current battle effect system: how ability JSON resolves into effect
 
 ## Current Status
 The mod has an implemented centralized effect system built around `EffectApplierRegistry`, `EffectRegistry`, `BattleState.applyEffect`, and `EffectInstance`. Effects already drive buffs, debuffs, control states, periodic damage or healing, resource changes, mines, pets, flight, and reset logic.
+Phase 1 of the battle refactor now validates effect references during reload so broken ability data fails early instead of falling through at runtime.
+Phase 7 now makes `EffectApplierRegistry` the explicit gameplay-content effect-input contract: validated ability data and golden self/opponent bonuses resolve through registered applier ids, while generic fallback behavior is separated from core validated runtime paths.
 
 ## Player-Facing Behavior
 - Effects can buff, debuff, damage over time, heal over time, lock actions, alter mana flow, summon pets, place mines, or modify dodge, reflect, and flight behavior.
@@ -19,6 +21,7 @@ The mod has an implemented centralized effect system built around `EffectApplier
 - [`src/main/java/bruhof/teenycraft/battle/effect/PeriodicBattleEffect.java`](../../src/main/java/bruhof/teenycraft/battle/effect/PeriodicBattleEffect.java)
 - [`src/main/java/bruhof/teenycraft/battle/effect/EffectInstance.java`](../../src/main/java/bruhof/teenycraft/battle/effect/EffectInstance.java)
 - [`src/main/java/bruhof/teenycraft/battle/effect/EffectCalculator.java`](../../src/main/java/bruhof/teenycraft/battle/effect/EffectCalculator.java)
+- [`src/main/java/bruhof/teenycraft/battle/validation/BattleContentValidation.java`](../../src/main/java/bruhof/teenycraft/battle/validation/BattleContentValidation.java)
 - [`src/main/java/bruhof/teenycraft/capability/BattleState.java`](../../src/main/java/bruhof/teenycraft/capability/BattleState.java)
 - [`src/main/resources/data/teenycraft/abilities`](../../src/main/resources/data/teenycraft/abilities)
 
@@ -31,7 +34,7 @@ The current effect pipeline is:
 4. The target `BattleState` receives `applyEffect(...)`.
 5. `EffectRegistry` supplies lifecycle hooks such as `onApply`, `onTick`, `onAttack`, and `onRemove`.
 
-Golden bonuses reuse this same path. A golden bonus such as `self:power_up:0.3` or `opponent:stun:1.2` still resolves through the effect applier registry before reaching battle state.
+`AbilityLoader` now parses golden bonuses on reload. Golden effect bonuses such as `self:power_up:0.3` or `opponent:stun:1.2` reuse this same applier path through their parsed scope/id/param records instead of reparsing raw strings at cast time.
 
 ## Effect Storage Model
 Active effects are stored in `BattleState.activeEffects`, keyed by effect id.
@@ -121,6 +124,7 @@ Current behavior:
 - the effect's `magnitude` field is treated as the interval in ticks
 - `onPeriodicTick` fires when `remainingDuration % interval == 0`
 - `getSmartSplitValue` can evenly split a stored total value across the remaining pulses by consuming from `power`
+- delayed effects that carry a caster now also persist the original source figure identity needed for later combat-source hooks
 
 Implemented periodic effects:
 
@@ -212,6 +216,9 @@ Current helper ids include:
 - `remote_mine`
 
 These are routing helpers in `EffectApplierRegistry`. They often translate into one or more real stored effect ids.
+They are part of the validated gameplay-content input contract even when they are not one-to-one `EffectRegistry` entries.
+By contrast, `EffectRegistry` ids such as stored internal statuses are runtime state ids, not generic ability-data inputs unless an applier explicitly exposes them.
+`EffectApplierRegistry.getOrFallback(...)` still exists for non-validated/debug contexts, but validated gameplay execution now uses strict registered lookups.
 
 ## Client Display
 `BattleState.getEffectList` currently exposes:

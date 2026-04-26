@@ -2,9 +2,12 @@ package bruhof.teenycraft.capability;
 
 import bruhof.teenycraft.battle.BattleFigure;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface IBattleState {
 
@@ -16,26 +19,53 @@ public interface IBattleState {
     List<BattleFigure> getTeam();
     
     /**
-     * Initializes the team from the TitanManager inventory.
+     * Initializes hot battle state for one participant in a paired battle.
      * @param teamStacks List of 3 ItemStacks from the manager.
-     * @param player The player instance.
+     * @param ownerEntity The owning battle participant.
+     * @param opponentEntity The authoritative paired opponent, if known.
      */
-    void initializeBattle(List<ItemStack> teamStacks, net.minecraft.server.level.ServerPlayer player);
+    void initializeBattle(List<ItemStack> teamStacks, LivingEntity ownerEntity, LivingEntity opponentEntity);
 
     // The currently active figure (0-2)
     BattleFigure getActiveFigure();
     int getActiveFigureIndex();
     void setActiveFigure(int index);
+
+    UUID getOpponentEntityId();
+    LivingEntity getOpponentEntity();
+    IBattleState getOpponentBattleState();
     
     // Swapping Logic
     void swapFigure(int newIndex, net.minecraft.world.entity.player.Player player);
+    boolean trySwapFigureFromItem(ItemStack stack, net.minecraft.world.entity.player.Player player);
     int getSwapCooldown();
     void refreshPlayerInventory(net.minecraft.world.entity.player.Player player);
     void updatePlayerSpeed(net.minecraft.world.entity.player.Player player);
 
     // Core Loop
     void tick();
-    void checkFaint(net.minecraft.world.entity.LivingEntity entity);
+    void checkFaint(LivingEntity entity);
+    CombatMutationResult applyCombatFigureDelta(BattleFigure figure, int amount, @Nullable CombatMutationSource source);
+    void resolveCombatFigureDelta(CombatMutationResult mutation);
+    @Nullable CombatMutationSource resolveCombatMutationSource(@Nullable UUID entityId, int figureIndex);
+
+    default CombatMutationResult applyCombatFigureDelta(BattleFigure figure, int amount) {
+        return applyCombatFigureDelta(figure, amount, null);
+    }
+
+    default CombatMutationResult applyResolvedCombatFigureDelta(BattleFigure figure, int amount) {
+        return applyResolvedCombatFigureDelta(figure, amount, null);
+    }
+
+    default CombatMutationResult applyResolvedCombatFigureDelta(BattleFigure figure, int amount, @Nullable CombatMutationSource source) {
+        CombatMutationResult mutation = applyCombatFigureDelta(figure, amount, source);
+        resolveCombatFigureDelta(mutation);
+        return mutation;
+    }
+
+    default @Nullable CombatMutationSource resolveCombatMutationSource(@Nullable UUID entityId) {
+        return resolveCombatMutationSource(entityId, bruhof.teenycraft.battle.effect.EffectInstance.NO_CASTER_FIGURE_INDEX);
+    }
     
     // Player State (Mana & Effects)
     float getCurrentMana();
@@ -75,13 +105,17 @@ public interface IBattleState {
     // Effect Management
     void applyEffect(String effectId, int duration, int magnitude);
     void applyEffect(String effectId, int duration, int magnitude, float power);
-    void applyEffect(String effectId, int duration, int magnitude, float power, java.util.UUID caster);
+    void applyEffect(String effectId, int duration, int magnitude, float power, java.util.UUID caster, @Nullable BattleFigure casterFigure);
     boolean hasEffect(String effectId);
     void removeEffect(String effectId);
     int getEffectMagnitude(String effectId);
     bruhof.teenycraft.battle.effect.EffectInstance getEffectInstance(String effectId);
     void removeEffectsByCategory(bruhof.teenycraft.battle.effect.BattleEffect.EffectCategory category);
     void triggerOnAttack(bruhof.teenycraft.battle.BattleFigure attacker); // Pass attacker context
+
+    default void applyEffect(String effectId, int duration, int magnitude, float power, java.util.UUID caster) {
+        applyEffect(effectId, duration, magnitude, power, caster, null);
+    }
     
     // Charge Up logic
     boolean isCharging();
@@ -152,4 +186,21 @@ public interface IBattleState {
     
     // Clean up
     void endBattle();
+
+    record CombatMutationSource(@Nullable IBattleState state, @Nullable LivingEntity entity, @Nullable BattleFigure figure) {
+        public boolean hasAttackerFigure() {
+            return state != null && entity != null && figure != null;
+        }
+    }
+
+    record CombatMutationResult(@Nullable BattleFigure figure, int requestedDelta, int previousHp, int currentHp,
+                                @Nullable CombatMutationSource source) {
+        public boolean isDamage() {
+            return requestedDelta < 0;
+        }
+
+        public boolean fainted() {
+            return isDamage() && previousHp > 0 && currentHp <= 0;
+        }
+    }
 }

@@ -2,6 +2,7 @@ package bruhof.teenycraft.command;
 
 import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.battle.BattleFigure;
+import bruhof.teenycraft.battle.ai.BattleAiProfile;
 import bruhof.teenycraft.capability.BattleStateProvider;
 import bruhof.teenycraft.capability.TeenyCoinsProvider;
 import bruhof.teenycraft.capability.TitanManagerProvider;
@@ -40,6 +41,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class CommandTeeny {
+    private record OpponentSetup(List<ItemStack> stacks, BattleAiProfile aiProfile) {
+    }
+
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext context) {
         dispatcher.register(Commands.literal("teeny")
@@ -124,20 +128,9 @@ public class CommandTeeny {
             return 0;
         }
 
-        LivingEntity caster;
-        LivingEntity enemy;
-
-        if ("opponent".equalsIgnoreCase(casterType)) {
-            caster = player.level().getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(15),
-                            e -> e != player && e.getCapability(BattleStateProvider.BATTLE_STATE).isPresent())
-                    .stream().findFirst().orElse(null);
-            enemy = player;
-        } else {
-            caster = player;
-            enemy = player.level().getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(15),
-                            e -> e != player && e.getCapability(BattleStateProvider.BATTLE_STATE).isPresent())
-                    .stream().findFirst().orElse(null);
-        }
+        BattleDebugContextResolver.Resolution resolution = BattleDebugContextResolver.resolve(player, casterType);
+        LivingEntity caster = resolution.caster();
+        LivingEntity enemy = resolution.enemy();
 
         if (caster == null) {
             context.getSource().sendFailure(Component.literal("Could not find a valid " + casterType + " to cast as!"));
@@ -263,14 +256,14 @@ public class CommandTeeny {
                 return;
             }
 
-            List<ItemStack> opponentStacks = buildOpponentStacks(context, npcId);
-            if (opponentStacks.isEmpty() || opponentStacks.get(0).isEmpty()) {
+            OpponentSetup opponentSetup = buildOpponentSetup(context, npcId);
+            if (opponentSetup.stacks().isEmpty() || opponentSetup.stacks().get(0).isEmpty()) {
                 return;
             }
 
             try {
-                var session = ArenaBattleManager.startBattle(player, playerTeam, opponentStacks, arenaId);
-                BattleFigure activeOpponent = new BattleFigure(opponentStacks.get(0));
+                var session = ArenaBattleManager.startBattle(player, playerTeam, opponentSetup.stacks(), arenaId, opponentSetup.aiProfile());
+                BattleFigure activeOpponent = new BattleFigure(opponentSetup.stacks().get(0));
                 context.getSource().sendSuccess(() ->
                         Component.literal("Battle Started vs " + activeOpponent.getNickname() + " in " + session.arenaId()), true);
             } catch (IllegalArgumentException | IllegalStateException e) {
@@ -280,15 +273,17 @@ public class CommandTeeny {
         return 1;
     }
 
-    private static List<ItemStack> buildOpponentStacks(CommandContext<CommandSourceStack> context, String npcId) {
+    private static OpponentSetup buildOpponentSetup(CommandContext<CommandSourceStack> context, String npcId) {
         List<ItemStack> opponentStacks = new ArrayList<>();
+        BattleAiProfile aiProfile = BattleAiProfile.DEFAULT;
         if (npcId != null) {
-            List<NPCFigureBuilder.NPCFigureData> npcData = NPCTeamLoader.getTeam(npcId);
-            if (npcData == null) {
+            NPCTeamLoader.NPCTeamDefinition npcTeam = NPCTeamLoader.getTeamDefinition(npcId);
+            if (npcTeam == null) {
                 context.getSource().sendFailure(Component.literal("NPC Team not found: " + npcId));
-                return List.of();
+                return new OpponentSetup(List.of(), BattleAiProfile.DEFAULT);
             }
-            for (NPCFigureBuilder.NPCFigureData fd : npcData) {
+            aiProfile = npcTeam.aiProfile;
+            for (NPCFigureBuilder.NPCFigureData fd : npcTeam.figures) {
                 opponentStacks.add(NPCFigureBuilder.build(fd));
             }
         } else {
@@ -304,10 +299,10 @@ public class CommandTeeny {
 
         if (opponentStacks.isEmpty() || opponentStacks.get(0).isEmpty()) {
             context.getSource().sendFailure(Component.literal("Failed to build opponent team!"));
-            return List.of();
+            return new OpponentSetup(List.of(), aiProfile);
         }
 
-        return opponentStacks;
+        return new OpponentSetup(opponentStacks, aiProfile);
     }
 
     private static int battleStatus(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

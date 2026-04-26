@@ -1,9 +1,9 @@
 {
   "id": "teenycraft:arena1",
   "template": "teenycraft:arenas/arena1",
-  "player_spawn": [10.5, 1.0, 18.5],
+  "player_spawn": [7.5, 2.0, 18.5],
   "player_yaw": -90.0,
-  "opponent_spawn": [26.5, 1.0, 18.5],
+  "opponent_spawn": [29.5, 2.0, 18.5],
   "opponent_yaw": 90.0,
   "clear_padding": [1, 1, 1],
   "tags": [

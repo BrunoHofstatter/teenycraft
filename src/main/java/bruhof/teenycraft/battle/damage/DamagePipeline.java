@@ -2,6 +2,7 @@ package bruhof.teenycraft.battle.damage;
 
 import bruhof.teenycraft.capability.IBattleState;
 import bruhof.teenycraft.battle.BattleFigure;
+import bruhof.teenycraft.battle.FigureClassType;
 import bruhof.teenycraft.battle.StatType;
 import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.util.AbilityLoader;
@@ -16,9 +17,11 @@ public class DamagePipeline {
 
     public static class DamageResult {
         public int baseDamagePerHit;
+        public int classBonusDamagePerHit = 0;
         public int hitCount = 1;
         public boolean isGroupDamage = false;
         public boolean canCrit = false;
+        public boolean classBonusEligible = false;
         public boolean undodgeable = false;
         public float knockback = 0.5f; // Default vanilla-ish knockback
         public List<String> effects = new ArrayList<>();
@@ -34,10 +37,16 @@ public class DamagePipeline {
             this.isGroupDamage = group;
             this.canCrit = canCrit;
         }
+
+        public int getTotalDamagePerHit() {
+            return baseDamagePerHit + classBonusDamagePerHit;
+        }
     }
     
     public static class MitigationResult {
         public int finalDamage;
+        public int finalBaseDamage;
+        public int finalClassBonusDamage;
         public boolean isDodged;
         public boolean isBlocked; // Shield
         public boolean isCritical;
@@ -45,6 +54,8 @@ public class DamagePipeline {
         public int critBonus;
         
         public MitigationResult(int dmg, boolean dodged, boolean blocked, boolean critical) {
+            this.finalBaseDamage = dmg;
+            this.finalClassBonusDamage = 0;
             this.finalDamage = dmg;
             this.isDodged = dodged;
             this.isBlocked = blocked;
@@ -52,12 +63,42 @@ public class DamagePipeline {
         }
 
         public MitigationResult(int dmg, boolean dodged, boolean blocked, boolean critical, int dodgeRed, int critB) {
+            this.finalBaseDamage = dmg;
+            this.finalClassBonusDamage = 0;
             this.finalDamage = dmg;
             this.isDodged = dodged;
             this.isBlocked = blocked;
             this.isCritical = critical;
             this.dodgeReduction = dodgeRed;
             this.critBonus = critB;
+        }
+
+        public MitigationResult(int dmg, int baseDmg, int classBonusDmg, boolean dodged, boolean blocked, boolean critical,
+                                int dodgeRed, int critB) {
+            this.finalDamage = dmg;
+            this.finalBaseDamage = baseDmg;
+            this.finalClassBonusDamage = classBonusDmg;
+            this.isDodged = dodged;
+            this.isBlocked = blocked;
+            this.isCritical = critical;
+            this.dodgeReduction = dodgeRed;
+            this.critBonus = critB;
+        }
+    }
+
+    private static class MitigationBreakdown {
+        private int finalDamage;
+        private int finalBaseDamage;
+        private boolean isDodged;
+        private boolean isBlocked;
+        private int dodgeReduction;
+
+        private MitigationBreakdown(int finalDamage, int finalBaseDamage, boolean isDodged, boolean isBlocked, int dodgeReduction) {
+            this.finalDamage = finalDamage;
+            this.finalBaseDamage = finalBaseDamage;
+            this.isDodged = isDodged;
+            this.isBlocked = isBlocked;
+            this.dodgeReduction = dodgeReduction;
         }
     }
 
@@ -120,7 +161,7 @@ public class DamagePipeline {
 
         // --- SURPRISE LOGIC ---
         boolean hasSurprise = false;
-        if (isGolden && data.goldenBonus != null && data.goldenBonus.contains("trait:surprise")) {
+        if (isGolden && data.hasGoldenBonus(AbilityLoader.GoldenBonusScope.TRAIT, "surprise")) {
             hasSurprise = true;
         } else if (data.traits != null) {
             for (AbilityLoader.TraitData t : data.traits) {
@@ -149,6 +190,7 @@ public class DamagePipeline {
         // We no longer roll here to allow multi-hit independent rolls.
         DamageResult result = new DamageResult(Math.round(rawDamage));
         result.canCrit = true; // Most abilities can crit
+        result.classBonusEligible = true;
 
         // 4. Trait Processing
         bruhof.teenycraft.battle.trait.TraitRegistry.triggerPipelineHooks(data.traits, result);
@@ -157,81 +199,138 @@ public class DamagePipeline {
     }
     
     public static MitigationResult calculateMitigation(IBattleState victimState, BattleFigure victim, IBattleState attackerState, BattleFigure attacker, DamageResult incoming, AbilityData data, boolean isGolden) {
-        int initialDmg = incoming.baseDamagePerHit;
+        int initialBaseDamage = incoming.baseDamagePerHit;
+        int initialTotalDamage = incoming.getTotalDamagePerHit();
         int critBonus = 0;
         boolean isCrit = false;
 
         // 1. Critical Hit Roll (Per Hit)
-        if (incoming.canCrit && attacker != null && attacker.tryCrit(attackerState)) {
+        if (initialTotalDamage > 0 && incoming.canCrit && attacker != null && attacker.tryCrit(attackerState)) {
             isCrit = true;
             float luckVal = attacker.getEffectiveStat(StatType.LUCK, attackerState);
             float critMult = (luckVal / 100.0f * TeenyBalance.LUCK_BALANCE_MULTIPLIER) + TeenyBalance.BASE_LUCK_MULTIPLIER;
-            int critDmg = Math.round(initialDmg * critMult);
-            critBonus = critDmg - initialDmg;
-            initialDmg = critDmg;
+            int critTotalDamage = Math.round(initialTotalDamage * critMult);
+            int critBaseDamage = Math.round(initialBaseDamage * critMult);
+            critBonus = critTotalDamage - initialTotalDamage;
+            initialTotalDamage = critTotalDamage;
+            initialBaseDamage = Math.min(critBaseDamage, initialTotalDamage);
         }
         
-        MitigationResult res = calculateMitigationInternal(victimState, victim, initialDmg, incoming.undodgeable, data, isGolden);
+        MitigationBreakdown res = calculateMitigationInternal(
+                victimState,
+                victim,
+                initialTotalDamage,
+                initialBaseDamage,
+                incoming.undodgeable,
+                data,
+                isGolden
+        );
         
         // 2. Flight Evasion Check
         if (victimState != null && victimState.hasEffect("flight") && !incoming.isGroupDamage) {
             res.isDodged = true;
             res.dodgeReduction = res.finalDamage;
             res.finalDamage = 0;
+            res.finalBaseDamage = 0;
         }
 
-        return new MitigationResult(res.finalDamage, res.isDodged, res.isBlocked, isCrit, res.dodgeReduction, critBonus);
+        int finalBaseDamage = Math.min(res.finalBaseDamage, res.finalDamage);
+        int finalClassBonusDamage = Math.max(0, res.finalDamage - finalBaseDamage);
+        return new MitigationResult(
+                res.finalDamage,
+                finalBaseDamage,
+                finalClassBonusDamage,
+                res.isDodged,
+                res.isBlocked,
+                isCrit,
+                res.dodgeReduction,
+                critBonus
+        );
     }
 
     public static MitigationResult calculatePoisonTick(IBattleState victimState, BattleFigure victim, BattleFigure attacker, IBattleState attackerState, float baseTickDamage) {
-        int initialDmg = Math.round(baseTickDamage);
+        int initialDamage = Math.round(baseTickDamage);
         int critBonus = 0;
         boolean isCrit = false;
 
         // 1. Roll for Crit (Attacker Context)
-        if (attacker != null && attacker.tryCrit(attackerState)) {
+        if (initialDamage > 0 && attacker != null && attacker.tryCrit(attackerState)) {
             isCrit = true;
             float luckVal = attacker.getLuckStat(); // Fallback to base stat if attackerState is null (which it shouldn't be for long)
             if (attackerState != null) luckVal = attacker.getEffectiveStat(StatType.LUCK, attackerState);
             
             float critMult = (luckVal / 100.0f * TeenyBalance.LUCK_BALANCE_MULTIPLIER) + TeenyBalance.BASE_LUCK_MULTIPLIER;
-            int critDmg = Math.round(initialDmg * critMult);
-            critBonus = critDmg - initialDmg;
-            initialDmg = critDmg;
+            int critDmg = Math.round(initialDamage * critMult);
+            critBonus = critDmg - initialDamage;
+            initialDamage = critDmg;
         }
 
         // 2. Standard Mitigation (Internal)
-        MitigationResult mit = calculateMitigationInternal(victimState, victim, initialDmg, false, null, false);
-        return new MitigationResult(mit.finalDamage, mit.isDodged, mit.isBlocked, isCrit, mit.dodgeReduction, critBonus);
+        MitigationBreakdown mit = calculateMitigationInternal(victimState, victim, initialDamage, initialDamage, false, null, false);
+        return new MitigationResult(mit.finalDamage, mit.finalBaseDamage, 0, mit.isDodged, mit.isBlocked, isCrit, mit.dodgeReduction, critBonus);
     }
 
-    private static MitigationResult calculateMitigationInternal(IBattleState victimState, BattleFigure victim, int initialDmg, boolean isUndodgeable, AbilityData data, boolean isGolden) {
+    public static DamageResult[] splitIntoHitResults(DamageResult result) {
+        int[] hitSplits = DistributionHelper.split(result.baseDamagePerHit, result.hitCount);
+        DamageResult[] splitResults = new DamageResult[hitSplits.length];
+        for (int i = 0; i < hitSplits.length; i++) {
+            DamageResult split = new DamageResult(hitSplits[i], 1, result.isGroupDamage, result.canCrit);
+            split.classBonusDamagePerHit = (i == hitSplits.length - 1) ? result.classBonusDamagePerHit : 0;
+            split.classBonusEligible = result.classBonusEligible && i == hitSplits.length - 1;
+            split.undodgeable = result.undodgeable;
+            split.knockback = result.knockback;
+            split.effects.addAll(result.effects);
+            splitResults[i] = split;
+        }
+        return splitResults;
+    }
+
+    public static void populateClassBonus(DamageResult result, BattleFigure attacker, BattleFigure victim) {
+        if (result == null || attacker == null || victim == null || !result.classBonusEligible) {
+            return;
+        }
+        if (result.classBonusDamagePerHit > 0 || result.baseDamagePerHit <= 0) {
+            return;
+        }
+
+        FigureClassType attackerClass = attacker.getFigureClass();
+        FigureClassType victimClass = victim.getFigureClass();
+        if (!attackerClass.hasAdvantageOver(victimClass)) {
+            return;
+        }
+
+        result.classBonusDamagePerHit = Math.max(1, Math.round(result.baseDamagePerHit * TeenyBalance.CLASS_ADVANTAGE_BONUS_MULT));
+    }
+
+    private static MitigationBreakdown calculateMitigationInternal(IBattleState victimState, BattleFigure victim, int initialDmg,
+                                                                   int initialBaseDamage, boolean isUndodgeable, AbilityData data,
+                                                                   boolean isGolden) {
         int finalDmg = initialDmg;
+        int finalBaseDamage = Math.min(initialBaseDamage, initialDmg);
         boolean isDodged = false;
         int dodgeReduction = 0;
         
         boolean undodgeable = isUndodgeable;
-        if (data != null && !undodgeable && isGolden && data.goldenBonus != null) {
-            for (String bonus : data.goldenBonus) {
-                if ("trait:undodgeable".equals(bonus)) {
-                    undodgeable = true;
-                    break;
-                }
-            }
+        if (data != null && !undodgeable && isGolden) {
+            undodgeable = data.hasGoldenBonus(AbilityLoader.GoldenBonusScope.TRAIT, "undodgeable");
         }
 
         // 1. Defense Multipliers (Relative)
         int defMod = victim.getEffectiveStat(StatType.DEFENSE_PERCENT, victimState);
         if (defMod != 0) {
-            float mult = 1.0f - (defMod / 100.0f);
-            finalDmg = (int) (finalDmg * Math.max(0, mult));
+            finalDmg = applyPercentModifier(finalDmg, defMod);
+            finalBaseDamage = applyPercentModifier(finalBaseDamage, defMod);
+            finalBaseDamage = Math.min(finalBaseDamage, finalDmg);
         }
 
         // 1.5 Reflect Reduction (Multiplicative)
         if (victimState != null && victimState.hasEffect("reflect")) {
             int reflectMag = victimState.getEffectMagnitude("reflect");
-            finalDmg = (int)(finalDmg * (reflectMag / 100.0f));
+            finalDmg = applyRatioModifier(finalDmg, reflectMag);
+            finalBaseDamage = applyRatioModifier(finalBaseDamage, reflectMag);
+            finalBaseDamage = Math.min(finalBaseDamage, finalDmg);
         }
+        finalBaseDamage = Math.min(finalBaseDamage, finalDmg);
 
         // 2. Shield Check (Absolute Negation) - Check BEFORE Dodge so it can skip dodge roll
         boolean isShielded = false;
@@ -240,6 +339,7 @@ public class DamagePipeline {
              isShielded = true;
              if (!undodgeable) {
                  finalDmg = 0;
+                 finalBaseDamage = 0;
              }
         }
 
@@ -268,6 +368,8 @@ public class DamagePipeline {
             int preDodge = finalDmg;
             finalDmg = Math.max(0, finalDmg - mitigation);
             dodgeReduction = preDodge - finalDmg;
+            finalBaseDamage = Math.max(0, finalBaseDamage - mitigation);
+            finalBaseDamage = Math.min(finalBaseDamage, finalDmg);
         }
         
         // Consume Dodge Smoke charge (every attack)
@@ -278,6 +380,15 @@ public class DamagePipeline {
             }
         }
         
-        return new MitigationResult(finalDmg, isDodged, isShielded, false, dodgeReduction, 0);
+        return new MitigationBreakdown(finalDmg, finalBaseDamage, isDodged, isShielded, dodgeReduction);
+    }
+
+    private static int applyPercentModifier(int damage, int percentModifier) {
+        float mult = 1.0f - (percentModifier / 100.0f);
+        return (int) (damage * Math.max(0, mult));
+    }
+
+    private static int applyRatioModifier(int damage, int percentKept) {
+        return (int) (damage * (percentKept / 100.0f));
     }
 }

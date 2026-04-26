@@ -31,18 +31,6 @@ public class ModCreativeTabs {
                         pOutput.accept(ModItems.TITAN_PAD.get());
                         pOutput.accept(ModItems.CHIP_FUSER.get());
                         pOutput.accept(ModItems.ROBIN.get());
-                        pOutput.accept(ModItems.CYBORG.get());
-                        pOutput.accept(ModItems.RAVEN.get());
-                        pOutput.accept(ModItems.STARFIRE.get());
-                        pOutput.accept(ModItems.BEAST_BOY.get());
-                        pOutput.accept(ModItems.SILKIE.get());
-
-                        pOutput.accept(ModItems.BATMAN.get());
-                        pOutput.accept(ModItems.SUPERMAN.get());
-                        pOutput.accept(ModItems.SEE_MORE.get());
-                        pOutput.accept(ModItems.HARLEY_QUINN.get());
-                        pOutput.accept(ModItems.JOKER.get());
-                        pOutput.accept(ModItems.BILLY_NUMEROUS.get());
 
                         pOutput.accept(ModItems.ACCESSORY_TITANS_COIN.get());
                         pOutput.accept(ModItems.ACCESSORY_MOTHER_BOX.get());

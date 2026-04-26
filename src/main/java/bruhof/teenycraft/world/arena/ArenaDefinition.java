@@ -8,7 +8,7 @@ import java.util.List;
 
 public record ArenaDefinition(
         ResourceLocation id,
-        ResourceLocation templateId,
+        List<ArenaTemplateDefinition> templates,
         Vec3 playerSpawn,
         float playerYaw,
         float playerPitch,
@@ -16,18 +16,29 @@ public record ArenaDefinition(
         float opponentYaw,
         float opponentPitch,
         BlockPos clearPadding,
-        List<String> tags
+        List<String> tags,
+        List<ArenaPickupSpawnerDefinition> pickupSpawners
 ) {
     public ArenaDefinition {
+        templates = templates == null ? List.of() : List.copyOf(templates);
         clearPadding = clearPadding == null ? BlockPos.ZERO : clearPadding;
         tags = tags == null ? List.of() : List.copyOf(tags);
+        pickupSpawners = pickupSpawners == null ? List.of() : List.copyOf(pickupSpawners);
+    }
+
+    public Vec3 positionAt(BlockPos origin, Vec3 localPosition) {
+        return origin.getCenter().add(localPosition.x - 0.5, localPosition.y, localPosition.z - 0.5);
+    }
+
+    public BlockPos blockAt(BlockPos origin, BlockPos localPosition) {
+        return origin.offset(localPosition);
     }
 
     public Vec3 playerSpawnAt(BlockPos origin) {
-        return origin.getCenter().add(playerSpawn.x - 0.5, playerSpawn.y, playerSpawn.z - 0.5);
+        return positionAt(origin, playerSpawn);
     }
 
     public Vec3 opponentSpawnAt(BlockPos origin) {
-        return origin.getCenter().add(opponentSpawn.x - 0.5, opponentSpawn.y, opponentSpawn.z - 0.5);
+        return positionAt(origin, opponentSpawn);
     }
 }

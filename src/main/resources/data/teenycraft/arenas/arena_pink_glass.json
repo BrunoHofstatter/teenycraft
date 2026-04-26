@@ -1,0 +1,133 @@
+{
+  "id": "teenycraft:arena_pink_glass",
+  "template": "teenycraft:arenas/arena_pink_glass",
+  "player_spawn": [23.5, 18.0, 13.5],
+  "player_yaw": 0,
+  "opponent_spawn": [23.5, 18.0, 33.5],
+  "opponent_yaw": 180.0,
+  "clear_padding": [1, 1, 1],
+  "tags": [],
+  "pickups": [
+    {
+      "id": "pink_glass_launch1",
+      "spots": [
+        [23.5, 20.0, 1.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "launch",
+          "destination": [23.5, 25.0, 23.5],
+          "arc_height": 7.0
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 0,
+      "cooldown_ticks": 20
+    },
+    {
+      "id": "pink_glass_launch2",
+      "spots": [
+        [23.5, 20.0, 45.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "launch",
+          "destination": [23.5, 25.0, 23.5],
+          "arc_height": 7.0
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 0,
+      "cooldown_ticks": 20
+    },
+    {
+      "id": "pink_glass_wall",
+      "spots": [
+        [23.5, 19.0, 39.5],
+        [23.5, 19.0, 7.5]
+
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "wall",
+          "duration_ticks": 120,
+          "block": "minecraft:purple_stained_glass",
+          "blocks": [
+            [21, 18, 36], [22, 18, 36],[23, 18, 36],[24, 18, 36],[25, 18, 36], [21, 19, 36], [22, 19, 36], [23, 19, 36],
+            [24, 19, 36], [25, 19, 36], [21, 20, 36], [22, 20, 36], [23, 20, 36], [24, 20, 36], [25, 20, 36], [21, 21, 36], [22, 21, 36],
+            [23, 21, 36], [24, 21, 36], [25, 21, 36], [21, 22, 36], [22, 22, 36], [23, 22, 36], [24, 22, 36], [25, 22, 36]
+          ]
+        },
+        {
+          "type": "wall",
+          "duration_ticks": 120,
+          "block": "minecraft:purple_stained_glass",
+          "blocks": [
+            [21, 18, 10], [22, 18, 10], [23, 18, 10], [24, 18, 10], [25, 18, 10], [21, 19, 10], [22, 19, 10], [23, 19, 10],
+            [24, 19, 10], [25, 19, 10], [21, 20, 10], [22, 20, 10], [23, 20, 10], [24, 20, 10], [25, 20, 10], [21, 21, 10],
+            [22, 21, 10], [23, 21, 10], [24, 21, 10], [25, 21, 10], [21, 22, 10], [22, 22, 10], [23, 22, 10], [24, 22, 10],
+            [25, 22, 10]
+          ]
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 80,
+      "cooldown_ticks": 200
+    },
+    {
+      "id": "pink_glass_speed",
+      "spots": [
+        [36.5, 21.0, 35.5],
+        [10.5, 21.0, 11.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "speed",
+          "level": 2,
+          "duration_ticks": 300
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 40,
+      "cooldown_ticks": 200
+    },
+    {
+      "id": "pink_glass_mana",
+      "spots": [
+        [36.5, 21.0, 11.5],
+        [10.5, 21.0, 35.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "mana",
+          "amount": 40
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 60,
+      "cooldown_ticks": 200
+    }
+  ,
+    {
+      "id": "pink_glass_amp",
+      "spots": [
+        [23.5, 25.0, 23.5]
+      ],
+      "spot_mode": "cycle",
+      "variants": [
+        {
+          "type": "amp",
+          "amount": 20
+        }
+      ],
+      "variant_mode": "cycle",
+      "first_spawn_delay_ticks": 200,
+      "cooldown_ticks": 400
+    }
+  ]
+}
