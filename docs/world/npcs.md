@@ -21,13 +21,15 @@ Document how authored NPC battle opponents are expected to work in the world and
 - [`src/main/java/bruhof/teenycraft/command/CommandTeeny.java`](../../src/main/java/bruhof/teenycraft/command/CommandTeeny.java)
 - [`src/main/java/bruhof/teenycraft/entity/custom/EntityTeenyDummy.java`](../../src/main/java/bruhof/teenycraft/entity/custom/EntityTeenyDummy.java)
 - [`src/main/java/bruhof/teenycraft/entity/ModEntities.java`](../../src/main/java/bruhof/teenycraft/entity/ModEntities.java)
+- [`npc-ai-controls.md`](npc-ai-controls.md)
 
 ## Implemented Behavior
 - NPC teams can be authored as JSON under `data/teenycraft/npc_teams`.
 - `NPCTeamLoader` loads those teams into runtime data.
 - `/teeny battle start <npcId>` can build an opponent team from that loaded NPC team data.
 - NPC figure entries can now include `chip_id` and `chip_rank`.
-- Team JSON can optionally include an `ai` object with fields such as `difficulty`, `aggression`, `swap_bias`, `preferred_range`, `mana_discipline`, and `risk_tolerance`.
+- Team JSON can optionally include an `ai` object for battle behavior tuning.
+- For the exact AI JSON contract and authoring guide, use [npc-ai-controls.md](npc-ai-controls.md).
 - The current battle opponent is still represented by `EntityTeenyDummy`, but that dummy now runs a first-pass battle AI instead of only acting as an idle target.
 
 ## Design Notes

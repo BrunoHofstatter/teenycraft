@@ -191,6 +191,11 @@ public final class BattleContentValidation {
         validateUnitFloat(path, ai, "swap_bias", errors);
         validateUnitFloat(path, ai, "mana_discipline", errors);
         validateUnitFloat(path, ai, "risk_tolerance", errors);
+        validateRangedFloat(path, ai, "move_speed_mult", 0.5f, 2.0f, errors);
+        validateMinInt(path, ai, "reaction_ticks", 1, errors);
+        validateMinInt(path, ai, "action_commit_ticks", 1, errors);
+        validateRangedDouble(path, ai, "choice_window", 0.0d, 10.0d, errors);
+        validateMinInt(path, ai, "swap_reconsideration_ticks", 0, errors);
 
         if (ai.has("preferred_range")) {
             String preferredRange = ai.get("preferred_range").getAsString();
@@ -199,6 +204,12 @@ public final class BattleContentValidation {
                 errors.add(new Issue(path, "ai.preferred_range must be one of auto, close, mid, or far"));
             }
         }
+
+        validateBoolean(path, ai, "consider_swap", errors);
+        validateBoolean(path, ai, "counter_awareness", errors);
+        validateBoolean(path, ai, "advanced_swap_logic", errors);
+        validateBoolean(path, ai, "consider_class_disadvantage_swap", errors);
+        validateBoolean(path, ai, "consider_class_advantage_swap", errors);
     }
 
     private static void validateUnitFloat(String path, JsonObject json, String field, List<Issue> errors) {
@@ -209,6 +220,50 @@ public final class BattleContentValidation {
         float value = json.get(field).getAsFloat();
         if (value < 0.0f || value > 1.0f) {
             errors.add(new Issue(path, "ai." + field + " must be between 0.0 and 1.0"));
+        }
+    }
+
+    private static void validateRangedFloat(String path, JsonObject json, String field, float min, float max, List<Issue> errors) {
+        if (!json.has(field)) {
+            return;
+        }
+
+        float value = json.get(field).getAsFloat();
+        if (value < min || value > max) {
+            errors.add(new Issue(path, "ai." + field + " must be between " + min + " and " + max));
+        }
+    }
+
+    private static void validateRangedDouble(String path, JsonObject json, String field, double min, double max, List<Issue> errors) {
+        if (!json.has(field)) {
+            return;
+        }
+
+        double value = json.get(field).getAsDouble();
+        if (value < min || value > max) {
+            errors.add(new Issue(path, "ai." + field + " must be between " + min + " and " + max));
+        }
+    }
+
+    private static void validateMinInt(String path, JsonObject json, String field, int min, List<Issue> errors) {
+        if (!json.has(field)) {
+            return;
+        }
+
+        int value = json.get(field).getAsInt();
+        if (value < min) {
+            errors.add(new Issue(path, "ai." + field + " must be >= " + min));
+        }
+    }
+
+    private static void validateBoolean(String path, JsonObject json, String field, List<Issue> errors) {
+        if (!json.has(field)) {
+            return;
+        }
+
+        JsonElement element = json.get(field);
+        if (element == null || !element.isJsonPrimitive() || !element.getAsJsonPrimitive().isBoolean()) {
+            errors.add(new Issue(path, "ai." + field + " must be a boolean"));
         }
     }
 

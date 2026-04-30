@@ -147,17 +147,22 @@ public interface IBattleState {
         public bruhof.teenycraft.util.AbilityLoader.AbilityData data;
         public int slotIndex;
         public boolean isGolden;
-        public int manaCost;
+        public int actualManaCost;
+        public int effectiveManaCost;
         public java.util.UUID targetUUID;
         public net.minecraft.world.phys.Vec3 castPosition;
         public int ticksRemaining;
         public bruhof.teenycraft.battle.BattleFigure attackerFigure;
 
-        public PendingProjectile(bruhof.teenycraft.util.AbilityLoader.AbilityData data, int slotIndex, boolean isGolden, int manaCost, java.util.UUID targetUUID, net.minecraft.world.phys.Vec3 castPosition, int ticksRemaining, bruhof.teenycraft.battle.BattleFigure attackerFigure) {
+        public PendingProjectile(bruhof.teenycraft.util.AbilityLoader.AbilityData data, int slotIndex, boolean isGolden,
+                                 int actualManaCost, int effectiveManaCost, java.util.UUID targetUUID,
+                                 net.minecraft.world.phys.Vec3 castPosition, int ticksRemaining,
+                                 bruhof.teenycraft.battle.BattleFigure attackerFigure) {
             this.data = data;
             this.slotIndex = slotIndex;
             this.isGolden = isGolden;
-            this.manaCost = manaCost;
+            this.actualManaCost = actualManaCost;
+            this.effectiveManaCost = effectiveManaCost;
             this.targetUUID = targetUUID;
             this.castPosition = castPosition;
             this.ticksRemaining = ticksRemaining;

@@ -52,8 +52,9 @@ public final class FigurePreviewHelper {
             boolean isGolden = ItemFigure.isAbilityGolden(stack, abilityId);
             String tierLetter = slotIndex < tiers.size() ? tiers.get(slotIndex) : "a";
             int manaCost = TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
-            int damage = calculateDamagePreview(previewFigure, data, manaCost);
-            int heal = calculateHealPreview(previewFigure, data, manaCost, isGolden);
+            int effectiveManaCost = TeenyBalance.getEffectiveManaCost(slotIndex + 1, tierLetter);
+            int damage = calculateDamagePreview(previewFigure, data, effectiveManaCost);
+            int heal = calculateHealPreview(previewFigure, data, effectiveManaCost, isGolden);
 
             previews.add(new AbilityPreview(
                     abilityId,

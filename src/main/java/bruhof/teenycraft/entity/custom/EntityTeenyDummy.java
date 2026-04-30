@@ -1,5 +1,6 @@
 package bruhof.teenycraft.entity.custom;
 
+import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.battle.ai.BattleAiGoal;
 import bruhof.teenycraft.battle.ai.BattleAiProfile;
 import net.minecraft.world.entity.EntityType;
@@ -21,7 +22,7 @@ public class EntityTeenyDummy extends PathfinderMob {
     public static AttributeSupplier.Builder createAttributes() {
         return PathfinderMob.createMobAttributes()
                 .add(Attributes.MAX_HEALTH, 1000.0D)
-                .add(Attributes.MOVEMENT_SPEED, 0.10D)
+                .add(Attributes.MOVEMENT_SPEED, TeenyBalance.AI_DUMMY_BASE_MOVE_SPEED)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D);
     }
 

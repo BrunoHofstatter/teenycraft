@@ -193,7 +193,8 @@ public final class BattleAbilityExecution {
                 figure,
                 slotIndex,
                 data,
-                resolveManaCostForPendingCast(figure, slotIndex),
+                BattleAbilityContext.resolveActualManaCost(figure, slotIndex),
+                BattleAbilityContext.resolveEffectiveManaCost(figure, slotIndex),
                 isGolden
         );
         runResolvedCast(context, target, false, true, false);
@@ -254,7 +255,8 @@ public final class BattleAbilityExecution {
                 projectile.attackerFigure,
                 projectile.slotIndex,
                 projectile.data,
-                projectile.manaCost,
+                projectile.actualManaCost,
+                projectile.effectiveManaCost,
                 projectile.isGolden
         );
         runResolvedCast(context, target, false, true, true);
@@ -296,9 +298,9 @@ public final class BattleAbilityExecution {
             }
         }
 
-        if (context.state().getCurrentMana() < context.manaCost()) {
+        if (context.state().getCurrentMana() < context.actualManaCost()) {
             if (context.attacker() instanceof ServerPlayer sp) {
-                sp.sendSystemMessage(Component.literal("Â§cNot enough Mana! Need " + context.manaCost()));
+                sp.sendSystemMessage(Component.literal("Â§cNot enough Mana! Need " + context.actualManaCost()));
             }
             return false;
         }
@@ -380,7 +382,7 @@ public final class BattleAbilityExecution {
             int totalDamageDealt = executeHitStage(context, target, result);
             if (totalDamageDealt > 0) {
                 if (awardBatteryOnSuccess) {
-                    awardBatteryFromManaSpent(context.state(), context.manaCost());
+                    awardBatteryFromManaSpent(context.state(), context.actualManaCost());
                 }
                 rollTofu(context);
                 TraitRegistry.triggerHitHooks(
@@ -388,7 +390,7 @@ public final class BattleAbilityExecution {
                         context.attacker(),
                         context.figure(),
                         context.data(),
-                        context.manaCost(),
+                        context.effectiveManaCost(),
                         target,
                         totalDamageDealt,
                         context.isGolden()
@@ -396,14 +398,14 @@ public final class BattleAbilityExecution {
             }
         } else if (!skipSelfEffects) {
             if (awardBatteryOnSuccess) {
-                awardBatteryFromManaSpent(context.state(), context.manaCost());
+                awardBatteryFromManaSpent(context.state(), context.actualManaCost());
             }
         }
 
         if (!skipSelfEffects) {
             applySelfEffects(context);
             if (consumeManaNow) {
-                context.state().consumeMana(context.manaCost());
+                context.state().consumeMana(context.actualManaCost());
             }
             announceCast(context);
         }
@@ -447,7 +449,7 @@ public final class BattleAbilityExecution {
                                     alive.get(i),
                                     enemyHit,
                                     context.data(),
-                                    context.manaCost(),
+                                    context.effectiveManaCost(),
                                     context.isGolden(),
                                     false,
                                     false,
@@ -478,7 +480,7 @@ public final class BattleAbilityExecution {
                     context.attacker(),
                     context.figure(),
                     context.data(),
-                    context.manaCost(),
+                    context.effectiveManaCost(),
                     trait.params,
                     context.attacker()
             );
@@ -492,7 +494,7 @@ public final class BattleAbilityExecution {
                     context.attacker(),
                     context.figure(),
                     context.data(),
-                    context.manaCost(),
+                    context.effectiveManaCost(),
                     effect.params,
                     context.attacker()
             );
@@ -512,7 +514,7 @@ public final class BattleAbilityExecution {
                     context.attacker(),
                     context.figure(),
                     context.data(),
-                    context.manaCost(),
+                    context.effectiveManaCost(),
                     goldenBonus.params(),
                     context.attacker()
             );
@@ -596,9 +598,9 @@ public final class BattleAbilityExecution {
 
     private static void detonateMine(BattleAbilityContext context, LivingEntity target, @Nullable IBattleState targetState,
                                      BattleTargeting.ArmedMine armedMine) {
-        context.state().consumeMana(context.manaCost());
+        context.state().consumeMana(context.actualManaCost());
         if (detonateMineDamage(context, target, targetState, armedMine.figure(), armedMine.instance()) > 0) {
-            awardBatteryFromManaSpent(context.state(), context.manaCost());
+            awardBatteryFromManaSpent(context.state(), context.actualManaCost());
         }
     }
 
@@ -645,7 +647,7 @@ public final class BattleAbilityExecution {
             return;
         }
 
-        context.state().consumeMana(context.manaCost());
+        context.state().consumeMana(context.actualManaCost());
         double distance = context.attacker().getEyePosition().distanceTo(target.getEyePosition());
         int delayTicks = (int) (distance * TeenyBalance.getRaycastDelay(context.data().raycastDelayTier));
         if (delayTicks < 1) {
@@ -657,7 +659,8 @@ public final class BattleAbilityExecution {
                 context.data(),
                 context.slotIndex(),
                 context.isGolden(),
-                context.manaCost(),
+                context.actualManaCost(),
+                context.effectiveManaCost(),
                 target.getUUID(),
                 castPosition,
                 delayTicks,
@@ -674,7 +677,7 @@ public final class BattleAbilityExecution {
     }
 
     private static void failNoTarget(BattleAbilityContext context) {
-        context.state().consumeMana(context.manaCost());
+        context.state().consumeMana(context.actualManaCost());
         if (context.attacker() instanceof ServerPlayer sp) {
             sp.sendSystemMessage(Component.literal("Â§cNo target found!"));
         }
@@ -696,7 +699,8 @@ public final class BattleAbilityExecution {
                 figure,
                 slotIndex,
                 data,
-                resolveManaCostForPendingCast(figure, slotIndex),
+                BattleAbilityContext.resolveActualManaCost(figure, slotIndex),
+                BattleAbilityContext.resolveEffectiveManaCost(figure, slotIndex),
                 isGolden
         );
 
@@ -704,12 +708,6 @@ public final class BattleAbilityExecution {
             return BattleTargeting.getConeTarget(context);
         }
         return attacker;
-    }
-
-    private static int resolveManaCostForPendingCast(BattleFigure figure, int slotIndex) {
-        ArrayList<String> tiers = bruhof.teenycraft.item.custom.ItemFigure.getAbilityTiers(figure.getOriginalStack());
-        String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
-        return TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
     }
 
     private static boolean shouldEndBlueChannel(IBattleState state) {
@@ -855,7 +853,7 @@ public final class BattleAbilityExecution {
             }
         }
 
-        float chance = (context.manaCost() * TeenyBalance.TOFU_CHANCE_HIT_PERMANA) * chanceMultiplier;
+        float chance = (context.actualManaCost() * TeenyBalance.TOFU_CHANCE_HIT_PERMANA) * chanceMultiplier;
         if (Math.random() * 100.0 < chance) {
             context.state().spawnTofu(TeenyBalance.TOFU_BASE_MANA * powerMultiplier);
             if (context.attacker() instanceof ServerPlayer sp) {

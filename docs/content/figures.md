@@ -51,6 +51,17 @@ Current authored battle classes in shipped content are:
 
 `FigureLoader` resolves a figure by JSON `id`, then looks up the matching registered item named `figure_<id>`. In practice, figure content is only valid when the JSON file and `ModItems` registry entry stay in sync.
 
+## Figure Authoring Checklist
+When adding a new figure id like `argyle_trigon`, update all of these together:
+
+- Register the item in [`src/main/java/bruhof/teenycraft/item/ModItems.java`](../../src/main/java/bruhof/teenycraft/item/ModItems.java) as `figure_<id>`.
+- Add the figure content JSON under [`src/main/resources/data/teenycraft/figures`](../../src/main/resources/data/teenycraft/figures) with matching `id`, `class`, `abilities`, `ability_cost_tiers`, and `model_type`.
+- Add the held-item model JSON at `assets/teenycraft/models/item/figure_<id>.json`, usually pointing at `teenycraft:item/<id>`.
+- Add the item texture at `assets/teenycraft/textures/item/<id>.png`.
+- Add the battle skin texture at `assets/teenycraft/textures/entity/figure/<id>.png`.
+- Add `item.teenycraft.figure_<id>` to [`src/main/resources/assets/teenycraft/lang/en_us.json`](../../src/main/resources/assets/teenycraft/lang/en_us.json).
+
+
 ## Item-Persistent Figure State
 When a fresh figure is created, `ItemFigure.initializeFigure` writes the long-term state directly into the item tag.
 

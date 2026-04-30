@@ -19,6 +19,7 @@ Phase 7 now parses `golden_bonus` entries into structured loader records on relo
 - [`src/main/java/bruhof/teenycraft/util/AbilityLoader.java`](../../src/main/java/bruhof/teenycraft/util/AbilityLoader.java)
 - [`src/main/resources/data/teenycraft/abilities`](../../src/main/resources/data/teenycraft/abilities)
 - [`src/main/java/bruhof/teenycraft/TeenyBalance.java`](../../src/main/java/bruhof/teenycraft/TeenyBalance.java)
+- [`abilities-json-reference.md`](abilities-json-reference.md)
 
 ## Reload Validation
 Battle content reload now validates:
@@ -45,8 +46,29 @@ Current compatibility note:
 - Ability JSON can now optionally expose `description` and `golden_description` for the figure screen tooltip without changing battle execution data.
 - `AbilityLoader.AbilityData` now carries parsed `golden_bonus` records for battle runtime and preview helpers, while the raw strings remain only as source-data compatibility.
 
+## Ability Authoring Checklist
+When a figure needs a new ability id, update these together:
+
+- Add the ability JSON under [`src/main/resources/data/teenycraft/abilities`](../../src/main/resources/data/teenycraft/abilities) with a unique `id` and a unique `texture_index`.
+- Reference that ability id from the figure JSON `abilities` list.
+- If you want a custom icon, add `assets/teenycraft/models/item/ability_<id>.json` and usually `assets/teenycraft/models/item/ability_<id>_golden.json`.
+- Add the matching icon textures under `assets/teenycraft/textures/item/`, typically `ability_<id>.png` and `ability_<id>_golden.png`.
+- Add override entries for that `texture_index` to all three wrapper models:
+  - `assets/teenycraft/models/item/ability_1.json`
+  - `assets/teenycraft/models/item/ability_2.json`
+  - `assets/teenycraft/models/item/ability_3.json`
+- If the JSON introduces a brand-new effect id or trait id, implement and register it in the runtime registries before reload validation will accept the content.
+
+Important current icon behavior:
+
+- [`src/main/java/bruhof/teenycraft/client/AbilityIconManager.java`](../../src/main/java/bruhof/teenycraft/client/AbilityIconManager.java) is not only a missing-texture fallback. If an ability id is present in `FALLBACKS`, 
+`AbilityModelWrapper` will render that vanilla item model instead of your custom ability model.
+- So use `FALLBACKS` only when you intentionally want the vanilla-item icon, not in addition to a custom icon pipeline.
+
+## Technical Reference
+- For the field-by-field JSON contract, live effect and trait ids, parameter usage, and golden bonus merge rules, use [abilities-json-reference.md](abilities-json-reference.md).
+
 ## Open Questions
-- whether ability schema should be formalized in a dedicated reference doc
 - how much of golden ability behavior should stay data-driven versus code-driven
 
 ## Planned Additions

@@ -12,7 +12,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 
 public record BattleAbilityContext(IBattleState state, LivingEntity attacker, BattleFigure figure, int slotIndex,
-                                   AbilityLoader.AbilityData data, int manaCost, boolean isGolden) {
+                                   AbilityLoader.AbilityData data, int actualManaCost, int effectiveManaCost,
+                                   boolean isGolden) {
     @Nullable
     public static BattleAbilityContext create(IBattleState state, LivingEntity attacker, BattleFigure figure, int slotIndex) {
         AbilityLoader.AbilityData data = getAbilityData(figure, slotIndex);
@@ -30,14 +31,21 @@ public record BattleAbilityContext(IBattleState state, LivingEntity attacker, Ba
                 figure,
                 slotIndex,
                 data,
-                resolveManaCost(figure, slotIndex),
+                resolveActualManaCost(figure, slotIndex),
+                resolveEffectiveManaCost(figure, slotIndex),
                 ItemFigure.isAbilityGolden(figure.getOriginalStack(), data.id)
         );
     }
 
     public static BattleAbilityContext createResolved(IBattleState state, LivingEntity attacker, BattleFigure figure, int slotIndex,
                                                       AbilityLoader.AbilityData data, int manaCost, boolean isGolden) {
-        return new BattleAbilityContext(state, attacker, figure, slotIndex, data, manaCost, isGolden);
+        return createResolved(state, attacker, figure, slotIndex, data, manaCost, manaCost, isGolden);
+    }
+
+    public static BattleAbilityContext createResolved(IBattleState state, LivingEntity attacker, BattleFigure figure, int slotIndex,
+                                                      AbilityLoader.AbilityData data, int actualManaCost, int effectiveManaCost,
+                                                      boolean isGolden) {
+        return new BattleAbilityContext(state, attacker, figure, slotIndex, data, actualManaCost, effectiveManaCost, isGolden);
     }
 
     public boolean isMelee() {
@@ -70,9 +78,15 @@ public record BattleAbilityContext(IBattleState state, LivingEntity attacker, Ba
         return AbilityLoader.getAbility(order.get(slotIndex));
     }
 
-    private static int resolveManaCost(BattleFigure figure, int slotIndex) {
+    public static int resolveActualManaCost(BattleFigure figure, int slotIndex) {
         ArrayList<String> tiers = ItemFigure.getAbilityTiers(figure.getOriginalStack());
         String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
         return TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
+    }
+
+    public static int resolveEffectiveManaCost(BattleFigure figure, int slotIndex) {
+        ArrayList<String> tiers = ItemFigure.getAbilityTiers(figure.getOriginalStack());
+        String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
+        return TeenyBalance.getEffectiveManaCost(slotIndex + 1, tierLetter);
     }
 }

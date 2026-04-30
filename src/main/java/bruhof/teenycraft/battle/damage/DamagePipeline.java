@@ -122,7 +122,7 @@ public class DamagePipeline {
         // Get Mana Cost
         java.util.ArrayList<String> tiers = ItemFigure.getAbilityTiers(attacker.getOriginalStack());
         String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
-        int manaCost = TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
+        int manaCost = TeenyBalance.getEffectiveManaCost(slotIndex + 1, tierLetter);
         
         return calculateOutput(attackerState, attacker, data, manaCost, isGolden);
     }

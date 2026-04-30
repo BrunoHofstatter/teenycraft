@@ -120,11 +120,12 @@ public class BattleOverlay implements IGuiOverlay {
             }
 
             String tier = i < abilityTiers.size() ? abilityTiers.get(i) : "a";
-            int cost = bruhof.teenycraft.TeenyBalance.getManaCost(i + 1, tier);
+            int actualCost = bruhof.teenycraft.TeenyBalance.getManaCost(i + 1, tier);
+            int effectiveCost = bruhof.teenycraft.TeenyBalance.getEffectiveManaCost(i + 1, tier);
             int cooldown = i < cooldowns.length ? cooldowns[i] : 0;
             boolean isGolden = i < goldenStatus.size() && goldenStatus.get(i);
-            float scale = (side.currentMana() >= cost && cooldown <= 0) ? 1.2f : 0.8f;
-            int iconX = x + (int) ((cost / 100.0f) * totalWidth);
+            float scale = (side.currentMana() >= actualCost && cooldown <= 0) ? 1.2f : 0.8f;
+            int iconX = x + (int) ((actualCost / 100.0f) * totalWidth);
             int iconY = manaY + 4;
 
             ItemStack abilityStack = createTempAbilityStack(abilityId, i, isGolden);
@@ -136,7 +137,7 @@ public class BattleOverlay implements IGuiOverlay {
                 guiGraphics.pose().popPose();
             }
 
-            renderDamageLabel(guiGraphics, mc, iconX, iconY, scale, side, opposingSide, isEnemy, i, cost, abilityData);
+            renderDamageLabel(guiGraphics, mc, iconX, iconY, scale, side, opposingSide, isEnemy, i, effectiveCost, abilityData);
             renderActivationProgress(guiGraphics, mc, iconX, iconY, slotProgress, i, abilityData);
         }
     }

@@ -168,12 +168,14 @@ Additional event-driven runtime:
 - Stun, charging, and blue-channeling stop mana regen.
 - Curse reduces mana regen.
 - Dance increases mana regen.
+- Ability execution can now separate actual mana cost from hidden effective mana cost: the player only pays and sees the actual slot cost, while scaling-heavy formulas can read a different effective value for slot-based efficiency tuning.
 
 ### Battery
 - Battery charge is also stored on `BattleState`.
 - It fills passively over time and also gains charge from mana spent on successful actions.
 - A battery pickup threshold spawns as a target percentage of the mana bar.
 - When current mana crosses that threshold, the battery is collected and charge is awarded.
+- Battery gain from successful ability use follows actual mana spent, not hidden effective mana scaling.
 
 ### Accessories
 - The equipped accessory comes from the Titan Manager accessory slot.
@@ -185,6 +187,7 @@ Additional event-driven runtime:
 - Tofu is stored as temporary battle-only mana state.
 - When present, it appears as a separate battle item.
 - Using tofu triggers a random self or opponent effect based on the stored tofu power.
+- Tofu spawn chance from normal ability use also follows actual mana spent, while tofu power created by ability effects still follows the ability's gameplay scaling inputs.
 
 ## Ability Execution Flow
 `AbilityExecutor` is now a thin public facade over the Phase 6 executor helpers.

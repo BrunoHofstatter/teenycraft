@@ -1,0 +1,12 @@
+{
+  "id": "teenycraft:joker_solo",
+  "figures": [
+    {
+      "figure_id": "joker",
+      "level": 6,
+      "upgrades": "HHPPDL",
+      "ability_order": [0, 1, 2],
+      "golden_abilities": []
+    }
+  ]
+}

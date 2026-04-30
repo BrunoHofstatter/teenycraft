@@ -9,6 +9,10 @@ public class TeenyBalance {
             {80, 84, 88, 92, 96}
     };
 
+    private static final float[] EFFECTIVE_MANA_MULTIPLIERS_BY_SLOT = {
+            0.0f, 1.0f, 1.0f, 1.15f
+    };
+
     private static final float[] DAMAGE_MULTIPLIERS_BY_TIER = {
             0.0f, 0.82f, 0.85f, 0.88f, 0.91f, 0.94f, 0.97f,
             1.00f, 1.03f, 1.06f, 1.09f, 1.12f, 1.15f, 1.18f
@@ -55,6 +59,29 @@ public class TeenyBalance {
     public static final int BATTLE_MANA_REGEN_PER_SEC = 5;
     public static final int SWAP_COOLDOWN = 5;
     public static final double ARENA_PICKUP_COLLECTION_RADIUS = 1.0d;
+    public static final double AI_DUMMY_BASE_MOVE_SPEED = 0.20d;
+    public static final double AI_APPROACH_MOVE_SPEED = 1.5d;
+    public static final double AI_RANGE_APPROACH_MOVE_SPEED = 1.30d;
+    public static final double AI_RETREAT_MOVE_SPEED = 1.65d;
+    public static final double AI_REPEAT_SLOT_SOFT_PENALTY = 1.35d;
+    public static final int AI_MAX_SAME_SLOT_STREAK = 3;
+    public static final float AI_NEAR_READY_MELEE_MANA_PCT = 0.85f;
+    public static final float AI_EFFECTIVE_MANA_VALUE_WEIGHT = 5.5f;
+    public static final float AI_HIGH_MANA_EFFECTIVE_VALUE_WEIGHT = 8.0f;
+    public static final float AI_HIGH_MANA_SLOT3_PRIORITY_BONUS = 1.4f;
+    public static final float AI_FULL_MANA_SLOT3_PRIORITY_BONUS = 1.0f;
+    public static final float AI_SELF_HEAL_CRITICAL_HP_PCT = 0.25f;
+    public static final float AI_GROUP_HEAL_SELF_ONLY_HP_PCT = 0.35f;
+    public static final float AI_GROUP_HEAL_ALLY_LOW_HP_PCT = 0.75f;
+    public static final float AI_HEALTH_RADIO_MIN_MISSING_HP_PCT = 0.05f;
+    public static final float AI_BATTERY_DRAIN_MIN_HP_PCT = 0.65f;
+    public static final float AI_REMOTE_MINE_DETONATE_MIN_CHARGE_PCT = 0.70f;
+    public static final float AI_OPPONENT_HIGH_MANA_PCT = 0.70f;
+    public static final int AI_REFLECT_REUSE_TICKS = 60;
+    public static final double AI_THREAT_BAND_MIN_DISTANCE = 3.4d;
+    public static final double AI_THREAT_BAND_MIN_MAX_DISTANCE = 7.5d;
+    public static final double AI_THREAT_BAND_RANGE_PADDING = 2.0d;
+    public static final double AI_FAR_DISTANCE_PADDING = 1.0d;
 
     private static final double[] ARENA_SPEED_LEVEL_MULTIPLIERS = {
             0.10d, 0.20d, 0.30d, 0.40d, 0.50d,
@@ -342,6 +369,24 @@ public class TeenyBalance {
             return 0;
         }
         return MANA_COSTS_BY_SLOT[slot][getTierLetterIndex(tier)];
+    }
+
+    public static float getEffectiveManaMultiplier(int slot) {
+        if (slot < 1 || slot >= EFFECTIVE_MANA_MULTIPLIERS_BY_SLOT.length) {
+            return 1.0f;
+        }
+        return EFFECTIVE_MANA_MULTIPLIERS_BY_SLOT[slot];
+    }
+
+    public static int getEffectiveManaCost(int slot, String tier) {
+        return getEffectiveManaCost(getManaCost(slot, tier), slot);
+    }
+
+    public static int getEffectiveManaCost(int actualManaCost, int slot) {
+        if (actualManaCost <= 0) {
+            return 0;
+        }
+        return Math.max(0, Math.round(actualManaCost * getEffectiveManaMultiplier(slot)));
     }
 
     public static float getDamageMultiplier(int tier) {

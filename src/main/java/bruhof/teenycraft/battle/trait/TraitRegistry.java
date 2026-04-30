@@ -3,9 +3,9 @@ package bruhof.teenycraft.battle.trait;
 import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.battle.BattleFigure;
 import bruhof.teenycraft.battle.damage.DamagePipeline;
+import bruhof.teenycraft.battle.executor.BattleAbilityContext;
 import bruhof.teenycraft.chip.ChipExecutor;
 import bruhof.teenycraft.capability.IBattleState;
-import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.util.AbilityLoader;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -64,16 +64,14 @@ public class TraitRegistry {
             @Override public boolean onExecute(IBattleState state, LivingEntity attacker, BattleFigure figure, int slotIndex,
                                                AbilityLoader.AbilityData data, LivingEntity target, List<Float> params, boolean isGolden) {
                 float param = params.isEmpty() ? 1.0f : params.get(0);
-                java.util.ArrayList<String> tiers = ItemFigure.getAbilityTiers(figure.getOriginalStack());
-                String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
-                int manaCost = TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
+                int effectiveManaCost = BattleAbilityContext.resolveEffectiveManaCost(figure, slotIndex);
 
                 float totalMana = state.getCurrentMana();
                 int numberOfHits = (int) (totalMana * TeenyBalance.BLUE_TICKS_PER_MANA) + TeenyBalance.BLUE_TICKS_FLAT;
                 int interval = (int) (TeenyBalance.BLUE_BASE_INTERVAL * param);
                 if (interval <= 0) interval = 1;
 
-                DamagePipeline.DamageResult calc = DamagePipeline.calculateOutput(state, figure, data, manaCost, isGolden);
+                DamagePipeline.DamageResult calc = DamagePipeline.calculateOutput(state, figure, data, effectiveManaCost, isGolden);
                 int totalDamage = Math.round(calc.baseDamagePerHit * TeenyBalance.BLUE_DAMAGE_MULT);
 
                 float totalHealFloat = 0;
@@ -81,7 +79,7 @@ public class TraitRegistry {
                     for (AbilityLoader.EffectData effect : data.effectsOnSelf) {
                         if ("heal".equals(effect.id) || "eagle".equals(effect.id) || "group_heal".equals(effect.id)) {
                             float magParam = (!effect.params.isEmpty()) ? effect.params.get(0) : 1.0f;
-                            totalHealFloat += bruhof.teenycraft.battle.effect.EffectCalculator.calculateHealMagnitude(figure, manaCost, magParam);
+                            totalHealFloat += bruhof.teenycraft.battle.effect.EffectCalculator.calculateHealMagnitude(figure, effectiveManaCost, magParam);
                         }
                     }
                 }
@@ -134,11 +132,7 @@ public class TraitRegistry {
 
                 if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§e§lCHARGING..."));
 
-                java.util.ArrayList<String> tiers = ItemFigure.getAbilityTiers(figure.getOriginalStack());
-                String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
-                int manaCost = TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
-
-                state.consumeMana(manaCost);
+                state.consumeMana(BattleAbilityContext.resolveActualManaCost(figure, slotIndex));
                 state.startCharge(ticks, data, slotIndex, isGolden, (target != null) ? target.getUUID() : null);
                 return false;
             }

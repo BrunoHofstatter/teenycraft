@@ -1,0 +1,12 @@
+{
+  "id": "teenycraft:starfire_solo",
+  "figures": [
+    {
+      "figure_id": "starfire",
+      "level": 6,
+      "upgrades": "HHPPDL",
+      "ability_order": [0, 1, 2],
+      "golden_abilities": []
+    }
+  ]
+}

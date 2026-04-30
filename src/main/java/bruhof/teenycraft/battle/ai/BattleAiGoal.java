@@ -77,6 +77,11 @@ public class BattleAiGoal extends Goal {
     private int strafeTicks = 0;
     private float strafeDirection = 1.0f;
     private int lastUsedSlot = -1;
+    private int lastUsedSlotStreak = 0;
+    private int swapReconsiderationTicks = 0;
+    private int recentDamageTicks = 0;
+    private int reflectReuseTicks = 0;
+    private float lastObservedHp = -1.0f;
 
     public BattleAiGoal(EntityTeenyDummy dummy) {
         this.dummy = dummy;
@@ -103,6 +108,11 @@ public class BattleAiGoal extends Goal {
         strafeTicks = 0;
         strafeDirection = 1.0f;
         lastUsedSlot = -1;
+        lastUsedSlotStreak = 0;
+        swapReconsiderationTicks = 0;
+        recentDamageTicks = 0;
+        reflectReuseTicks = 0;
+        lastObservedHp = dummy.getHealth();
     }
 
     @Override
@@ -138,9 +148,22 @@ public class BattleAiGoal extends Goal {
         if (strafeTicks > 0) {
             strafeTicks--;
         }
+        if (swapReconsiderationTicks > 0) {
+            swapReconsiderationTicks--;
+        }
+        if (recentDamageTicks > 0) {
+            recentDamageTicks--;
+        }
+        if (reflectReuseTicks > 0) {
+            reflectReuseTicks--;
+        }
+        if (lastObservedHp >= 0.0f && dummy.getHealth() < lastObservedHp) {
+            recentDamageTicks = 30;
+        }
+        lastObservedHp = dummy.getHealth();
 
         BattleAiProfile profile = dummy.getAiProfile();
-        if (reevaluateTicks <= 0 || shouldReevaluate(state, opponent, active)) {
+        if (reevaluateTicks <= 0 || shouldReevaluate(state, opponent, active, profile)) {
             evaluateNextStep(state, opponentState, opponent, active, enemyFigure, profile);
             reevaluateTicks = profile.reactionIntervalTicks();
         }
@@ -185,7 +208,9 @@ public class BattleAiGoal extends Goal {
                             BattleFigure active,
                             BattleFigure enemyFigure,
                             BattleAiProfile profile) {
-        if (actionCooldownTicks > 0
+        if (!profile.considerSwap()
+                || actionCooldownTicks > 0
+                || swapReconsiderationTicks > 0
                 || state.getSwapCooldown() > 0
                 || state.hasEffect("stun")
                 || state.hasEffect("root")
@@ -214,6 +239,7 @@ public class BattleAiGoal extends Goal {
         }
 
         if (bestIndex < 0) {
+            swapReconsiderationTicks = profile.swapReconsiderationTicks();
             return false;
         }
 
@@ -227,6 +253,7 @@ public class BattleAiGoal extends Goal {
         }
 
         if (improvement < threshold) {
+            swapReconsiderationTicks = profile.swapReconsiderationTicks();
             return false;
         }
 
@@ -235,6 +262,7 @@ public class BattleAiGoal extends Goal {
         intent = Intent.HARD_SWAP;
         actionCooldownTicks = profile.actionCommitTicks();
         reevaluateTicks = profile.reactionIntervalTicks();
+        swapReconsiderationTicks = profile.swapReconsiderationTicks();
         return true;
     }
 
@@ -247,11 +275,7 @@ public class BattleAiGoal extends Goal {
         float hpPct = getHpPct(figure);
         score += hpPct * 4.0d;
 
-        if (figure.getFigureClass().hasAdvantageOver(enemyFigure.getFigureClass())) {
-            score += 4.5d;
-        } else if (enemyFigure.getFigureClass().hasAdvantageOver(figure.getFigureClass())) {
-            score -= 4.0d;
-        }
+        score += scoreSwapClassMatchup(figure.getFigureClass(), enemyFigure.getFigureClass(), profile);
 
         if (figureIndex == state.getActiveFigureIndex()) {
             score += 0.5d;
@@ -305,7 +329,7 @@ public class BattleAiGoal extends Goal {
             AbilityRole role = classifyRole(context);
             double score = scoreAction(state, opponentState, active, enemyFigure, opponent, context, role, profile);
             if (slot == lastUsedSlot) {
-                score -= 0.85d;
+                score -= TeenyBalance.AI_REPEAT_SLOT_SOFT_PENALTY * Math.max(1, lastUsedSlotStreak);
             }
             if (score > 0.0d) {
                 actions.add(new ScoredAction(slot, role, score, prefersDistance(role)));
@@ -316,12 +340,34 @@ public class BattleAiGoal extends Goal {
             return null;
         }
 
+        ScoredAction meleeOverride = selectMeleeOverride(actions, state, active, opponent, profile);
+        if (meleeOverride != null) {
+            return meleeOverride;
+        }
+
+        ScoredAction nearReadyMelee = selectNearReadyMeleeOverride(state, active, opponent, profile);
+        if (nearReadyMelee != null) {
+            return nearReadyMelee;
+        }
+
         double max = actions.stream().mapToDouble(ScoredAction::score).max().orElse(0.0d);
         List<ScoredAction> shortlist = new ArrayList<>();
         double minScore = max - profile.choiceWindow();
         for (ScoredAction action : actions) {
             if (action.score() >= minScore) {
                 shortlist.add(action);
+            }
+        }
+
+        if (lastUsedSlot >= 0 && lastUsedSlotStreak >= TeenyBalance.AI_MAX_SAME_SLOT_STREAK) {
+            List<ScoredAction> alternatives = new ArrayList<>();
+            for (ScoredAction action : actions) {
+                if (action.slot() != lastUsedSlot) {
+                    alternatives.add(action);
+                }
+            }
+            if (!alternatives.isEmpty()) {
+                shortlist = alternatives;
             }
         }
 
@@ -358,7 +404,7 @@ public class BattleAiGoal extends Goal {
             return false;
         }
 
-        return state.getCurrentMana() >= context.manaCost();
+        return state.getCurrentMana() >= context.actualManaCost();
     }
 
     private AbilityRole classifyRole(BattleAbilityContext context) {
@@ -415,43 +461,112 @@ public class BattleAiGoal extends Goal {
         double distance = dummy.distanceTo(opponent);
         float selfHpPct = getHpPct(active);
         float enemyHpPct = getHpPct(enemyFigure);
-        double score = switch (role) {
-            case MELEE_DAMAGE -> 4.2d + (profile.aggression() * 2.5d);
-            case RANGED_DAMAGE -> 4.0d + (profile.aggression() * 2.0d);
-            case HEAL -> scoreHeal(state, active, profile);
-            case CLEANSE -> scoreCleanse(state, profile);
-            case BUFF -> scoreBuff(state, selfHpPct, profile);
-            case CONTROL -> 3.3d + ((1.0f - enemyHpPct) * 1.5d);
-            case DEBUFF -> 3.0d + ((1.0f - enemyHpPct) * 1.2d);
-            case UTILITY -> 1.4d;
-        };
+        boolean pressured = isPressured(opponent);
+        boolean highMana = isHighMana(state);
+        boolean fullMana = state.getCurrentMana() >= (TeenyBalance.BATTLE_MANA_MAX * 0.97f);
+        PureEffectFamily pureEffectFamily = resolvePureEffectFamily(context);
+        double score;
 
-        if (role == AbilityRole.MELEE_DAMAGE) {
-            score += scoreClassMatchup(active.getFigureClass(), enemyFigure.getFigureClass(), 1.2d);
-            if (distance <= MELEE_REACH + 0.8d) {
-                score += 2.0d;
-            } else if (distance >= 6.0d) {
-                score -= 1.0d;
-            }
-        } else if (role == AbilityRole.RANGED_DAMAGE || role == AbilityRole.CONTROL || role == AbilityRole.DEBUFF) {
-            double maxRange = TeenyBalance.getRangeValue(context.data().rangeTier);
-            double preferredRange = adjustPreferredRange(maxRange, context, profile);
-            double distanceOffset = Math.abs(distance - preferredRange);
-            score += Math.max(0.0d, 2.4d - distanceOffset);
+        if (pureEffectFamily != null) {
+            score = scorePureEffectAbility(
+                    state,
+                    opponentState,
+                    active,
+                    enemyFigure,
+                    opponent,
+                    context,
+                    pureEffectFamily,
+                    profile,
+                    distance,
+                    selfHpPct,
+                    pressured,
+                    highMana,
+                    fullMana
+            );
+        } else {
+            score = switch (role) {
+                case MELEE_DAMAGE -> 4.2d + (profile.aggression() * 2.5d);
+                case RANGED_DAMAGE -> 4.0d + (profile.aggression() * 2.0d);
+                case HEAL -> scoreHeal(state, active, profile);
+                case CLEANSE -> scoreCleanse(state, profile);
+                case BUFF -> scoreBuff(state, selfHpPct, profile);
+                case CONTROL -> 3.3d + ((1.0f - enemyHpPct) * 1.5d);
+                case DEBUFF -> 3.0d + ((1.0f - enemyHpPct) * 1.2d);
+                case UTILITY -> 1.4d;
+            };
 
-            if (context.hasOpponentEffect("remote_mine") && state.hasActiveMine(context.slotIndex(), opponent.getUUID())) {
-                score += 2.0d;
-            }
-
-            if (profile.enablesCounterAwareness() && role != AbilityRole.RANGED_DAMAGE) {
-                if (opponentState.hasEffect("cleanse_immunity")) {
-                    score -= 1.8d;
+            if (role == AbilityRole.MELEE_DAMAGE) {
+                score += scoreClassMatchup(active.getFigureClass(), enemyFigure.getFigureClass(), 1.2d);
+                if (distance <= MELEE_REACH + 0.8d) {
+                    score += 2.0d;
+                } else if (distance >= 6.0d) {
+                    score -= 1.0d;
                 }
-                if (hasEnemyCleanse(opponentState)) {
-                    score -= 0.8d;
+            } else if (role == AbilityRole.RANGED_DAMAGE || role == AbilityRole.CONTROL || role == AbilityRole.DEBUFF) {
+                double maxRange = TeenyBalance.getRangeValue(context.data().rangeTier);
+                double preferredRange = adjustPreferredRange(maxRange, context, profile);
+                double distanceOffset = Math.abs(distance - preferredRange);
+                score += Math.max(0.0d, 2.4d - distanceOffset);
+
+                if (context.hasOpponentEffect("remote_mine") && state.hasActiveMine(context.slotIndex(), opponent.getUUID())) {
+                    score += 2.0d;
                 }
+
+                if (profile.enablesCounterAwareness() && role != AbilityRole.RANGED_DAMAGE) {
+                    if (opponentState.hasEffect("cleanse_immunity")) {
+                        score -= 1.8d;
+                    }
+                    if (hasEnemyCleanse(opponentState)) {
+                        score -= 0.8d;
+                    }
+                }
+            }
+
+            if (pressured) {
+                score += switch (role) {
+                    case MELEE_DAMAGE, RANGED_DAMAGE -> 2.4d;
+                    case CONTROL -> 0.4d;
+                    case HEAL -> selfHpPct <= 0.35f ? 0.8d : -2.2d;
+                    case CLEANSE -> -1.8d;
+                    case BUFF -> -3.0d;
+                    case DEBUFF -> -1.8d;
+                    case UTILITY -> -1.6d;
+                };
+            }
+
+            if (highMana) {
+                score += switch (role) {
+                    case MELEE_DAMAGE, RANGED_DAMAGE -> 1.8d;
+                    case CONTROL -> 0.7d;
+                    case DEBUFF -> 0.4d;
+                    case HEAL -> selfHpPct <= 0.50f ? 0.2d : -1.4d;
+                    case CLEANSE -> -1.0d;
+                    case BUFF -> -1.8d;
+                    case UTILITY -> -1.1d;
+                };
+            }
+
+            if (context.isSelfTargeted() && distance <= 3.0d && role != AbilityRole.HEAL && role != AbilityRole.CLEANSE) {
+                score -= 0.6d;
+            }
+
+            if (context.actualManaCost() > (state.getCurrentMana() * (0.55f + (profile.manaDiscipline() * 0.35f)))) {
+                score -= 0.7d;
+            }
+
+            if (role == AbilityRole.BUFF) {
+                score += scoreSelfEffectNovelty(state, context);
+            }
+            if (role == AbilityRole.DEBUFF || role == AbilityRole.CONTROL) {
+                score += scoreOpponentEffectNovelty(opponentState, context);
             }
         }
+
+        if (score <= 0.0d) {
+            return score;
+        }
+
+        score += scoreEffectiveManaValue(context, role, highMana, fullMana);
 
         if (context.hasTrait("charge_up")) {
             score -= (1.0f - profile.riskTolerance()) * 1.0d;
@@ -459,16 +574,8 @@ public class BattleAiGoal extends Goal {
                 score -= 1.2d;
             }
         }
-        if (context.hasTrait("blue") && state.getCurrentMana() >= (context.manaCost() * 1.5f)) {
+        if (context.hasTrait("blue") && state.getCurrentMana() >= (context.actualManaCost() * 1.5f)) {
             score += 0.8d;
-        }
-
-        if (context.isSelfTargeted() && distance <= 3.0d && role != AbilityRole.HEAL && role != AbilityRole.CLEANSE) {
-            score -= 0.6d;
-        }
-
-        if (context.manaCost() > (state.getCurrentMana() * (0.55f + (profile.manaDiscipline() * 0.35f)))) {
-            score -= 0.7d;
         }
 
         return score;
@@ -477,34 +584,26 @@ public class BattleAiGoal extends Goal {
     private double scoreHeal(BattleState state, BattleFigure active, BattleAiProfile profile) {
         float hpPct = getHpPct(active);
         float missingPct = 1.0f - hpPct;
-        if (missingPct < 0.18f) {
+        if (missingPct < 0.10f || healingBlocked(state)) {
             return 0.0d;
         }
-        double score = 2.0d + (missingPct * 8.0d);
-        if (state.hasEffect("kiss")) {
-            score = 0.0d;
-        }
-        if (hpPct <= (0.30f + ((1.0f - profile.riskTolerance()) * 0.15f))) {
+        double score = 1.2d + (missingPct * missingPct * 12.0d);
+        if (hpPct <= Math.max(TeenyBalance.AI_SELF_HEAL_CRITICAL_HP_PCT,
+                0.30f + ((1.0f - profile.riskTolerance()) * 0.15f))) {
             score += 1.8d;
         }
         return score;
     }
 
     private double scoreCleanse(BattleState state, BattleAiProfile profile) {
-        double score = 0.0d;
-        for (String effectId : CLEANSEABLE_SELF_EFFECTS) {
-            if (state.hasEffect(effectId)) {
-                score += switch (effectId) {
-                    case "stun", "root", "freeze_movement" -> 3.5d;
-                    case "poison", "shock", "kiss" -> 2.5d;
-                    default -> 1.4d;
-                };
-            }
-        }
         if (state.hasEffect("kiss")) {
             return 0.0d;
         }
-        return score + ((1.0f - profile.riskTolerance()) * 0.5d);
+        int debuffCount = countSelfCleanseableDebuffs(state);
+        if (debuffCount <= 0) {
+            return 0.0d;
+        }
+        return (debuffCount * 2.5d) + ((1.0f - profile.riskTolerance()) * 0.5d);
     }
 
     private double scoreBuff(BattleState state, float selfHpPct, BattleAiProfile profile) {
@@ -514,6 +613,537 @@ public class BattleAiGoal extends Goal {
         }
         if (selfHpPct < 0.30f) {
             score -= 0.8d;
+        }
+        return score;
+    }
+
+    private double scorePureEffectAbility(BattleState state,
+                                          IBattleState opponentState,
+                                          BattleFigure active,
+                                          BattleFigure enemyFigure,
+                                          LivingEntity opponent,
+                                          BattleAbilityContext context,
+                                          PureEffectFamily family,
+                                          BattleAiProfile profile,
+                                          double distance,
+                                          float selfHpPct,
+                                          boolean pressured,
+                                          boolean highMana,
+                                          boolean fullMana) {
+        boolean far = isFar(distance, enemyFigure);
+        boolean threatBand = !pressured && isThreatBand(distance, enemyFigure);
+
+        return switch (family) {
+            case HEAL -> scorePureHeal(state, selfHpPct, pressured);
+            case GROUP_HEAL -> scorePureGroupHeal(state, active, selfHpPct, pressured);
+            case POWER_UP -> scorePowerUp(state, pressured, far, highMana, fullMana);
+            case DANCE -> scoreDance(state, pressured, far, highMana, fullMana);
+            case CLEANSE -> scorePureCleanse(state);
+            case BATTERY_DRAIN -> scoreBatteryDrain(state, context, selfHpPct);
+            case CUTENESS -> scoreThreatBandDefense(state, "cuteness", threatBand);
+            case SHIELD -> scoreThreatBandDefense(state, "shield", threatBand);
+            case FLIGHT -> scoreFlight(state, pressured);
+            case POISON -> scoreNoPressureOpponentEffect(opponentState, pressured, far, "poison");
+            case POWER_DOWN -> scoreNoPressureOpponentEffect(opponentState, pressured, far, "power_down");
+            case CURSE -> scoreNoPressureOpponentEffect(opponentState, pressured, far, "curse");
+            case WAFFLE -> scoreNoPressureOpponentEffect(opponentState, pressured, far, "waffle");
+            case REMOTE_MINE -> scoreRemoteMine(state, opponentState, opponent, context, pressured, far, highMana);
+            case HEALTH_RADIO -> scoreHealthRadio(state, selfHpPct, pressured);
+            case POWER_RADIO -> scoreNoPressureSelfSetup(state, pressured, far, highMana, "power_radio", 2.4d);
+            case DEFENSE_DOWN -> scoreNoPressureOpponentEffect(opponentState, pressured, far, "defense_down");
+            case DEFENSE_UP -> scoreThreatBandDefense(state, "defense_up", threatBand);
+            case FREEZE -> scoreFreeze(opponentState, context);
+            case DODGE_SMOKE -> scoreThreatBandDefense(state, "dodge_smoke", threatBand);
+            case LUCK_UP -> scoreNoPressureSelfSetup(state, pressured, far, highMana, "luck_up", 2.0d);
+            case PETS -> scorePets(state, pressured, far);
+            case REFLECT -> scoreReflect(state, pressured);
+        };
+    }
+
+    private double scorePureHeal(BattleState state, float selfHpPct, boolean pressured) {
+        if (healingBlocked(state)) {
+            return 0.0d;
+        }
+
+        float missingPct = 1.0f - selfHpPct;
+        if (missingPct < 0.10f) {
+            return 0.0d;
+        }
+
+        double score = 1.2d + (missingPct * missingPct * 12.0d);
+        if (pressured) {
+            if (selfHpPct > TeenyBalance.AI_SELF_HEAL_CRITICAL_HP_PCT) {
+                score *= 0.15d;
+            } else {
+                score += 2.0d;
+            }
+        }
+        return score;
+    }
+
+    private double scorePureGroupHeal(BattleState state, BattleFigure active, float selfHpPct, boolean pressured) {
+        if (healingBlocked(state)) {
+            return 0.0d;
+        }
+
+        double totalMissingPct = 0.0d;
+        int injuredBenchCount = 0;
+        boolean lowBenchAlly = false;
+        for (BattleFigure figure : state.getTeam()) {
+            if (figure == null || figure.getCurrentHp() <= 0) {
+                continue;
+            }
+
+            float hpPct = getHpPct(figure);
+            float missingPct = 1.0f - hpPct;
+            totalMissingPct += missingPct;
+
+            if (figure != active && missingPct >= 0.08f) {
+                injuredBenchCount++;
+            }
+            if (figure != active && hpPct <= TeenyBalance.AI_GROUP_HEAL_ALLY_LOW_HP_PCT) {
+                lowBenchAlly = true;
+            }
+        }
+
+        if (totalMissingPct < 0.16f) {
+            return 0.0d;
+        }
+        if (injuredBenchCount == 0 && selfHpPct > TeenyBalance.AI_GROUP_HEAL_SELF_ONLY_HP_PCT) {
+            return 0.0d;
+        }
+
+        double score = totalMissingPct * 4.8d;
+        if (injuredBenchCount > 0) {
+            score += 0.7d + (injuredBenchCount * 0.4d);
+        }
+        if (lowBenchAlly) {
+            score += 0.9d;
+        }
+        if (selfHpPct <= TeenyBalance.AI_SELF_HEAL_CRITICAL_HP_PCT) {
+            score += 1.5d;
+        }
+
+        if (pressured) {
+            if (selfHpPct > TeenyBalance.AI_SELF_HEAL_CRITICAL_HP_PCT) {
+                return 0.0d;
+            }
+            score = Math.max(score, 4.5d + ((1.0f - selfHpPct) * 6.0d));
+        }
+
+        return score;
+    }
+
+    private double scorePowerUp(BattleState state, boolean pressured, boolean far, boolean highMana, boolean fullMana) {
+        if (positiveSelfEffectsBlocked(state) || pressured) {
+            return 0.0d;
+        }
+
+        double score = 1.0d;
+        if (far) {
+            score += 1.4d;
+        }
+        if (highMana) {
+            score += 1.6d;
+        }
+        if (fullMana) {
+            score += 1.4d;
+        }
+        return score;
+    }
+
+    private double scoreDance(BattleState state, boolean pressured, boolean far, boolean highMana, boolean fullMana) {
+        if (positiveSelfEffectsBlocked(state) || pressured || state.hasEffect("dance")) {
+            return 0.0d;
+        }
+
+        double score = 0.8d;
+        if (far) {
+            score += 1.0d;
+        }
+        if (highMana) {
+            score += 1.1d;
+        }
+        if (fullMana) {
+            score += 0.8d;
+        }
+        return score;
+    }
+
+    private double scorePureCleanse(BattleState state) {
+        if (state.hasEffect("kiss")) {
+            return 0.0d;
+        }
+
+        int debuffCount = countSelfCleanseableDebuffs(state);
+        if (debuffCount <= 0) {
+            return 0.0d;
+        }
+        return debuffCount * 2.5d;
+    }
+
+    private double scoreBatteryDrain(BattleState state, BattleAbilityContext context, float selfHpPct) {
+        if (context.slotIndex() == 2 || selfHpPct <= TeenyBalance.AI_BATTERY_DRAIN_MIN_HP_PCT) {
+            return 0.0d;
+        }
+
+        float manaPct = getManaPct(state);
+        if (manaPct >= 0.95f) {
+            return 0.0d;
+        }
+
+        double safeHpWindow = Math.max(0.0d,
+                (selfHpPct - TeenyBalance.AI_BATTERY_DRAIN_MIN_HP_PCT) / (1.0d - TeenyBalance.AI_BATTERY_DRAIN_MIN_HP_PCT));
+        double score = 2.2d + (safeHpWindow * 1.8d);
+        if (manaPct <= 0.55f) {
+            score += 1.2d;
+        } else if (manaPct <= 0.75f) {
+            score += 0.4d;
+        }
+        return score;
+    }
+
+    private double scoreThreatBandDefense(BattleState state, String effectId, boolean threatBand) {
+        if (positiveSelfEffectsBlocked(state) || state.hasEffect(effectId) || !threatBand) {
+            return 0.0d;
+        }
+        return 3.4d;
+    }
+
+    private double scoreFlight(BattleState state, boolean pressured) {
+        if (positiveSelfEffectsBlocked(state) || state.hasEffect("flight") || !pressured) {
+            return 0.0d;
+        }
+        return 4.3d;
+    }
+
+    private double scoreNoPressureOpponentEffect(IBattleState opponentState, boolean pressured, boolean far, String effectId) {
+        if (pressured || opponentState.hasEffect(effectId)) {
+            return 0.0d;
+        }
+
+        double score = 2.6d;
+        if (far) {
+            score += 0.6d;
+        }
+        return score;
+    }
+
+    private double scoreRemoteMine(BattleState state,
+                                   IBattleState opponentState,
+                                   LivingEntity opponent,
+                                   BattleAbilityContext context,
+                                   boolean pressured,
+                                   boolean far,
+                                   boolean highMana) {
+        if (state.hasActiveMine(context.slotIndex(), opponent.getUUID())) {
+            float chargePct = getRemoteMineChargePct(opponentState, context.slotIndex());
+            if (chargePct < TeenyBalance.AI_REMOTE_MINE_DETONATE_MIN_CHARGE_PCT) {
+                return 0.0d;
+            }
+            return 6.0d + (chargePct * 4.0d);
+        }
+
+        if (pressured) {
+            return 0.0d;
+        }
+
+        double score = 3.0d;
+        if (far) {
+            score += 0.8d;
+        }
+        if (highMana) {
+            score += 0.4d;
+        }
+        return score;
+    }
+
+    private double scoreHealthRadio(BattleState state, float selfHpPct, boolean pressured) {
+        if (healingBlocked(state) || pressured || state.hasEffect("health_radio")) {
+            return 0.0d;
+        }
+
+        float missingPct = 1.0f - selfHpPct;
+        if (missingPct < TeenyBalance.AI_HEALTH_RADIO_MIN_MISSING_HP_PCT) {
+            return 0.0d;
+        }
+        return 1.8d + (missingPct * 5.0d);
+    }
+
+    private double scoreNoPressureSelfSetup(BattleState state,
+                                            boolean pressured,
+                                            boolean far,
+                                            boolean highMana,
+                                            String effectId,
+                                            double baseScore) {
+        if (positiveSelfEffectsBlocked(state) || pressured || state.hasEffect(effectId)) {
+            return 0.0d;
+        }
+
+        double score = baseScore;
+        if (far) {
+            score += 0.6d;
+        }
+        if (highMana) {
+            score += 0.5d;
+        }
+        return score;
+    }
+
+    private double scoreFreeze(IBattleState opponentState, BattleAbilityContext context) {
+        if (context.slotIndex() == 2 || opponentState.hasEffect("freeze") || opponentState.hasEffect("freeze_movement")) {
+            return 0.0d;
+        }
+
+        double score = 2.8d;
+        if (getManaPct(opponentState) >= TeenyBalance.AI_OPPONENT_HIGH_MANA_PCT) {
+            score += 2.0d;
+        }
+        return score;
+    }
+
+    private double scorePets(BattleState state, boolean pressured, boolean far) {
+        if (positiveSelfEffectsBlocked(state) || pressured) {
+            return 0.0d;
+        }
+
+        boolean hasPet1 = state.hasEffect("pet_slot_1");
+        boolean hasPet2 = state.hasEffect("pet_slot_2");
+        if (hasPet1 && hasPet2) {
+            return 0.0d;
+        }
+
+        double score = (hasPet1 || hasPet2) ? 2.0d : 3.0d;
+        if (far) {
+            score += 0.6d;
+        }
+        return score;
+    }
+
+    private double scoreReflect(BattleState state, boolean pressured) {
+        if (!pressured || reflectReuseTicks > 0 || state.hasEffect("reflect")) {
+            return 0.0d;
+        }
+        return 4.6d;
+    }
+
+    private boolean healingBlocked(BattleState state) {
+        return state.hasEffect("kiss");
+    }
+
+    private boolean positiveSelfEffectsBlocked(BattleState state) {
+        return state.hasEffect("kiss");
+    }
+
+    private int countSelfCleanseableDebuffs(BattleState state) {
+        int count = 0;
+        for (String effectId : CLEANSEABLE_SELF_EFFECTS) {
+            if (state.hasEffect(effectId)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private boolean hasSelfEffect(BattleAbilityContext context, String effectId) {
+        if (context.data().effectsOnSelf == null) {
+            return false;
+        }
+        for (AbilityLoader.EffectData effect : context.data().effectsOnSelf) {
+            if (effectId.equals(effect.id)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasOpponentEffectId(BattleAbilityContext context, String effectId) {
+        if (context.data().effectsOnOpponent == null) {
+            return false;
+        }
+        for (AbilityLoader.EffectData effect : context.data().effectsOnOpponent) {
+            if (effectId.equals(effect.id)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private PureEffectFamily resolvePureEffectFamily(BattleAbilityContext context) {
+        if (context.isSelfTargeted()) {
+            if (hasSelfEffect(context, "group_heal")) {
+                return PureEffectFamily.GROUP_HEAL;
+            }
+            if (hasSelfEffect(context, "heal")) {
+                return PureEffectFamily.HEAL;
+            }
+            if (hasSelfEffect(context, "health_radio")) {
+                return PureEffectFamily.HEALTH_RADIO;
+            }
+            if (hasSelfEffect(context, "cleanse")) {
+                return PureEffectFamily.CLEANSE;
+            }
+            if (hasSelfEffect(context, "power_up")) {
+                return PureEffectFamily.POWER_UP;
+            }
+            if (hasSelfEffect(context, "dance")) {
+                return PureEffectFamily.DANCE;
+            }
+            if (hasSelfEffect(context, "cuteness")) {
+                return PureEffectFamily.CUTENESS;
+            }
+            if (hasSelfEffect(context, "shield")) {
+                return PureEffectFamily.SHIELD;
+            }
+            if (hasSelfEffect(context, "flight")) {
+                return PureEffectFamily.FLIGHT;
+            }
+            if (hasSelfEffect(context, "power_radio")) {
+                return PureEffectFamily.POWER_RADIO;
+            }
+            if (hasSelfEffect(context, "defense_up")) {
+                return PureEffectFamily.DEFENSE_UP;
+            }
+            if (hasSelfEffect(context, "dodge_smoke")) {
+                return PureEffectFamily.DODGE_SMOKE;
+            }
+            if (hasSelfEffect(context, "luck_up")) {
+                return PureEffectFamily.LUCK_UP;
+            }
+            if (hasSelfEffect(context, "pets")) {
+                return PureEffectFamily.PETS;
+            }
+            if (hasSelfEffect(context, "reflect")) {
+                return PureEffectFamily.REFLECT;
+            }
+            if (hasSelfEffect(context, "self_shock") && hasSelfEffect(context, "bar_fill")) {
+                return PureEffectFamily.BATTERY_DRAIN;
+            }
+            return null;
+        }
+
+        if (hasOpponentEffectId(context, "remote_mine")) {
+            return PureEffectFamily.REMOTE_MINE;
+        }
+        if (hasOpponentEffectId(context, "poison")) {
+            return PureEffectFamily.POISON;
+        }
+        if (context.data().damageTier != 0) {
+            return null;
+        }
+        if (hasOpponentEffectId(context, "power_down")) {
+            return PureEffectFamily.POWER_DOWN;
+        }
+        if (hasOpponentEffectId(context, "curse")) {
+            return PureEffectFamily.CURSE;
+        }
+        if (hasOpponentEffectId(context, "waffle")) {
+            return PureEffectFamily.WAFFLE;
+        }
+        if (hasOpponentEffectId(context, "defense_down")) {
+            return PureEffectFamily.DEFENSE_DOWN;
+        }
+        if (hasOpponentEffectId(context, "freeze")) {
+            return PureEffectFamily.FREEZE;
+        }
+        return null;
+    }
+
+    private boolean isFar(double distance, BattleFigure enemyFigure) {
+        return distance > getThreatBandMax(enemyFigure) + TeenyBalance.AI_FAR_DISTANCE_PADDING;
+    }
+
+    private boolean isThreatBand(double distance, BattleFigure enemyFigure) {
+        return distance >= TeenyBalance.AI_THREAT_BAND_MIN_DISTANCE
+                && distance <= getThreatBandMax(enemyFigure);
+    }
+
+    private double getThreatBandMax(BattleFigure enemyFigure) {
+        return Math.max(
+                TeenyBalance.AI_THREAT_BAND_MIN_MAX_DISTANCE,
+                estimateThreatRange(enemyFigure) + TeenyBalance.AI_THREAT_BAND_RANGE_PADDING
+        );
+    }
+
+    private double estimateThreatRange(BattleFigure figure) {
+        if (figure == null) {
+            return 6.0d;
+        }
+
+        double maxRange = MELEE_REACH + 0.8d;
+        for (int slot = 0; slot < 3; slot++) {
+            AbilityLoader.AbilityData data = BattleAbilityContext.getAbilityData(figure, slot);
+            if (data == null) {
+                continue;
+            }
+            if ("melee".equalsIgnoreCase(data.hitType)) {
+                maxRange = Math.max(maxRange, MELEE_REACH + 0.8d);
+            } else if ("raycasting".equalsIgnoreCase(data.hitType) || "ranged".equalsIgnoreCase(data.hitType)) {
+                maxRange = Math.max(maxRange, TeenyBalance.getRangeValue(data.rangeTier));
+            }
+        }
+        return maxRange;
+    }
+
+    private float getRemoteMineChargePct(IBattleState opponentState, int slotIndex) {
+        BattleTargeting.ArmedMine armedMine = BattleTargeting.findArmedMine(opponentState, slotIndex, dummy.getUUID());
+        if (armedMine == null) {
+            return 0.0f;
+        }
+        return Math.min(1.0f, armedMine.instance().magnitude / (float) TeenyBalance.REMOTE_MINE_STAGES);
+    }
+
+    private float getManaPct(IBattleState state) {
+        if (state == null || TeenyBalance.BATTLE_MANA_MAX <= 0) {
+            return 0.0f;
+        }
+        return Math.max(0.0f, Math.min(1.0f, state.getCurrentMana() / (float) TeenyBalance.BATTLE_MANA_MAX));
+    }
+
+    private double scoreSelfEffectNovelty(BattleState state, BattleAbilityContext context) {
+        if (context.data().effectsOnSelf == null || context.data().effectsOnSelf.isEmpty()) {
+            return 0.0d;
+        }
+
+        double score = 0.0d;
+        int redundantEffects = 0;
+        int freshEffects = 0;
+        for (AbilityLoader.EffectData effect : context.data().effectsOnSelf) {
+            if (state.hasEffect(effect.id)) {
+                redundantEffects++;
+                score -= 2.1d;
+            } else {
+                freshEffects++;
+                score += 0.5d;
+            }
+        }
+
+        if (freshEffects == 0 && redundantEffects > 0) {
+            score -= 1.8d;
+        }
+        return score;
+    }
+
+    private double scoreOpponentEffectNovelty(IBattleState opponentState, BattleAbilityContext context) {
+        if (context.data().effectsOnOpponent == null || context.data().effectsOnOpponent.isEmpty()) {
+            return 0.0d;
+        }
+
+        double score = 0.0d;
+        int redundantEffects = 0;
+        int freshEffects = 0;
+        for (AbilityLoader.EffectData effect : context.data().effectsOnOpponent) {
+            if (opponentState.hasEffect(effect.id)) {
+                redundantEffects++;
+                score -= 2.4d;
+            } else {
+                freshEffects++;
+                score += 0.5d;
+            }
+        }
+
+        if (freshEffects == 0 && redundantEffects > 0) {
+            score -= 2.2d;
         }
         return score;
     }
@@ -543,7 +1173,7 @@ public class BattleAiGoal extends Goal {
         return 0.0d;
     }
 
-    private boolean shouldReevaluate(BattleState state, LivingEntity opponent, BattleFigure active) {
+    private boolean shouldReevaluate(BattleState state, LivingEntity opponent, BattleFigure active, BattleAiProfile profile) {
         if (plannedSlot < 0) {
             return true;
         }
@@ -552,6 +1182,23 @@ public class BattleAiGoal extends Goal {
         }
         BattleAbilityContext context = BattleAbilityContext.create(state, dummy, active, plannedSlot);
         if (context == null || !isActionUsable(state, active, context)) {
+            return true;
+        }
+        AbilityRole plannedRole = classifyRole(context);
+        if (isPressured(opponent)) {
+            if (plannedRole == AbilityRole.BUFF
+                    || plannedRole == AbilityRole.DEBUFF
+                    || plannedRole == AbilityRole.CLEANSE
+                    || plannedRole == AbilityRole.UTILITY) {
+                return true;
+            }
+            if (!context.isMelee()
+                    && dummy.distanceTo(opponent) <= MELEE_REACH + 0.25d
+                    && hasUsableMeleeAction(state, active)) {
+                return true;
+            }
+        }
+        if (isHighMana(state) && (plannedRole == AbilityRole.BUFF || plannedRole == AbilityRole.CLEANSE || plannedRole == AbilityRole.UTILITY)) {
             return true;
         }
         if (context.isRanged() && context.hasOpponentEffect("remote_mine") && state.hasActiveMine(plannedSlot, opponent.getUUID())) {
@@ -588,7 +1235,16 @@ public class BattleAiGoal extends Goal {
         }
 
         if (used) {
-            lastUsedSlot = plannedSlot;
+            PureEffectFamily pureEffectFamily = resolvePureEffectFamily(context);
+            if (plannedSlot == lastUsedSlot) {
+                lastUsedSlotStreak++;
+            } else {
+                lastUsedSlot = plannedSlot;
+                lastUsedSlotStreak = 1;
+            }
+            if (pureEffectFamily == PureEffectFamily.REFLECT) {
+                reflectReuseTicks = TeenyBalance.AI_REFLECT_REUSE_TICKS;
+            }
             actionCooldownTicks = profile.actionCommitTicks();
             reevaluateTicks = Math.min(reevaluateTicks, Math.max(4, profile.reactionIntervalTicks() / 2));
         }
@@ -596,12 +1252,12 @@ public class BattleAiGoal extends Goal {
 
     private void handleMovement(BattleState state, LivingEntity opponent, BattleAiProfile profile) {
         double distance = dummy.distanceTo(opponent);
-        double moveSpeed = 1.0d;
+        double moveSpeedMult = profile.moveSpeedMult();
 
         switch (intent) {
             case PRESSURE_MELEE -> {
                 if (distance > MELEE_REACH) {
-                    dummy.getNavigation().moveTo(opponent, moveSpeed);
+                    dummy.getNavigation().moveTo(opponent, TeenyBalance.AI_APPROACH_MOVE_SPEED * moveSpeedMult);
                 } else {
                     dummy.getNavigation().stop();
                     strafe(0.35f, 0.45f);
@@ -610,9 +1266,9 @@ public class BattleAiGoal extends Goal {
             case PRESSURE_RANGED -> {
                 double desiredRange = desiredRangeForPlannedAction(state, profile);
                 if (distance > desiredRange + RANGE_BAND_PADDING) {
-                    dummy.getNavigation().moveTo(opponent, moveSpeed);
+                    dummy.getNavigation().moveTo(opponent, TeenyBalance.AI_RANGE_APPROACH_MOVE_SPEED * moveSpeedMult);
                 } else if (distance < desiredRange - RANGE_BAND_PADDING) {
-                    moveAwayFrom(opponent, moveSpeed);
+                    moveAwayFrom(opponent, TeenyBalance.AI_RETREAT_MOVE_SPEED * moveSpeedMult);
                 } else {
                     dummy.getNavigation().stop();
                     strafe(0.05f, 0.55f);
@@ -621,7 +1277,7 @@ public class BattleAiGoal extends Goal {
             case SELF_MAINTENANCE, KITE -> {
                 double desiredRange = Math.max(6.0d, desiredRangeForPlannedAction(state, profile));
                 if (distance < desiredRange) {
-                    moveAwayFrom(opponent, moveSpeed);
+                    moveAwayFrom(opponent, TeenyBalance.AI_RETREAT_MOVE_SPEED * moveSpeedMult);
                 } else {
                     dummy.getNavigation().stop();
                     strafe(0.0f, 0.5f);
@@ -629,7 +1285,7 @@ public class BattleAiGoal extends Goal {
             }
             case HARD_SWAP, STALL -> {
                 if (distance < 5.0d) {
-                    moveAwayFrom(opponent, moveSpeed);
+                    moveAwayFrom(opponent, TeenyBalance.AI_RETREAT_MOVE_SPEED * moveSpeedMult);
                 } else {
                     dummy.getNavigation().stop();
                     strafe(0.0f, 0.35f);
@@ -737,6 +1393,123 @@ public class BattleAiGoal extends Goal {
                 || role == AbilityRole.UTILITY;
     }
 
+    private double scoreSwapClassMatchup(FigureClassType selfClass, FigureClassType enemyClass, BattleAiProfile profile) {
+        if (selfClass.hasAdvantageOver(enemyClass)) {
+            return profile.considersClassAdvantageSwap() ? 4.5d : 0.0d;
+        }
+        if (enemyClass.hasAdvantageOver(selfClass)) {
+            return profile.considersClassDisadvantageSwap() ? -4.0d : 0.0d;
+        }
+        return 0.0d;
+    }
+
+    private boolean isPressured(LivingEntity opponent) {
+        return recentDamageTicks > 0 || dummy.distanceTo(opponent) <= MELEE_REACH + 1.0d;
+    }
+
+    private boolean isHighMana(BattleState state) {
+        return state.getCurrentMana() >= (TeenyBalance.BATTLE_MANA_MAX * 0.85f);
+    }
+
+    private boolean hasUsableMeleeAction(BattleState state, BattleFigure active) {
+        for (int slot = 0; slot < 3; slot++) {
+            BattleAbilityContext context = BattleAbilityContext.create(state, dummy, active, slot);
+            if (context != null && context.isMelee() && isActionUsable(state, active, context)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private double scoreEffectiveManaValue(BattleAbilityContext context, AbilityRole role, boolean highMana, boolean fullMana) {
+        if (context.actualManaCost() <= 0 || context.effectiveManaCost() <= context.actualManaCost()) {
+            return 0.0d;
+        }
+
+        double effectiveBonusRatio = (double) (context.effectiveManaCost() - context.actualManaCost()) / (double) context.actualManaCost();
+        double score = effectiveBonusRatio * TeenyBalance.AI_EFFECTIVE_MANA_VALUE_WEIGHT;
+
+        if (highMana) {
+            score += effectiveBonusRatio * TeenyBalance.AI_HIGH_MANA_EFFECTIVE_VALUE_WEIGHT;
+        }
+
+        if (context.slotIndex() == 2) {
+            if (highMana) {
+                score += TeenyBalance.AI_HIGH_MANA_SLOT3_PRIORITY_BONUS;
+            }
+            if (fullMana) {
+                score += TeenyBalance.AI_FULL_MANA_SLOT3_PRIORITY_BONUS;
+            }
+        }
+
+        return switch (role) {
+            case MELEE_DAMAGE, RANGED_DAMAGE, CONTROL, DEBUFF -> score;
+            case BUFF -> score * 0.45d;
+            case HEAL, CLEANSE, UTILITY -> 0.0d;
+        };
+    }
+
+    private boolean needsEmergencyMaintenance(BattleState state, BattleFigure active, BattleAiProfile profile) {
+        return getHpPct(active) <= TeenyBalance.AI_SELF_HEAL_CRITICAL_HP_PCT
+                || (!state.hasEffect("kiss") && countSelfCleanseableDebuffs(state) >= 2);
+    }
+
+    private ScoredAction selectMeleeOverride(List<ScoredAction> actions,
+                                             BattleState state,
+                                             BattleFigure active,
+                                             LivingEntity opponent,
+                                             BattleAiProfile profile) {
+        if (dummy.distanceTo(opponent) > MELEE_REACH + 0.25d || needsEmergencyMaintenance(state, active, profile)) {
+            return null;
+        }
+
+        ScoredAction best = null;
+        for (ScoredAction action : actions) {
+            if (action.role() != AbilityRole.MELEE_DAMAGE) {
+                continue;
+            }
+            if (best == null || action.score() > best.score()) {
+                best = action;
+            }
+        }
+        return best;
+    }
+
+    private ScoredAction selectNearReadyMeleeOverride(BattleState state,
+                                                      BattleFigure active,
+                                                      LivingEntity opponent,
+                                                      BattleAiProfile profile) {
+        if (dummy.distanceTo(opponent) > MELEE_REACH + 0.25d || needsEmergencyMaintenance(state, active, profile)) {
+            return null;
+        }
+
+        ScoredAction best = null;
+        for (int slot = 0; slot < 3; slot++) {
+            BattleAbilityContext context = BattleAbilityContext.create(state, dummy, active, slot);
+            if (context == null || !context.isMelee()) {
+                continue;
+            }
+            if (isActionUsable(state, active, context)) {
+                continue;
+            }
+            if (state.getCurrentMana() <= 0 || context.actualManaCost() <= 0) {
+                continue;
+            }
+
+            float readiness = state.getCurrentMana() / (float) context.actualManaCost();
+            if (readiness < TeenyBalance.AI_NEAR_READY_MELEE_MANA_PCT) {
+                continue;
+            }
+
+            double score = 7.0d + readiness + scoreEffectiveManaValue(context, AbilityRole.MELEE_DAMAGE, isHighMana(state), false);
+            ScoredAction candidate = new ScoredAction(slot, AbilityRole.MELEE_DAMAGE, score, false);
+            if (best == null || candidate.score() > best.score()) {
+                best = candidate;
+            }
+        }
+        return best;
+    }
+
     private enum Intent {
         HARD_SWAP,
         PRESSURE_MELEE,
@@ -755,6 +1528,32 @@ public class BattleAiGoal extends Goal {
         CONTROL,
         DEBUFF,
         UTILITY
+    }
+
+    private enum PureEffectFamily {
+        HEAL,
+        GROUP_HEAL,
+        POWER_UP,
+        DANCE,
+        CLEANSE,
+        BATTERY_DRAIN,
+        CUTENESS,
+        SHIELD,
+        FLIGHT,
+        POISON,
+        POWER_DOWN,
+        CURSE,
+        WAFFLE,
+        REMOTE_MINE,
+        HEALTH_RADIO,
+        POWER_RADIO,
+        DEFENSE_DOWN,
+        DEFENSE_UP,
+        FREEZE,
+        DODGE_SMOKE,
+        LUCK_UP,
+        PETS,
+        REFLECT
     }
 
     private record ScoredAction(int slot, AbilityRole role, double score, boolean prefersDistance) {

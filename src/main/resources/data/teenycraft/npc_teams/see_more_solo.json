@@ -1,0 +1,12 @@
+{
+  "id": "teenycraft:see_more_solo",
+  "figures": [
+    {
+      "figure_id": "see_more",
+      "level": 6,
+      "upgrades": "HHPPDL",
+      "ability_order": [0, 1, 2],
+      "golden_abilities": []
+    }
+  ]
+}

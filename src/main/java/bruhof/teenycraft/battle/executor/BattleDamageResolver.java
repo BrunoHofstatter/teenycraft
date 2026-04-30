@@ -30,7 +30,7 @@ public final class BattleDamageResolver {
                 context.state(),
                 context.figure(),
                 context.data(),
-                context.manaCost(),
+                context.effectiveManaCost(),
                 context.isGolden()
         );
 
@@ -53,7 +53,7 @@ public final class BattleDamageResolver {
                     victimState.getActiveFigure(),
                     result,
                     context.data(),
-                    context.manaCost(),
+                    context.effectiveManaCost(),
                     context.isGolden(),
                     false,
                     isPetFire,
@@ -70,7 +70,7 @@ public final class BattleDamageResolver {
     }
 
     public static int applyDamageToFigure(IBattleState attackerState, LivingEntity attacker, LivingEntity targetEntity, IBattleState victimState,
-                                          BattleFigure victimFigure, DamageResult result, AbilityLoader.AbilityData data, int manaCost,
+                                          BattleFigure victimFigure, DamageResult result, AbilityLoader.AbilityData data, int effectiveManaCost,
                                           boolean isGolden, boolean isReflected, boolean isPetFire, int accessoryReactionId,
                                           boolean canTriggerBirdarang) {
         if (victimState == null || victimFigure == null) {
@@ -85,7 +85,7 @@ public final class BattleDamageResolver {
                 victimFigure,
                 result,
                 data,
-                manaCost,
+                effectiveManaCost,
                 isGolden,
                 isReflected,
                 isPetFire,
@@ -352,7 +352,7 @@ public final class BattleDamageResolver {
                     context.attacker(),
                     attackingFigure,
                     context.data(),
-                    context.manaCost(),
+                    context.effectiveManaCost(),
                     effect.params,
                     context.targetEntity()
             );
@@ -368,7 +368,7 @@ public final class BattleDamageResolver {
                     context.attacker(),
                     attackingFigure,
                     context.data(),
-                    context.manaCost(),
+                    context.effectiveManaCost(),
                     goldenBonus.params(),
                     context.targetEntity()
             );
@@ -397,7 +397,7 @@ public final class BattleDamageResolver {
 
     private record DamageApplicationContext(@Nullable IBattleState attackerState, LivingEntity attacker, LivingEntity targetEntity,
                                             IBattleState victimState, BattleFigure victimFigure, DamageResult result,
-                                            @Nullable AbilityLoader.AbilityData data, int manaCost, boolean isGolden,
+                                            @Nullable AbilityLoader.AbilityData data, int effectiveManaCost, boolean isGolden,
                                             boolean isReflected, boolean isPetFire, int accessoryReactionId,
                                             boolean canTriggerBirdarang) {
     }

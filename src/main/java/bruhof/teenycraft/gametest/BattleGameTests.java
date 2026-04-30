@@ -141,6 +141,26 @@ public final class BattleGameTests {
     }
 
     @GameTest(template = "arenas/arena1", timeoutTicks = 200)
+    public static void opponentChargeUpStartsChargingBeforeApplyingEffect(GameTestHelper helper) {
+        BattleHarness battle = startBattle(helper, List.of(figure("robin")), List.of(figure("raven")), ItemStack.EMPTY);
+
+        BattleFigure active = battle.opponentState.getActiveFigure();
+        battle.opponentState.addMana(manaCost(active, 0) + 20);
+
+        AbilityExecutor.executeAction(battle.opponent, active, 0);
+
+        helper.assertTrue(battle.opponentState.isCharging(), "opponent charge-up abilities should enter charge state first");
+        helper.assertTrue(battle.opponentState.getLockedSlot() == 0, "opponent charge-up should lock the casting slot");
+        helper.assertFalse(battle.playerState.hasEffect("curse"), "charge-up should not apply the effect immediately");
+
+        helper.runAfterDelay(35, () -> {
+            helper.assertFalse(battle.opponentState.isCharging(), "opponent charge state should end after the delay");
+            helper.assertTrue(battle.playerState.hasEffect("curse"), "the effect should apply after charge completes");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arenas/arena1", timeoutTicks = 200)
     public static void faintRoundResetOnlyTouchesPairedOpponent(GameTestHelper helper) {
         BattleHarness battle = startBattle(helper, List.of(figure("robin"), figure("batman")), List.of(figure("joker")), ItemStack.EMPTY);
         NearbyBattler distractor = spawnNearbyBattler(helper, DISTRACTOR_POS, figure("superman"));
