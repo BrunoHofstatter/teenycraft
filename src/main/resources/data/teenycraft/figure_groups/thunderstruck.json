@@ -1,0 +1,12 @@
+{
+  "id": "thunderstruck",
+  "name": "Thunderstruck",
+  "priority": 1,
+  "figures": [
+    "black_lightning",
+    "shazam"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

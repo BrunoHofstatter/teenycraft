@@ -1,0 +1,24 @@
+{
+  "id": "presidential_slam",
+  "name": "Presidential Slam",
+  "description": "Swing your bat at the opponent, deal damage and Stun them",
+  "golden_description": "Increased Luck chance on hit",
+  "texture_index": 37,
+  "particle": "minecraft:sweep_attack",
+  "particle_count": 6,
+  "hit_type": "melee",
+  "damage_tier": 7,
+  "effects_on_opponent": [
+    {
+      "id": "stun",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "trait:luckier:1.0"
+  ]
+}

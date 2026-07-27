@@ -1,0 +1,13 @@
+{
+  "id": "gotham_city_sirens",
+  "name": "Gotham City Sirens",
+  "priority": 1,
+  "figures": [
+    "catwoman",
+    "harley_quinn",
+    "poison_ivy"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

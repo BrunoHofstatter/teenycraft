@@ -58,6 +58,7 @@ These trait ids are explicitly registered in `TraitRegistry.init()`:
 - `charge_up`
 - `instant_cast_chance`
 - `surprise`
+- `luckier`
 - `undodgeable`
 - `activate`
 
@@ -167,6 +168,22 @@ Current example:
 
 - `burp_surprise`
 
+### `luckier`
+Type: pipeline trait
+
+Current behavior:
+
+- adds a flat ability-specific critical-hit chance after the figure's normal Luck crit roll fails
+- uses a second figure-owned shuffle bag rather than an independent random roll
+- calibrates the second bag so the final expected crit chance is the normal crit chance plus the flat bonus
+- does not change the critical damage multiplier, which still uses the figure's effective Luck
+- uses `LUCKIER_FLAT_CRIT_CHANCE` from `TeenyBalance`, multiplied by the first trait parameter
+
+Current examples:
+
+- golden `presidential_slam`
+- golden `laser_eyes_manta`
+
 ### `undodgeable`
 Type: pipeline trait
 
@@ -250,10 +267,12 @@ Current runtime examples:
 - `trait:instant_cast_chance` adds charge-skip behavior to some golden abilities
 - `trait:undodgeable` adds undodgeable behavior to some golden abilities
 - `trait:surprise` would be honored by the damage pipeline if present
+- `trait:luckier:1.0` adds the full balance-defined flat crit chance
 
 Pipeline-side golden handling is not fully uniform:
 
 - `undodgeable` and `surprise` have direct golden handling in `DamagePipeline`
+- golden-only `luckier` is applied in `DamagePipeline` before per-hit crit rolls
 - execution traits are handled through `TraitRegistry.triggerExecutionHooks`
 - `tofu_chance` is handled manually in `AbilityExecutor.rollTofu`
 - `instant_cast` is a compatibility alias, not a live mechanic
@@ -277,6 +296,7 @@ Golden-only trait usage currently includes:
 - `instant_cast_chance`
 - `undodgeable`
 - `blue`
+- `luckier`
 - `tofu_chance`
 
 ## Balance Hooks
@@ -284,6 +304,7 @@ Golden-only trait usage currently includes:
 - `CHARGE_UP_MULT_PER_SEC`
 - `BASE_CHARGE_DELAY`
 - `INSTANT_CAST_CHANCE_PERCENTAGE`
+- `LUCKIER_FLAT_CRIT_CHANCE`
 - `BLUE_TICKS_PER_MANA`
 - `BLUE_TICKS_FLAT`
 - `BLUE_DAMAGE_MULT`

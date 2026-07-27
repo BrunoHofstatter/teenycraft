@@ -1,0 +1,24 @@
+{
+    "id":  "darkseid",
+    "name":  "Darkseid",
+    "description":  "Ruler of Apokolips, seeker of the Anti-Life Equation, very bad boss",
+    "class":  "Dark Arts",
+    "price":  5000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  3,
+                       "power_scale":  3,
+                       "dodge_scale":  1,
+                       "luck_scale":  1
+                   },
+    "abilities":  [
+                      "laser_eyes",
+                      "mighty_punch",
+                      "evil_laugh"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "c",
+                               "b"
+                           ]
+}

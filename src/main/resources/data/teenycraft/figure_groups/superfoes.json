@@ -1,0 +1,13 @@
+{
+  "id": "superfoes",
+  "name": "Superfoes",
+  "priority": 1,
+  "figures": [
+    "bizarro",
+    "darkseid",
+    "lex_luthor"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

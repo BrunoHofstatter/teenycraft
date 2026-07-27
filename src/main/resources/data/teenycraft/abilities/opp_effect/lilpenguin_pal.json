@@ -1,0 +1,27 @@
+{
+  "id": "lilpenguin_pal",
+  "name": "Lil'Penguin Pal",
+  "description": "Your lil penguin pal comes out and applies Freeze to the opponent",
+  "golden_description": "Waffle Chance (blocks a random ability)",
+  "texture_index": 120,
+  "particle": "minecraft:snowflake",
+  "particle_count": 6,
+  "hit_type": "ranged",
+  "raycast_delay_tier": 3,
+  "range_tier": 8,
+  "damage_tier": 0,
+  "effects_on_opponent": [
+    {
+      "id": "freeze",
+      "params": [
+        1,
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:waffle_chance:0.5,1.0"
+  ]
+}

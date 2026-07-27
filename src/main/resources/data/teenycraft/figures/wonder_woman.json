@@ -1,0 +1,24 @@
+{
+    "id":  "wonder_woman",
+    "name":  "Wonder Woman",
+    "description":  "Amazon princess, warrior diplomat, and champion of truth and peace",
+    "class":  "Super",
+    "price":  15000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2,
+                       "power_scale":  3,
+                       "dodge_scale":  1.5,
+                       "luck_scale":  1.5
+                   },
+    "abilities":  [
+                      "counterattack",
+                      "heroic_pose",
+                      "amazonian_beatdown"
+                  ],
+    "ability_cost_tiers":  [
+                               "b",
+                               "d",
+                               "b"
+                           ]
+}

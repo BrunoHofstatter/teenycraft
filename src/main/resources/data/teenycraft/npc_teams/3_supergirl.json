@@ -1,0 +1,25 @@
+{
+  "id": "teenycraft:3_supergirl",
+  "figures": [
+    {
+      "figure_id": "supergirl",
+      "level": 11,
+      "upgrades": "HHHHHPPPPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "flight"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 3,
+    "consider_swap": false,
+    "aggression": 0.65,
+    "preferred_range": "close"
+  }
+}
+

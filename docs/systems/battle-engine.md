@@ -16,6 +16,7 @@ The planned battle-refactor phases are now complete. Intentionally unchanged non
 Post-refactor cleanup now separates more of the presentation plumbing without changing battle outcomes: HUD sync builds a typed snapshot before packet serialization, the client overlay consumes that structured snapshot, and battle hotbar reconstruction flows through a dedicated loadout helper instead of living inline in `BattleState`.
 Class advantage is now implemented in the live damage pipeline with explicit per-hit bonus tracking so presentation can later show the class bonus separately instead of only as part of final total damage.
 Non-player battlers now also use more of that same runtime correctly: `BattleState` updates owner speed and delayed projectiles against the owning entity, and dummy presentation now follows active-figure damage and swaps so arena opponents can run the new first-pass battle AI on top of the normal combat model.
+The battle HUD now also has a first-pass mirrored rail presentation layer on both sides of the screen: active figure card, HP, mana with embedded ability icons and `activate` counters, accessory battery bar with exact `0/200` readout plus a distinct ready state before activation, bench summaries, larger effect badges across up to three rows, dynamic rail height based on visible effect rows, tofu preview rendering, and transient client-side combat feedback packets for large damage or heal numbers plus ability, resource, tofu, and pickup popups.
 
 ## Player-Facing Behavior
 - Battles are real-time, not turn-based.
@@ -24,6 +25,7 @@ Non-player battlers now also use more of that same runtime correctly: `BattleSta
 - During battle, the player inventory is replaced with battle controls: ability items, tofu when present, an accessory slot, and bench figure swap icons.
 - Participant resources such as mana, tofu, battery, accessory runtime, and arena linkage stay on `BattleState`, while temporary combat state such as effects, cooldown buckets, slot progress, and charge/channel state live on the owning `BattleFigure`.
 - Team defeat occurs when all figures on that battle team have fainted.
+- Team slots 1 and 2 can receive one selected shared-group combo; slot 3 is outside the combo pair.
 
 ## Source Of Truth
 - [`src/main/java/bruhof/teenycraft/battle/AbilityExecutor.java`](../../src/main/java/bruhof/teenycraft/battle/AbilityExecutor.java)
@@ -99,14 +101,14 @@ Current implemented entry is command-driven through `/teeny battle start`.
 
 Current flow:
 
-1. Read the player's three team slots from the Titan Manager.
+1. Read the player's three team slots, selected combo group, and opening-slot marker from the Titan Manager.
 2. Resolve an arena id from command input or the current default arena set.
 3. Choose a free fixed battle slot in the Teenyverse and paste the arena template into that slot.
 4. Teleport the player into the Teenyverse if needed, then place them at the arena's authored player spawn.
 5. Build the opposing team either from NPC team JSON or a fallback debug boss.
 6. Spawn an `EntityTeenyDummy` at the arena's authored opponent spawn.
 7. Initialize both participants' `BattleState` data through one paired bootstrap flow so each side starts with an authoritative opponent id before initial figure activation.
-8. Activate each side's opening figure and then replace the player's normal inventory with battle controls.
+8. Resolve the shared group for slots 1 and 2, apply its registered effects to those two battle snapshots, activate the saved opening figure, and then replace the player's normal inventory with battle controls.
 
 Important current details:
 
@@ -117,6 +119,7 @@ Important current details:
 - The current battle start path is still command-driven debug scaffolding, but it no longer depends on a hardcoded iron platform.
 - Arena battle sessions can now also run arena pickup logic, temporary walls, and launch state on top of the normal battle loop.
 - Entering the Teenyverse causes the Titan Manager capability to save and clear the player's vanilla inventory. Leaving the Teenyverse restores it.
+- Automatic combo selection uses group priority and then group id alphabetically; an eligible saved player choice overrides that default.
 
 ## Battle Controls And Inventory Replacement
 During battle, `BattleState.refreshPlayerInventory` clears the player's current inventory and fills it with battle items.
@@ -169,6 +172,7 @@ Additional event-driven runtime:
 - Curse reduces mana regen.
 - Dance increases mana regen.
 - Ability execution can now separate actual mana cost from hidden effective mana cost: the player only pays and sees the actual slot cost, while scaling-heavy formulas can read a different effective value for slot-based efficiency tuning.
+- `charge_up` abilities now reserve their cost visually during the purple charge-up bar and only spend actual mana when the charged cast resolves.
 
 ### Battery
 - Battery charge is also stored on `BattleState`.
@@ -176,17 +180,24 @@ Additional event-driven runtime:
 - A battery pickup threshold spawns as a target percentage of the mana bar.
 - When current mana crosses that threshold, the battery is collected and charge is awarded.
 - Battery gain from successful ability use follows actual mana spent, not hidden effective mana scaling.
+- The HUD marker for that threshold belongs to the mana bar because it represents a mana crossing point, not current battery fill.
 
 ### Accessories
 - The equipped accessory comes from the Titan Manager accessory slot.
 - Accessories activate only when battery charge meets the activation minimum.
 - Once active, the accessory drains battery each tick and runs its own executor hooks.
+- Player accessories resolve damage, effect strength, duration, interval, max-HP bonus, and battery drain from the player's mastery tier when activated.
+- Periodic accessories pulse immediately on activation and then on their resolved interval; Bat Signal retains its delayed one-shot behavior.
+- Accessory actions emit semantic contribution records into separate activation and battle milestone snapshots.
+- Accessory-applied effects preserve source-accessory metadata, including per-accessory magnitude inside stackable effects.
+- Natural battle completion finalizes milestone battle conditions for both wins and losses; manual abandonment discards the battle snapshot.
 - Accessory state can modify battle behavior and may refresh the player's battle inventory.
+- The client HUD now also distinguishes `off`, `ready`, and `active` accessory presentation states so players can see when the accessory is primed before activation.
 
 ### Tofu
 - Tofu is stored as temporary battle-only mana state.
 - When present, it appears as a separate battle item.
-- Using tofu triggers a random self or opponent effect based on the stored tofu power.
+- Tofu now rolls and stores its preview effect when the tofu is created, then uses that stored outcome when consumed.
 - Tofu spawn chance from normal ability use also follows actual mana spent, while tofu power created by ability effects still follows the ability's gameplay scaling inputs.
 
 ## Ability Execution Flow
@@ -218,6 +229,7 @@ Important runtime behaviors:
 - `BattleDamageResolver` owns standard hit resolution, mutation invocation, pet and reflect follow-ups, opponent-effect handoff, and the tiny vanilla hurt feedback, while `BattleState` still remains the single authoritative HP/faint/kill correctness path
 - battle-target resolution for the covered runtime paths is pairing-aware: melee validation, ranged cone checks, remote mine detonation, tofu opponent effects, blue-channel ticks, accessory opponent hooks, first-appearance chip hooks, faint reset visuals, and HUD sync all resolve through the authoritative paired opponent
 - raycast delay creates a `PendingProjectile`; mana and self effects happen on fire, and damage or opponent effects happen on projectile resolution
+- for abilities that have both `charge_up` and raycast delay, the charge-up resolves first, then the charged cast fires and queues the delayed projectile
 - remote mine casts can detonate an existing mine instead of placing or firing normally
 - some traits can cancel or redirect execution through `TraitRegistry.triggerExecutionHooks`
 - self effects and opponent effects are applied through `EffectApplierRegistry`
@@ -252,6 +264,7 @@ Important current rules:
 
 - dodge is mitigation, not full avoidance by default
 - crit and dodge both use shuffle bags rather than flat percent rolls
+- `luckier` adds a flat ability-specific crit chance through a second figure-owned shuffle bag while leaving crit damage unchanged
 - shield is consumed when checked
 - group damage breaks flight on the victim before mitigation
 - class advantage follows the current cycle `Cute > Dark Arts > Super > Tech > Martial Arts > Beast > Cute`
@@ -332,14 +345,24 @@ Current opponent-facing sync now resolves against the authoritative paired oppon
 Current synced data includes:
 
 - active and enemy figure ids, names, model types, and slot indices
+- owning participant entity ids for rail-anchored transient feedback
 - HP, mana, battery, cooldowns, and slot progress
+- tofu state, equipped accessory id and active state, waffle lock data, and charge or blue-channel bar state
 - current ability ids, tiers, and golden flags
-- active effect strings
+- structured active-effect snapshot entries for compact icon-and-timer rendering
 - bench figure ids and HP summaries
 - remote mine state flags, including mines that stay on benched figures
 
 This sync is display-oriented. Runtime authority remains server-side in `BattleState`, `AbilityExecutor`, and the related battle registries.
 The current synced HUD snapshot does not yet expose the separated class-bonus damage numbers; the runtime tracks them now so later UI work can surface them without redefining combat math.
+
+Current battle feedback now uses two channels:
+
+- persistent mirrored HUD state from `PacketSyncBattleData`
+- transient display-only combat UI events from `PacketBattleUiEvent`
+
+Normal battle readability no longer depends only on chat spam for core action feedback, although many legacy system messages still exist alongside the new overlay layer.
+The current overlay crosshair indicators now separate ranged target validity from mana readiness: one square shows whether the held ranged ability has a valid paired target in cone and line of sight, and a second square below it shows whether current mana meets that held ability's actual mana cost.
 
 ## Design Notes
 - Player and opponent battle participants should stay as symmetric as possible by sharing the same capability and runtime model.

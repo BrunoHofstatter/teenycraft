@@ -1,0 +1,24 @@
+{
+    "id":  "poison_ivy",
+    "name":  "Poison Ivy",
+    "description":  "Plant-loving villain who protects nature and poisons everyone else",
+    "class":  "Dark Arts",
+    "price":  500,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1.5,
+                       "power_scale":  3,
+                       "dodge_scale":  1.5,
+                       "luck_scale":  2
+                   },
+    "abilities":  [
+                      "deadly_kiss",
+                      "root",
+                      "natures_wrath"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "b",
+                               "b"
+                           ]
+}

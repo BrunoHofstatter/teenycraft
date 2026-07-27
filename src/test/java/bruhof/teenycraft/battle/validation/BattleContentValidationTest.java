@@ -4,6 +4,7 @@ import bruhof.teenycraft.battle.effect.EffectApplierRegistry;
 import bruhof.teenycraft.battle.effect.EffectRegistry;
 import bruhof.teenycraft.battle.trait.TraitRegistry;
 import bruhof.teenycraft.util.AbilityLoader;
+import bruhof.teenycraft.group.GroupComboEffectRegistry;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.junit.jupiter.api.BeforeAll;
@@ -21,6 +22,7 @@ class BattleContentValidationTest {
         EffectRegistry.init();
         EffectApplierRegistry.init();
         TraitRegistry.init();
+        GroupComboEffectRegistry.init();
     }
 
     @Test
@@ -35,6 +37,7 @@ class BattleContentValidationTest {
                     "self:power_up:0.3",
                     "opponent:remote_mine:1.3",
                     "trait:tofu_chance:1.5,1.2",
+                    "trait:luckier:1.0",
                     "trait:instant_cast"
                   ]
                 }
@@ -154,6 +157,65 @@ class BattleContentValidationTest {
 
         assertTrue(report.hasErrors());
         assertTrue(report.errors().stream().anyMatch(issue -> issue.message().contains("unknown scope 'weird'")));
+    }
+
+    @Test
+    void acceptsPlaceholderGroupEffectAndSeparateMembership() {
+        JsonObject firstFigure = json("""
+                {"id":"alpha","abilities":[]}
+                """);
+        JsonObject secondFigure = json("""
+                {"id":"beta","abilities":[]}
+                """);
+        JsonObject group = json("""
+                {
+                  "id":"friends",
+                  "name":"Friends",
+                  "priority":1,
+                  "figures":["alpha","beta"],
+                  "combo_effects":["none"]
+                }
+                """);
+
+        BattleContentValidation.ValidationReport report = BattleContentValidation.validate(
+                Map.of(),
+                Map.of("teenycraft:figures/alpha.json", firstFigure,
+                        "teenycraft:figures/beta.json", secondFigure),
+                Map.of(),
+                Map.of("teenycraft:figure_groups/friends.json", group)
+        );
+
+        assertFalse(report.hasErrors());
+    }
+
+    @Test
+    void rejectsLegacyFigureMembershipAndUnknownComboEffect() {
+        JsonObject firstFigure = json("""
+                {"id":"alpha","abilities":[],"groups":["friends"]}
+                """);
+        JsonObject secondFigure = json("""
+                {"id":"beta","abilities":[]}
+                """);
+        JsonObject group = json("""
+                {
+                  "id":"friends",
+                  "name":"Friends",
+                  "priority":1,
+                  "figures":["alpha","beta"],
+                  "combo_effects":["not_registered"]
+                }
+                """);
+
+        BattleContentValidation.ValidationReport report = BattleContentValidation.validate(
+                Map.of(),
+                Map.of("teenycraft:figures/alpha.json", firstFigure,
+                        "teenycraft:figures/beta.json", secondFigure),
+                Map.of(),
+                Map.of("teenycraft:figure_groups/friends.json", group)
+        );
+
+        assertTrue(report.errors().stream().anyMatch(issue -> issue.message().contains("legacy field 'groups'")));
+        assertTrue(report.errors().stream().anyMatch(issue -> issue.message().contains("unknown combo effect id 'not_registered'")));
     }
 
     private static JsonObject json(String json) {

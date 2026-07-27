@@ -1,6 +1,8 @@
 package bruhof.teenycraft.screen;
 
+import bruhof.teenycraft.TeenyCraft;
 import bruhof.teenycraft.capability.TeenyCoinsProvider;
+import bruhof.teenycraft.item.custom.ItemAccessory;
 import bruhof.teenycraft.capability.TitanManagerStorageSlot;
 import bruhof.teenycraft.networking.ModMessages;
 import bruhof.teenycraft.networking.PacketTitanManagerAction;
@@ -11,6 +13,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -21,6 +24,8 @@ import java.util.List;
 import java.util.Locale;
 
 public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu> {
+    private static final ResourceLocation COMBO_BANNER = new ResourceLocation(
+            TeenyCraft.MOD_ID, "textures/gui/group_combo_banner.png");
     private static final int PANEL_BG = 0xFF1C1F26;
     private static final int PANEL_LIGHT = 0xFF2D3544;
     private static final int PANEL_DARK = 0xFF141820;
@@ -29,6 +34,8 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
     private static final int TEXT_MAIN = 0xFFE8ECF1;
     private static final int TEXT_MUTED = 0xFF9CA7B5;
     private static final int TEXT_GOLD = 0xFFF1C96B;
+    private static final int COMBO_ACCENT = 0xFFB078E6;
+    private static final int COMBO_ACCENT_DARK = 0xFF57376E;
 
     private static final int TEAM_SLOT_COUNT = 3;
     private static final int TEAM_SLOT_START = 0;
@@ -44,6 +51,13 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
     private Button prevPageButton;
     private Button nextPageButton;
     private boolean suppressSearchCallback = false;
+    private boolean comboOverlayOpen = false;
+    private int comboOverlayPage = 0;
+
+    private static final int COMBO_HELP_X = 135;
+    private static final int COMBO_HELP_Y = 16;
+    private static final int COMBO_HELP_SIZE = 9;
+    private static final int COMBO_ROWS_PER_PAGE = 6;
 
     public TitanManagerScreen(TitanManagerMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -213,6 +227,33 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
         TitanManagerViewState viewState = menu.getViewState();
         String pageText = (viewState.getPageIndex() + 1) + "/" + viewState.getPageCount();
         guiGraphics.drawString(font, pageText, x + 33, y + 170, TEXT_MAIN, false);
+
+        drawComboSlotIndicator(guiGraphics, x, y);
+        drawLeadMarker(guiGraphics, x, y);
+    }
+
+    private void drawComboSlotIndicator(GuiGraphics guiGraphics, int x, int y) {
+        int firstX = x + 55;
+        int secondRight = x + 92;
+        guiGraphics.fill(firstX, y + 16, secondRight, y + 17, COMBO_ACCENT_DARK);
+        guiGraphics.fill(firstX, y + 36, secondRight, y + 38, COMBO_ACCENT);
+        guiGraphics.fill(firstX, y + 16, firstX + 1, y + 38, COMBO_ACCENT);
+        guiGraphics.fill(secondRight - 1, y + 16, secondRight, y + 38, COMBO_ACCENT);
+
+        int helpX = x + COMBO_HELP_X;
+        int helpY = y + COMBO_HELP_Y;
+        guiGraphics.fill(helpX + 2, helpY, helpX + 7, helpY + COMBO_HELP_SIZE, COMBO_ACCENT_DARK);
+        guiGraphics.fill(helpX, helpY + 2, helpX + COMBO_HELP_SIZE, helpY + 7, COMBO_ACCENT_DARK);
+        guiGraphics.drawString(font, "?", helpX + 2, helpY, TEXT_MAIN, false);
+    }
+
+    private void drawLeadMarker(GuiGraphics guiGraphics, int x, int y) {
+        int slot = menu.getLeadTeamSlot();
+        int markerX = x + 56 + slot * 18 + 10;
+        int markerY = y + 14;
+        guiGraphics.fill(markerX + 2, markerY, markerX + 7, markerY + 9, PANEL_ACCENT_MUTED);
+        guiGraphics.fill(markerX, markerY + 2, markerX + 9, markerY + 7, PANEL_ACCENT_MUTED);
+        guiGraphics.drawString(font, "1", markerX + 2, markerY, TEXT_MAIN, false);
     }
 
     private void drawSectionFrame(GuiGraphics guiGraphics, int x1, int y1, int width, int height) {
@@ -238,6 +279,30 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (comboOverlayOpen) {
+            return handleComboOverlayClick(mouseX, mouseY, button);
+        }
+
+        if (button == 0 && isWithin(mouseX, mouseY, leftPos + COMBO_HELP_X, topPos + COMBO_HELP_Y,
+                COMBO_HELP_SIZE, COMBO_HELP_SIZE)) {
+            comboOverlayOpen = true;
+            comboOverlayPage = 0;
+            return true;
+        }
+
+        int leadMarkerX = leftPos + 56 + menu.getLeadTeamSlot() * 18 + 10;
+        if (button == 0 && isWithin(mouseX, mouseY, leadMarkerX, topPos + 14, 9, 9)) {
+            ModMessages.sendToServer(PacketTitanManagerAction.cycleLeadSlot(menu.containerId));
+            return true;
+        }
+        if (button == 1 && hoveredSlot != null && hoveredSlot.getItem().getItem() instanceof ItemAccessory) {
+            int slotListIndex = menu.slots.indexOf(hoveredSlot);
+            if (slotListIndex >= 0 && minecraft != null && minecraft.gameMode != null) {
+                minecraft.gameMode.handleInventoryButtonClick(menu.containerId,
+                        TitanManagerMenu.BUTTON_OPEN_ACCESSORY_BASE + slotListIndex);
+                return true;
+            }
+        }
         if (button == 2 && hoveredSlot != null) {
             int slotListIndex = menu.slots.indexOf(hoveredSlot);
             if (slotListIndex >= STORAGE_SLOT_START && slotListIndex < STORAGE_SLOT_END) {
@@ -247,6 +312,16 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        if (comboOverlayOpen) {
+            int pageCount = getComboOverlayPageCount();
+            comboOverlayPage = Math.max(0, Math.min(pageCount - 1, comboOverlayPage + (delta < 0 ? 1 : -1)));
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     @Override
@@ -272,6 +347,152 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         renderFavoriteMarkers(guiGraphics);
         renderTooltip(guiGraphics, mouseX, mouseY);
+        if (comboOverlayOpen) {
+            renderComboOverlay(guiGraphics, mouseX, mouseY);
+        } else {
+            renderComboTooltips(guiGraphics, mouseX, mouseY);
+        }
+    }
+
+    private void renderComboTooltips(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        if (isWithin(mouseX, mouseY, leftPos + COMBO_HELP_X, topPos + COMBO_HELP_Y,
+                COMBO_HELP_SIZE, COMBO_HELP_SIZE)) {
+            List<Component> lines = new ArrayList<>();
+            lines.add(Component.literal("Group combo"));
+            GroupComboOption active = getEffectiveCombo();
+            if (active == null) {
+                lines.add(Component.literal("Slots 1 and 2 do not share a group."));
+            } else {
+                lines.add(Component.literal(active.name() + (menu.isComboAutomatic() ? " (automatic)" : "")));
+                for (GroupComboEffectOption effect : active.effects()) {
+                    lines.add(Component.literal(effect.description()));
+                }
+            }
+            lines.add(Component.literal("Click to choose a shared group."));
+            guiGraphics.renderComponentTooltip(font, lines, mouseX, mouseY);
+        }
+
+        int leadMarkerX = leftPos + 56 + menu.getLeadTeamSlot() * 18 + 10;
+        if (isWithin(mouseX, mouseY, leadMarkerX, topPos + 14, 9, 9)) {
+            guiGraphics.renderComponentTooltip(font, List.of(
+                    Component.literal("First appearance"),
+                    Component.literal("Click to move the opening marker.")), mouseX, mouseY);
+        }
+    }
+
+    private void renderComboOverlay(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        int panelX = leftPos + 18;
+        int panelY = topPos + 36;
+        int panelWidth = 204;
+        int panelHeight = 176;
+        guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xB0000000);
+        guiGraphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, PANEL_DARK);
+        guiGraphics.fill(panelX + 2, panelY + 2, panelX + panelWidth - 2, panelY + panelHeight - 2, PANEL_LIGHT);
+        guiGraphics.fill(panelX + 5, panelY + 5, panelX + panelWidth - 5, panelY + 27, COMBO_ACCENT_DARK);
+        guiGraphics.blit(COMBO_BANNER, panelX + 75, panelY + 6, 70, 20,
+                0.0f, 0.0f, 1536, 683, 1536, 683);
+        guiGraphics.drawString(font, "GROUP COMBO", panelX + 10, panelY + 12, TEXT_MAIN, false);
+        guiGraphics.drawString(font, "x", panelX + panelWidth - 15, panelY + 11, TEXT_MAIN, false);
+
+        drawComboRow(guiGraphics, panelX + 8, panelY + 33, panelWidth - 16,
+                "Automatic", "Priority, then alphabetical", menu.isComboAutomatic(), mouseX, mouseY);
+
+        List<GroupComboOption> options = menu.getComboOptions();
+        int start = comboOverlayPage * COMBO_ROWS_PER_PAGE;
+        for (int row = 0; row < COMBO_ROWS_PER_PAGE; row++) {
+            int index = start + row;
+            if (index >= options.size()) {
+                break;
+            }
+            GroupComboOption option = options.get(index);
+            String effects = option.effects().stream().map(GroupComboEffectOption::label)
+                    .reduce((left, right) -> left + ", " + right).orElse("No bonus yet");
+            drawComboRow(guiGraphics, panelX + 8, panelY + 53 + row * 18, panelWidth - 16,
+                    option.name(), effects, !menu.isComboAutomatic() && option.id().equals(menu.getEffectiveComboGroupId()),
+                    mouseX, mouseY);
+        }
+
+        if (options.isEmpty()) {
+            guiGraphics.drawCenteredString(font, "Put two figures with a shared group", panelX + panelWidth / 2,
+                    panelY + 78, TEXT_MUTED);
+            guiGraphics.drawCenteredString(font, "in the first two team slots.", panelX + panelWidth / 2,
+                    panelY + 90, TEXT_MUTED);
+        }
+
+        int pageCount = getComboOverlayPageCount();
+        guiGraphics.drawString(font, "<", panelX + 12, panelY + panelHeight - 15,
+                comboOverlayPage > 0 ? TEXT_MAIN : TEXT_MUTED, false);
+        guiGraphics.drawCenteredString(font, (comboOverlayPage + 1) + "/" + pageCount,
+                panelX + panelWidth / 2, panelY + panelHeight - 15, TEXT_MUTED);
+        guiGraphics.drawString(font, ">", panelX + panelWidth - 18, panelY + panelHeight - 15,
+                comboOverlayPage + 1 < pageCount ? TEXT_MAIN : TEXT_MUTED, false);
+    }
+
+    private void drawComboRow(GuiGraphics guiGraphics, int x, int y, int width, String title, String detail,
+                              boolean selected, int mouseX, int mouseY) {
+        boolean hovered = isWithin(mouseX, mouseY, x, y, width, 16);
+        guiGraphics.fill(x, y, x + width, y + 16,
+                selected ? COMBO_ACCENT_DARK : hovered ? 0xFF3A4353 : PANEL_DARK);
+        if (selected) {
+            guiGraphics.fill(x, y, x + 3, y + 16, COMBO_ACCENT);
+        }
+        guiGraphics.drawString(font, truncateToWidth(title, 84), x + 6, y + 4, TEXT_MAIN, false);
+        guiGraphics.drawString(font, truncateToWidth(detail, 88), x + 98, y + 4, TEXT_MUTED, false);
+    }
+
+    private boolean handleComboOverlayClick(double mouseX, double mouseY, int button) {
+        if (button != 0) {
+            return true;
+        }
+        int panelX = leftPos + 18;
+        int panelY = topPos + 36;
+        int panelWidth = 204;
+        int panelHeight = 176;
+        if (isWithin(mouseX, mouseY, panelX + panelWidth - 22, panelY + 5, 18, 22)
+                || !isWithin(mouseX, mouseY, panelX, panelY, panelWidth, panelHeight)) {
+            comboOverlayOpen = false;
+            return true;
+        }
+        if (isWithin(mouseX, mouseY, panelX + 8, panelY + 33, panelWidth - 16, 16)) {
+            ModMessages.sendToServer(PacketTitanManagerAction.setComboAuto(menu.containerId));
+            return true;
+        }
+        int start = comboOverlayPage * COMBO_ROWS_PER_PAGE;
+        for (int row = 0; row < COMBO_ROWS_PER_PAGE; row++) {
+            if (isWithin(mouseX, mouseY, panelX + 8, panelY + 53 + row * 18, panelWidth - 16, 16)) {
+                int index = start + row;
+                if (index < menu.getComboOptions().size()) {
+                    ModMessages.sendToServer(PacketTitanManagerAction.setComboGroup(menu.containerId,
+                            menu.getComboOptions().get(index).id()));
+                }
+                return true;
+            }
+        }
+        int pageCount = getComboOverlayPageCount();
+        if (isWithin(mouseX, mouseY, panelX + 6, panelY + panelHeight - 22, 24, 20)) {
+            comboOverlayPage = Math.max(0, comboOverlayPage - 1);
+        } else if (isWithin(mouseX, mouseY, panelX + panelWidth - 30, panelY + panelHeight - 22, 24, 20)) {
+            comboOverlayPage = Math.min(pageCount - 1, comboOverlayPage + 1);
+        }
+        return true;
+    }
+
+    private int getComboOverlayPageCount() {
+        return Math.max(1, (menu.getComboOptions().size() + COMBO_ROWS_PER_PAGE - 1) / COMBO_ROWS_PER_PAGE);
+    }
+
+    private GroupComboOption getEffectiveCombo() {
+        return menu.getComboOptions().stream()
+                .filter(option -> option.id().equals(menu.getEffectiveComboGroupId()))
+                .findFirst().orElse(null);
+    }
+
+    private String truncateToWidth(String text, int width) {
+        return font.width(text) <= width ? text : font.plainSubstrByWidth(text, Math.max(0, width - font.width("..."))) + "...";
+    }
+
+    private static boolean isWithin(double mouseX, double mouseY, int x, int y, int width, int height) {
+        return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
     }
 
     private void renderFavoriteMarkers(GuiGraphics guiGraphics) {

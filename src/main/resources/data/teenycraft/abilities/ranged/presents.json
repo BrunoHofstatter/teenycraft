@@ -1,0 +1,24 @@
+{
+  "id": "presents",
+  "name": "Presents!",
+  "description": "Throw presents at the opponent and deal Group Damage",
+  "golden_description": "Bonus Power Up",
+  "texture_index": 19,
+  "particle": "minecraft:happy_villager",
+  "particle_count": 8,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 6,
+  "range_tier": 2,
+  "damage_tier": 10,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "group_damage",
+      "params": []
+    }
+  ],
+  "golden_bonus": [
+    "self:power_up:0.3"
+  ]
+}

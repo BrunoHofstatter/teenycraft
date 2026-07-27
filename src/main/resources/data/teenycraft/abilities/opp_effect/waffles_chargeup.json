@@ -1,0 +1,38 @@
+{
+  "id": "waffles_chargeup",
+  "name": "Waffles!",
+  "description": "Charge Up and throw a waffle at your opponent that doesn't do any damage. (It blocks a random ability for some time)",
+  "golden_description": "Waffle Chance (yes more waffles)",
+  "texture_index": 128,
+  "particle": "minecraft:dragon_breath",
+  "particle_count": 5,
+  "hit_type": "ranged",
+  "raycast_delay_tier": 1,
+  "range_tier": 8,
+  "damage_tier": 0,
+  "effects_on_opponent": [
+    {
+      "id": "waffle",
+      "params": [
+        1,
+        1.2
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "charge_up",
+      "params": [
+        0.4
+      ]
+    },
+    {
+      "id": "undodgeable",
+      "params": []
+    }
+  ],
+  "golden_bonus": [
+    "opponent:waffle_chance:0.5,1.0"
+  ]
+}

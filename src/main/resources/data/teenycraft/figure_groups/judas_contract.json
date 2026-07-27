@@ -1,0 +1,17 @@
+{
+  "id": "judas_contract",
+  "name": "Judas Contract",
+  "priority": 1,
+  "figures": [
+    "beast_boy",
+    "cyborg",
+    "nightwing",
+    "raven",
+    "slade",
+    "starfire",
+    "terra"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+    "id":  "slade",
+    "name":  "Slade",
+    "description":  "Masked mercenary, Robin’s enemy, and professional dramatic shadow",
+    "class":  "Martial Arts",
+    "price":  7500,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2.5,
+                       "power_scale":  3,
+                       "dodge_scale":  2.5,
+                       "luck_scale":  2
+                   },
+    "abilities":  [
+                      "counterattack",
+                      "shuriken_storm",
+                      "deathstrike"
+                  ],
+    "ability_cost_tiers":  [
+                               "b",
+                               "b",
+                               "e"
+                           ]
+}

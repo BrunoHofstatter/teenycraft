@@ -1,0 +1,19 @@
+{
+  "id": "tea_toss",
+  "name": "Tea Toss",
+  "description": "Who throws a tea cup to deal damage? I mean honestely",
+  "golden_description": "Stun",
+  "texture_index": 92,
+  "particle": "minecraft:splash",
+  "particle_count": 4,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 6,
+  "range_tier": 3,
+  "damage_tier": 10,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:stun:0.5"
+  ]
+}

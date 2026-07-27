@@ -16,9 +16,11 @@ The player-facing loop is:
 ## Current Status
 ### Implemented or substantially present
 - Titan Manager capability, team slots, separate figure/chip/accessory storage tabs, and server-driven search/sort/filter flow
+- Player-bound accessory mastery with synced purchase-ready state, Tier 2 through Tier 4 runtime scaling, live accessory-specific Tier 2 through Tier 5 milestones, attributed semantic tracking, and a functional progression/purchase screen
 - Player-attached Teeny Coin currency with Titan Manager display and debug command support
 - First-pass Chip Fuser block/menu/screen for basic duplicate chip rank-up
 - Core figure item data and stat handling
+- Separate figure-group JSON, bidirectional group indexes, two-slot group combos, and player-selectable combo resolution
 - Battle state capability on living entities
 - Real-time battle loop with mana, cooldowns, effects, and virtual HP
 - Command-driven arena battle startup in the Teenyverse with JSON arena metadata, structure templates, multipart arena support, first-pass arena pickups, and first-pass opponent battle AI
@@ -48,12 +50,16 @@ The player-facing loop is:
   - [systems/player-vault.md](systems/player-vault.md)
 - Content:
   - [content/figures.md](content/figures.md)
+  - [content/figure-groups.md](content/figure-groups.md)
   - [content/attributes.md](content/attributes.md)
   - [content/abilities.md](content/abilities.md)
   - [content/abilities-json-reference.md](content/abilities-json-reference.md)
+  - [content/ability-icon-workflow.md](content/ability-icon-workflow.md)
+  - [content/ability-item-displays.md](content/ability-item-displays.md)
   - [content/traits.md](content/traits.md)
   - [content/effects.md](content/effects.md)
   - [content/accessories.md](content/accessories.md)
+  - [content/accessory-milestones.md](content/accessory-milestones.md)
   - [content/chips.md](content/chips.md)
 - World:
   - [world/teenyverse.md](world/teenyverse.md)

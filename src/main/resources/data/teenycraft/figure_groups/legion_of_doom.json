@@ -1,0 +1,16 @@
+{
+  "id": "legion_of_doom",
+  "name": "Legion of Doom",
+  "priority": 1,
+  "figures": [
+    "bizarro",
+    "black_manta",
+    "gorilla_grodd",
+    "lex_luthor",
+    "sinestro",
+    "the_riddler"
+  ],
+  "combo_effects": [
+    "stat_power"
+  ]
+}

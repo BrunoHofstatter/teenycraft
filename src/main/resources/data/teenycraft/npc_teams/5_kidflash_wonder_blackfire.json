@@ -1,0 +1,60 @@
+{
+  "id": "teenycraft:5_kidflash_wonder_blackfire",
+  "figures": [
+    {
+      "figure_id": "kid_flash",
+      "level": 20,
+      "upgrades": "HHHHHHHHHPPPPPPPLLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "nuh_uh",
+        "dance",
+        "super_dash"
+      ]
+    },
+    {
+      "figure_id": "wonder_woman",
+      "level": 20,
+      "upgrades": "HHHHHHHHHHPPPPPPPPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "counterattack",
+        "heroic_pose",
+        "amazonian_beatdown"
+      ]
+    },
+    {
+      "figure_id": "blackfire",
+      "level": 20,
+      "upgrades": "HHHHHHHHHHPPPPPPPPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "laser_eyes",
+        "raspberry",
+        "super_dash"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 5,
+    "aggression": 0.9,
+    "swap_bias": 0.25,
+    "preferred_range": "close",
+    "mana_discipline": 0.2,
+    "risk_tolerance": 0.9,
+    "move_speed_mult": 1.2
+  }
+}
+

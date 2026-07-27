@@ -1,0 +1,24 @@
+{
+    "id":  "red_arrow",
+    "name":  "Red Arrow",
+    "description":  "Roy Harper, sharp archer, former sidekick, and stubborn solo hero",
+    "class":  "Martial Arts",
+    "price":  400,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2,
+                       "power_scale":  2.5,
+                       "dodge_scale":  2.5,
+                       "luck_scale":  1
+                   },
+    "abilities":  [
+                      "charged_arrow",
+                      "poison_arrow",
+                      "arrow_storm"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "d",
+                               "b"
+                           ]
+}

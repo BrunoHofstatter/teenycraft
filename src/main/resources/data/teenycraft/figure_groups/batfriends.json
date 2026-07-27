@@ -1,0 +1,16 @@
+{
+  "id": "batfriends",
+  "name": "Batfriends",
+  "priority": 1,
+  "figures": [
+    "alfred",
+    "batgirl",
+    "batman",
+    "batman_beyond",
+    "nightwing",
+    "robin"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

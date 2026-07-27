@@ -1,0 +1,12 @@
+{
+  "id": "wilson_family",
+  "name": "Wilson Family",
+  "priority": 1,
+  "figures": [
+    "rose_wilson",
+    "slade"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

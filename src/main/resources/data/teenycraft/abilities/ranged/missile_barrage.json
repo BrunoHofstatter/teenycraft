@@ -1,17 +1,24 @@
 {
   "id": "missile_barrage",
   "name": "Missile Barrage",
-  "texture_index": 12,
+  "description": "Shoot many rockets at your opponent, dealing Group Damage (explosion)",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 8,
   "particle": "minecraft:explosion",
   "particle_count": 5,
   "hit_type": "raycasting",
-  "raycast_delay_tier": 6,
-  "range_tier": 4,
-  "damage_tier": 8,
+  "raycast_delay_tier": 4,
+  "range_tier": 7,
+  "damage_tier": 7,
   "effects_on_opponent": [],
   "effects_on_self": [],
   "traits": [
-    { "id": "group_damage" }
+    {
+      "id": "group_damage",
+      "params": []
+    }
   ],
-  "golden_bonus": ["opponent:bar_deplete:1.0"]
+  "golden_bonus": [
+    "opponent:bar_deplete:1.0"
+  ]
 }

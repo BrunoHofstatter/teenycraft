@@ -1,0 +1,24 @@
+{
+    "id":  "the_flash",
+    "name":  "The Flash",
+    "description":  "Barry Allen, fastest man alive, forensic scientist, and hopeful hero",
+    "class":  "Super",
+    "price":  5000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2,
+                       "power_scale":  2,
+                       "dodge_scale":  4,
+                       "luck_scale":  0
+                   },
+    "abilities":  [
+                      "dance",
+                      "counterattack",
+                      "around_the_world"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "a",
+                               "e"
+                           ]
+}

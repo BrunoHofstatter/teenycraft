@@ -125,6 +125,7 @@ Current behavior:
 - `onPeriodicTick` fires when `remainingDuration % interval == 0`
 - `getSmartSplitValue` can evenly split a stored total value across the remaining pulses by consuming from `power`
 - delayed effects that carry a caster now also persist the original source figure identity needed for later combat-source hooks
+- chip-applied runtime effects now preserve that same source-figure attribution when they are authored through chip hook actions instead of normal ability JSON
 
 Implemented periodic effects:
 
@@ -170,6 +171,7 @@ Common current composite patterns:
 - `power_up`: infinite stackable flat damage bonus, consumed on attack.
 - `defense_up`: duration-based incoming damage reduction percent.
 - `luck_up`: duration-based Luck bonus that improves crits and effect scaling.
+- `speed_up`: duration-based movement-speed bonus used by dodge-reactive chip effects.
 - `dance`: duration-based mana regen multiplier.
 - `cuteness`: duration-based reflect percentage.
 - `shield`: negates the next hit unless the hit is undodgeable and shield-piercing logic still leaves damage.
@@ -183,8 +185,10 @@ Common current composite patterns:
 - `power_down`: infinite stackable flat damage penalty, consumed on attack.
 - `defense_down`: duration-based increased incoming damage percent.
 - `root`: duration-based swap lock.
+- `speed_down`: duration-based movement-speed penalty debuff, currently used by `Second Chance` rescue swaps.
 - `disable_0`, `disable_1`, `disable_2`: duration-based figure slot locks.
 - `stun`: duration-based action lock.
+- direct `stun` applications can now have their duration reduced by chip-authored direct-stun resistance, but `shock` still applies its periodic mini-stuns at full authored duration because it bypasses the direct `stun` applier path.
 - `freeze`: instant mana burn plus application of `freeze_movement`.
 - `freeze_movement`: duration-based movement freeze helper effect.
 - `poison`: periodic damage-over-time effect.

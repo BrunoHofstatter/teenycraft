@@ -1,0 +1,24 @@
+{
+  "id": "quick_punch_stun",
+  "name": "Quick Punch",
+  "description": "Give one punch to the opponent and Stun them",
+  "golden_description": "Undodgeable & Shield Piercing",
+  "texture_index": 111,
+  "particle": "minecraft:crit",
+  "particle_count": 3,
+  "hit_type": "melee",
+  "damage_tier": 7,
+  "effects_on_opponent": [
+    {
+      "id": "stun",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "trait:undodgeable"
+  ]
+}

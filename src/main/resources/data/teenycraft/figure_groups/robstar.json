@@ -1,0 +1,12 @@
+{
+  "id": "robstar",
+  "name": "RobStar",
+  "priority": 1,
+  "figures": [
+    "robin",
+    "starfire"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

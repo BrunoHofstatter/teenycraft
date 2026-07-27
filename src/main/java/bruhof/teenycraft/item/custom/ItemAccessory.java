@@ -2,6 +2,7 @@ package bruhof.teenycraft.item.custom;
 
 import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.capability.BattleStateProvider;
+import bruhof.teenycraft.screen.AccessoryScreenMenu;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -37,6 +38,7 @@ public class ItemAccessory extends Item {
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             serverPlayer.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(state -> {
                 if (!state.isBattling()) {
+                    AccessoryScreenMenu.open(serverPlayer, accessoryId);
                     return;
                 }
                 if (state.isAccessoryActive()) {

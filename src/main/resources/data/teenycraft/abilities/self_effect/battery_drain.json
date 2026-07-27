@@ -1,12 +1,14 @@
 {
   "id": "battery_drain",
   "name": "Battery Drain",
-  "texture_index": 1,
+  "description": "Zap yourself, trading some Health for a quick Bar Fill",
+  "golden_description": "Bonus Power Up",
+  "texture_index": 22,
   "particle": "minecraft:electric_spark",
-  "particle_count": 5,
+  "particle_count": 8,
   "hit_type": "none",
-  "damage_tier": 7,
-  "effects_on_opponent":[],
+  "damage_tier": 0,
+  "effects_on_opponent": [],
   "effects_on_self": [
     { "id": "self_shock", "params": [1.0] },
     { "id": "bar_fill", "params": [1.0] }

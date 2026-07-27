@@ -27,11 +27,13 @@ Economy and shop behavior are still mostly planned, but the base player currency
 - The economy should support collection and progression without making random acquisition feel mandatory or punishing.
 - Each shop type should have a distinct role.
 - Selling duplicates should not undermine other progression sinks such as sacrifice, crafting, or mastery.
+- Golden acquisition must not make unlimited purchases of the cheapest unrelated or same-class figure more efficient than pursuing meaningful duplicates and group matches. The planned mitigation combines affinity scoring with future feed-value tiers and shop-side scarcity or repeat-purchase controls; see [golden-abilities.md](golden-abilities.md#economy-risk-and-planned-mitigation).
 
 ## Open Questions
 - current versus planned shop implementation scope
 - pricing model and refresh logic
 - player-to-player transfer flow if coins should ever be tradeable directly
+- feed-value tier format and how shop availability should discourage repeated cheap-figure conversion
 
 ## Planned Additions
 - vendor catalog

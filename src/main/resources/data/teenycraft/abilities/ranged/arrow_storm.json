@@ -1,0 +1,19 @@
+{
+  "id": "arrow_storm",
+  "name": "Arrow Storm",
+  "description": "A storm of arrows that deal Group Damage",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 2,
+  "particle": "minecraft:crit",
+  "particle_count": 8,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 4,
+  "range_tier": 5,
+  "damage_tier": 8,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    { "id": "group_damage", "params": [] }
+  ],
+  "golden_bonus": ["opponent:bar_deplete:1.0"]
+}

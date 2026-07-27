@@ -79,7 +79,8 @@ public class TraitRegistry {
                     for (AbilityLoader.EffectData effect : data.effectsOnSelf) {
                         if ("heal".equals(effect.id) || "eagle".equals(effect.id) || "group_heal".equals(effect.id)) {
                             float magParam = (!effect.params.isEmpty()) ? effect.params.get(0) : 1.0f;
-                            totalHealFloat += bruhof.teenycraft.battle.effect.EffectCalculator.calculateHealMagnitude(figure, effectiveManaCost, magParam);
+                            totalHealFloat += bruhof.teenycraft.battle.effect.EffectCalculator.calculateHealMagnitude(figure, effectiveManaCost, magParam)
+                                    * ChipExecutor.getAbilityHealMultiplier(figure);
                         }
                     }
                 }
@@ -109,6 +110,7 @@ public class TraitRegistry {
                                                AbilityLoader.AbilityData data, LivingEntity target, List<Float> params, boolean isGolden) {
                 float param = params.isEmpty() ? 1.0f : params.get(0);
                 int ticks = (int) (TeenyBalance.BASE_CHARGE_DELAY * param);
+                ticks = Math.max(1, Math.round(ticks * ChipExecutor.getChargeDelayMultiplier(figure)));
 
                 boolean hasInstantChance = isGolden
                         && data.hasGoldenBonus(AbilityLoader.GoldenBonusScope.TRAIT, "instant_cast_chance");
@@ -132,7 +134,6 @@ public class TraitRegistry {
 
                 if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§e§lCHARGING..."));
 
-                state.consumeMana(BattleAbilityContext.resolveActualManaCost(figure, slotIndex));
                 state.startCharge(ticks, data, slotIndex, isGolden, (target != null) ? target.getUUID() : null);
                 return false;
             }
@@ -150,6 +151,14 @@ public class TraitRegistry {
 
         register(new ITrait() {
             @Override public String getId() { return "surprise"; }
+        });
+
+        register(new ITrait.IPipelineTrait() {
+            @Override public String getId() { return "luckier"; }
+            @Override public void modifyOutput(DamagePipeline.DamageResult result, List<Float> params) {
+                float scale = params.isEmpty() ? 1.0f : params.get(0);
+                result.flatCritChanceBonus = TeenyBalance.LUCKIER_FLAT_CRIT_CHANCE * scale;
+            }
         });
 
         // This trait is handled in AbilityExecutor.rollTofu rather than through

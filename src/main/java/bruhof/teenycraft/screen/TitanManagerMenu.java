@@ -7,6 +7,11 @@ import bruhof.teenycraft.capability.TitanManagerStorageSlot;
 import bruhof.teenycraft.item.custom.ItemAccessory;
 import bruhof.teenycraft.item.custom.ItemChip;
 import bruhof.teenycraft.item.custom.ItemFigure;
+import bruhof.teenycraft.group.FigureGroupDefinition;
+import bruhof.teenycraft.group.FigureGroupResolver;
+import bruhof.teenycraft.group.GroupComboEffectRegistry;
+import bruhof.teenycraft.group.GroupComboEffectSpec;
+import bruhof.teenycraft.util.FigureGroupLoader;
 import bruhof.teenycraft.networking.ModMessages;
 import bruhof.teenycraft.networking.PacketSyncTitanManagerView;
 import net.minecraft.network.FriendlyByteBuf;
@@ -21,7 +26,11 @@ import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.SlotItemHandler;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class TitanManagerMenu extends AbstractContainerMenu {
+    public static final int BUTTON_OPEN_ACCESSORY_BASE = 2000;
     private static final int STORAGE_VIEW_SLOTS = TitanManagerViewState.PAGE_SIZE;
     private static final int PLAYER_INVENTORY_START = 58;
     private static final int PLAYER_INVENTORY_END = 94;
@@ -30,6 +39,10 @@ public class TitanManagerMenu extends AbstractContainerMenu {
     private final Player player;
     private final TitanManagerViewState viewState = new TitanManagerViewState();
     private final TitanViewHandler titanViewHandler = new TitanViewHandler();
+    private List<GroupComboOption> comboOptions = List.of();
+    private String effectiveComboGroupId = "";
+    private boolean comboAutomatic = true;
+    private int leadTeamSlot = 0;
 
     public TitanManagerMenu(int containerId, Inventory inventory, FriendlyByteBuf extraData) {
         this(containerId, inventory, inventory.player.getCapability(TitanManagerProvider.TITAN_MANAGER)
@@ -55,6 +68,7 @@ public class TitanManagerMenu extends AbstractContainerMenu {
 
         layoutPlayerInventorySlots(inventory, 39, 183);
         viewState.rebuild(titanManager);
+        rebuildComboState();
     }
 
     public ITitanManager getTitanManager() {
@@ -63,6 +77,44 @@ public class TitanManagerMenu extends AbstractContainerMenu {
 
     public TitanManagerViewState getViewState() {
         return viewState;
+    }
+
+    public List<GroupComboOption> getComboOptions() {
+        return comboOptions;
+    }
+
+    public String getEffectiveComboGroupId() {
+        return effectiveComboGroupId;
+    }
+
+    public boolean isComboAutomatic() {
+        return comboAutomatic;
+    }
+
+    public int getLeadTeamSlot() {
+        return leadTeamSlot;
+    }
+
+    public void setComboGroup(String groupId) {
+        rebuildComboState();
+        if (groupId == null || groupId.isBlank()) {
+            titanManager.setSelectedComboGroupId("");
+        } else if (comboOptions.stream().anyMatch(option -> option.id().equals(groupId))) {
+            titanManager.setSelectedComboGroupId(groupId);
+        }
+        rebuildComboState();
+    }
+
+    public void cycleLeadTeamSlot() {
+        int current = titanManager.getLeadTeamSlot();
+        for (int offset = 1; offset <= ITitanManager.TEAM_SIZE; offset++) {
+            int candidate = (current + offset) % ITitanManager.TEAM_SIZE;
+            if (!titanManager.getTeamStack(candidate).isEmpty()) {
+                titanManager.setLeadTeamSlot(candidate);
+                break;
+            }
+        }
+        rebuildComboState();
     }
 
     public void setActiveTab(TitanManagerTab tab) {
@@ -116,13 +168,38 @@ public class TitanManagerMenu extends AbstractContainerMenu {
                 pageIndex, totalResults, pageCount, visibleSlots);
     }
 
+    public void applySyncedComboState(List<GroupComboOption> options,
+                                      String effectiveGroupId,
+                                      boolean automatic,
+                                      int leadSlot) {
+        comboOptions = List.copyOf(options);
+        effectiveComboGroupId = effectiveGroupId == null ? "" : effectiveGroupId;
+        comboAutomatic = automatic;
+        leadTeamSlot = Math.max(0, Math.min(ITitanManager.TEAM_SIZE - 1, leadSlot));
+    }
+
     @Override
     public void broadcastChanges() {
         if (player instanceof ServerPlayer serverPlayer) {
             viewState.rebuild(titanManager);
-            ModMessages.sendToPlayer(PacketSyncTitanManagerView.fromMenu(containerId, viewState), serverPlayer);
+            rebuildComboState();
+            ModMessages.sendToPlayer(PacketSyncTitanManagerView.fromMenu(containerId, viewState, this), serverPlayer);
         }
         super.broadcastChanges();
+    }
+
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        int slotIndex = id - BUTTON_OPEN_ACCESSORY_BASE;
+        if (slotIndex >= 0 && slotIndex < slots.size()) {
+            ItemStack stack = slots.get(slotIndex).getItem();
+            if (stack.getItem() instanceof ItemAccessory accessory && player instanceof ServerPlayer serverPlayer) {
+                AccessoryScreenMenu.open(serverPlayer, accessory.getAccessoryId());
+                return true;
+            }
+            return false;
+        }
+        return super.clickMenuButton(player, id);
     }
 
     @Override
@@ -191,6 +268,49 @@ public class TitanManagerMenu extends AbstractContainerMenu {
             return TitanManagerStorageSection.ACCESSORIES;
         }
         return null;
+    }
+
+    private void rebuildComboState() {
+        ItemStack first = titanManager.getTeamStack(0);
+        ItemStack second = titanManager.getTeamStack(1);
+        List<FigureGroupDefinition> eligible = first.isEmpty() || second.isEmpty()
+                ? List.of()
+                : FigureGroupLoader.getSharedGroups(ItemFigure.getFigureID(first), ItemFigure.getFigureID(second));
+
+        List<GroupComboOption> rebuilt = new ArrayList<>(eligible.size());
+        for (FigureGroupDefinition group : eligible) {
+            List<GroupComboEffectOption> effects = new ArrayList<>();
+            for (String effectId : group.comboEffectIds()) {
+                GroupComboEffectSpec effect = GroupComboEffectRegistry.get(effectId);
+                if (effect != null) {
+                    effects.add(new GroupComboEffectOption(effect.id(), effect.label(), effect.description(), effect.iconId()));
+                }
+            }
+            rebuilt.add(new GroupComboOption(group.id(), group.name(), group.priority(), effects));
+        }
+        comboOptions = List.copyOf(rebuilt);
+        String selected = titanManager.getSelectedComboGroupId();
+        String selectedToValidate = selected;
+        if (player instanceof ServerPlayer && selected != null && !selected.isBlank()
+                && eligible.stream().noneMatch(group -> group.id().equals(selectedToValidate))) {
+            titanManager.setSelectedComboGroupId("");
+            selected = "";
+        }
+        comboAutomatic = selected == null || selected.isBlank();
+        effectiveComboGroupId = first.isEmpty() || second.isEmpty()
+                ? ""
+                : FigureGroupResolver.resolve(ItemFigure.getFigureID(first), ItemFigure.getFigureID(second), selected)
+                .map(FigureGroupDefinition::id).orElse("");
+        leadTeamSlot = titanManager.getLeadTeamSlot();
+        if (player instanceof ServerPlayer && titanManager.getTeamStack(leadTeamSlot).isEmpty()) {
+            for (int slot = 0; slot < ITitanManager.TEAM_SIZE; slot++) {
+                if (!titanManager.getTeamStack(slot).isEmpty()) {
+                    titanManager.setLeadTeamSlot(slot);
+                    leadTeamSlot = slot;
+                    break;
+                }
+            }
+        }
     }
 
     private class TitanViewHandler implements IItemHandlerModifiable {

@@ -1,0 +1,12 @@
+{
+  "id": "forbidden_love",
+  "name": "Forbidden Love",
+  "priority": 1,
+  "figures": [
+    "cyborg",
+    "jinx"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

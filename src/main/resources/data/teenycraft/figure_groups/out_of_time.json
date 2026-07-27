@@ -1,0 +1,13 @@
+{
+  "id": "out_of_time",
+  "name": "Out of Time",
+  "priority": 1,
+  "figures": [
+    "batman_beyond",
+    "booster_gold",
+    "george_washington"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

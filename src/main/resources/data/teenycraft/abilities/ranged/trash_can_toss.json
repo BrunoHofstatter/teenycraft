@@ -1,0 +1,24 @@
+{
+  "id": "trash_can_toss",
+  "name": "Trash Can Toss",
+  "description": "Toss a trash can at the opponent that deals Group damage",
+  "golden_description": "Power Down",
+  "texture_index": 86,
+  "particle": "minecraft:poof",
+  "particle_count": 7,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 6,
+  "range_tier": 3,
+  "damage_tier": 10,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "group_damage",
+      "params": []
+    }
+  ],
+  "golden_bonus": [
+    "opponent:power_down:1.0"
+  ]
+}

@@ -24,8 +24,9 @@ public class BattleContentValidator extends SimplePreparableReloadListener<Battl
         Map<String, JsonObject> abilities = loadJsonObjects(resourceManager, "abilities");
         Map<String, JsonObject> figures = loadJsonObjects(resourceManager, "figures");
         Map<String, JsonObject> npcTeams = loadJsonObjects(resourceManager, "npc_teams");
+        Map<String, JsonObject> figureGroups = loadJsonObjects(resourceManager, "figure_groups");
 
-        BattleContentValidation.ValidationReport report = BattleContentValidation.validate(abilities, figures, npcTeams);
+        BattleContentValidation.ValidationReport report = BattleContentValidation.validate(abilities, figures, npcTeams, figureGroups);
         if (report.hasErrors()) {
             StringBuilder builder = new StringBuilder("Battle content validation failed:\n");
             for (BattleContentValidation.Issue error : report.errors()) {

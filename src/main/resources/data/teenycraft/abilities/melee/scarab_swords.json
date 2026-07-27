@@ -1,0 +1,24 @@
+{
+  "id": "scarab_swords",
+  "name": "Scarab Swords",
+  "description": "Use the swords in your armor to slice the opponent TWICE, yes twice, it is two hits",
+  "golden_description": "Power Down",
+  "texture_index": 85,
+  "particle": "minecraft:sweep_attack",
+  "particle_count": 6,
+  "hit_type": "melee",
+  "damage_tier": 11,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "multi_hit",
+      "params": [
+        2
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "opponent:power_down:1.0"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "bbrae",
+  "name": "BBRae",
+  "priority": 1,
+  "figures": [
+    "beast_boy",
+    "raven"
+  ],
+  "combo_effects": [
+    "stat_health"
+  ]
+}

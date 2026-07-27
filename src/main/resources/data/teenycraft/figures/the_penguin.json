@@ -1,0 +1,24 @@
+{
+    "id":  "the_penguin",
+    "name":  "The Penguin",
+    "description":  "Gotham crime boss with umbrellas, birds, and expensive bad manners",
+    "class":  "Beast",
+    "price":  800,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2,
+                       "power_scale":  2.5,
+                       "dodge_scale":  0.5,
+                       "luck_scale":  3
+                   },
+    "abilities":  [
+                      "stinky_fish",
+                      "lilpenguin_pal",
+                      "umbrella_shot"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "d",
+                               "e"
+                           ]
+}

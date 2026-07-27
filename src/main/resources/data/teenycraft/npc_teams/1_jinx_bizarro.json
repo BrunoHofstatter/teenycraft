@@ -1,0 +1,31 @@
+{
+  "id": "teenycraft:1_jinx_bizarro",
+  "figures": [
+    {
+      "figure_id": "jinx",
+      "level": 1,
+      "upgrades": "",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "bizarro",
+      "level": 1,
+      "upgrades": "",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    }
+  ],
+  "ai": {
+    "difficulty": 1
+  }
+}
+

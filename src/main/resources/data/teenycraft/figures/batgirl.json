@@ -1,0 +1,24 @@
+{
+    "id":  "batgirl",
+    "name":  "Batgirl",
+    "description":  "Barbara Gordon, Batfamily hero, hacker, and fearless crimefighter",
+    "class":  "Martial Arts",
+    "price":  5000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1.5,
+                       "power_scale":  2.5,
+                       "dodge_scale":  3,
+                       "luck_scale":  1
+                   },
+    "abilities":  [
+                      "heroic_pose",
+                      "ultimate_batarang",
+                      "staff_slam"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "d",
+                               "b"
+                           ]
+}

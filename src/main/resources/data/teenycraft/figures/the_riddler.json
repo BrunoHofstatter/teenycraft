@@ -1,0 +1,24 @@
+﻿{
+    "id":  "the_riddler",
+    "name":  "The Riddler",
+    "description":  "Puzzle-obsessed Gotham villain who cannot resist leaving clues behind",
+    "class":  "Tech",
+    "price":  5000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1.5,
+                       "power_scale":  2,
+                       "dodge_scale":  0.5,
+                       "luck_scale":  4
+                   },
+    "abilities":  [
+                      "good_luck",
+                      "riddle_me_this",
+                      "ponder"
+                  ],
+    "ability_cost_tiers":  [
+                               "b",
+                               "c",
+                               "d"
+                           ]
+}

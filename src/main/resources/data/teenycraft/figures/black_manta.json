@@ -1,0 +1,24 @@
+﻿{
+    "id":  "black_manta",
+    "name":  "Black Manta",
+    "description":  "Aquaman’s armored enemy, pirate, treasure hunter, and ocean menace",
+    "class":  "Tech",
+    "price":  800,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2.5,
+                       "power_scale":  2.5,
+                       "dodge_scale":  0.5,
+                       "luck_scale":  3
+                   },
+    "abilities":  [
+                      "laser_eyes_manta",
+                      "battery_drain",
+                      "trident_throw"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "d",
+                               "e"
+                           ]
+}

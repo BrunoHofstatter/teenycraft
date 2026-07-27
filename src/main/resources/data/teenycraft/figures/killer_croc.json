@@ -1,0 +1,24 @@
+﻿{
+    "id":  "killer_croc",
+    "name":  "Killer Croc",
+    "description":  "Mutated Gotham criminal, sewer brute, and professional biting hazard",
+    "class":  "Beast",
+    "price":  3000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  3.5,
+                       "power_scale":  3.5,
+                       "dodge_scale":  0,
+                       "luck_scale":  0
+                   },
+    "abilities":  [
+                      "slime_ball",
+                      "shockwave_stomp",
+                      "killer_claws"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "c",
+                               "d"
+                           ]
+}

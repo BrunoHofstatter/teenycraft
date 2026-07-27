@@ -1,0 +1,26 @@
+{
+  "id": "camera_flash",
+  "name": "Camera Flash",
+  "description": "Flash your camera at your opponent... and it deals damage? and Stuns them? Yes",
+  "golden_description": "More Stun duration",
+  "texture_index": 69,
+  "particle": "minecraft:flash",
+  "particle_count": 1,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 1,
+  "range_tier": 1,
+  "damage_tier": 8,
+  "effects_on_opponent": [
+    {
+      "id": "stun",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:stun:1.3"
+  ]
+}

@@ -1,17 +1,24 @@
 {
   "id": "burp_surprise",
   "name": "Burp Surprise",
-  "texture_index": 5,
+  "description": "Throws a random suprise at opponent for random damage (just a little random)",
+  "golden_description": "More Tofu chance (increases the natural chance of getting tofu)",
+  "texture_index": 74,
   "particle": "minecraft:bubble_pop",
-  "particle_count": 5,
+  "particle_count": 6,
   "hit_type": "raycasting",
-  "raycast_delay_tier": 8,
+  "raycast_delay_tier": 7,
   "range_tier": 4,
-  "damage_tier": 9,
+  "damage_tier": 11,
   "effects_on_opponent": [],
   "effects_on_self": [],
   "traits": [
-    { "id": "surprise" }
+    {
+      "id": "surprise",
+      "params": []
+    }
   ],
-  "golden_bonus": ["trait:tofu_chance:1.5,1.2"]
+  "golden_bonus": [
+    "trait:tofu_chance:1.5,1.2"
+  ]
 }

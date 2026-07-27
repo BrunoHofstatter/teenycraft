@@ -1,0 +1,26 @@
+{
+  "id": "pattycake",
+  "name": "Pattycake",
+  "description": "Charge Up your twin and throw him, dealing damage",
+  "golden_description": "Instant Cast Chance (chance of no Charge Up time)",
+  "texture_index": 32,
+  "particle": "minecraft:poof",
+  "particle_count": 6,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 1,
+  "range_tier": 4,
+  "damage_tier": 8,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "charge_up",
+      "params": [
+        1.2
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "trait:instant_cast_chance"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "id": "shockwave_stomp",
+  "name": "Shockwave Stomp",
+  "description": "Hit the ground and hit a shockwave at the opponent. Deals damage and Stuns",
+  "golden_description": "More Tofu chance (increases the natural chance of getting tofu)",
+  "texture_index": 77,
+  "particle": "minecraft:poof",
+  "particle_count": 10,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 5,
+  "range_tier": 3,
+  "damage_tier": 5,
+  "effects_on_opponent": [
+    {
+      "id": "stun",
+      "params": [
+        1.4
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "trait:tofu_chance:1.5,1.2"
+  ]
+}

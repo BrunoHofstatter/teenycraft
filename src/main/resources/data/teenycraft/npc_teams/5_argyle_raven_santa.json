@@ -1,0 +1,59 @@
+{
+  "id": "teenycraft:5_argyle_raven_santa",
+  "figures": [
+    {
+      "figure_id": "argyle_trigon",
+      "level": 20,
+      "upgrades": "HHHHHHHHPPPPPPPDDLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "curse",
+        "soul_punch",
+        "tofu"
+      ]
+    },
+    {
+      "figure_id": "raven",
+      "level": 20,
+      "upgrades": "HHHHHHHHPPPPPPPDDLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "curse",
+        "soul_punch",
+        "black_hole"
+      ]
+    },
+    {
+      "figure_id": "santa_clause",
+      "level": 20,
+      "upgrades": "HHHHHHHHPPPPPPPDDLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "laser_eyes",
+        "the_heal",
+        "presents"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 5,
+    "aggression": 0.2,
+    "preferred_range": "far",
+    "mana_discipline": 0.85,
+    "risk_tolerance": 0.1,
+    "swap_bias": 0.7
+  }
+}
+

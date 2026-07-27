@@ -1,0 +1,26 @@
+{
+  "id": "super_dash",
+  "name": "Super Dash",
+  "description": "Use your speed to dash and hit the opponent multiple times (yes this is a ranged attack, cause you're like fast...)",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 12,
+  "particle": "minecraft:cloud",
+  "particle_count": 10,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 1,
+  "range_tier": 8,
+  "damage_tier": 6,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "multi_hit",
+      "params": [
+        5
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "opponent:bar_deplete:1.0"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "superkent",
+  "name": "SuperKent",
+  "priority": 1,
+  "figures": [
+    "clark_kent",
+    "superman"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

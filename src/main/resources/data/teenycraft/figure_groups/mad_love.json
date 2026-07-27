@@ -1,0 +1,12 @@
+{
+  "id": "mad_love",
+  "name": "Mad Love",
+  "priority": 1,
+  "figures": [
+    "harley_quinn",
+    "joker"
+  ],
+  "combo_effects": [
+    "stat_health"
+  ]
+}

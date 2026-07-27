@@ -1,0 +1,16 @@
+{
+  "id": "power_titans",
+  "name": "Power Titans",
+  "priority": 1,
+  "figures": [
+    "beast_boy",
+    "cyborg",
+    "raven",
+    "robin",
+    "silkie",
+    "starfire"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

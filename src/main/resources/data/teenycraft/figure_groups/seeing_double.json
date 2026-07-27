@@ -1,0 +1,12 @@
+{
+  "id": "seeing_double",
+  "name": "Seeing Double",
+  "priority": 1,
+  "figures": [
+    "billy_numerous",
+    "mas_y_menos"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "teenycraft:item/ability_display/action",
+  "textures": {
+    "layer0": "teenycraft:item/ability_around_the_world"
+  }
+}

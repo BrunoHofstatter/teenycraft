@@ -1,0 +1,12 @@
+{
+  "id": "best_buds",
+  "name": "Best Buds",
+  "priority": 1,
+  "figures": [
+    "beast_boy",
+    "cyborg"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

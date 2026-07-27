@@ -1,0 +1,17 @@
+{
+  "id": "killer_claws",
+  "name": "Killer Claws",
+  "description": "Take out your claws and scratch the opponent",
+  "golden_description": "Power Down",
+  "texture_index": 82,
+  "particle": "minecraft:sweep_attack",
+  "particle_count": 6,
+  "hit_type": "melee",
+  "damage_tier": 11,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:power_down:1.0"
+  ]
+}

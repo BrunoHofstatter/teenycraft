@@ -1,19 +1,24 @@
 {
   "id": "harleys_mallet",
   "name": "Harley's Mallet",
-  "texture_index": 130,
+  "description": "Hit your opponent with your mallet and Stun them",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 6,
   "particle": "minecraft:crit",
   "particle_count": 8,
   "hit_type": "melee",
-  "raycast_delay_tier": 0,
-  "damage_tier": 6,
+  "damage_tier": 7,
   "effects_on_opponent": [
     {
       "id": "stun",
-      "params": [1.0]
+      "params": [
+        1
+      ]
     }
   ],
   "effects_on_self": [],
   "traits": [],
-  "golden_bonus": ["opponent:bar_deplete:1.0"]
+  "golden_bonus": [
+    "opponent:bar_deplete:1.0"
+  ]
 }

@@ -1,18 +1,24 @@
-{
-  "id": "robin",
-  "name": "Robin",
-  "description": "One of the classic titans, the leader of them all",
-  "class": "Martial Arts",
-  "groups": [ "Young Justice", "Robin", "Titans"],
-  "price": 150,
-  "model_type": "slim",
-  "attributes": {
-    "hp_scale": 1.5,
-    "power_scale": 2.5,
-    "dodge_scale": 2.5,
-    "luck_scale": 1.5
-  },
-    "abilities": ["heroic_pose", "birdarang", "staff_slam"],
-    "ability_cost_tiers": ["c", "c", "d"]
-  }
-  
+﻿{
+    "id":  "robin",
+    "name":  "Robin",
+    "description":  "Teen Titans leader, Batman’s student, and tiny boss of the whole team",
+    "class":  "Martial Arts",
+    "price":  150,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2,
+                       "power_scale":  2.5,
+                       "dodge_scale":  2.5,
+                       "luck_scale":  1
+                   },
+    "abilities":  [
+                      "heroic_pose",
+                      "birdarang",
+                      "staff_slam"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "c",
+                               "c"
+                           ]
+}

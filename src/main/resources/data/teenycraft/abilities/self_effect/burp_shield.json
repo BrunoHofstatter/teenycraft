@@ -1,15 +1,24 @@
 {
   "id": "burp_shield",
   "name": "Burp Shield",
-  "texture_index": 4,
-  "particle": "minecraft:bubble",
-  "particle_count": 5,
+  "description": "Burp a Shield around yourself that blocks 1 attack",
+  "golden_description": "Heal",
+  "texture_index": 26,
+  "particle": "minecraft:bubble_pop",
+  "particle_count": 8,
   "hit_type": "none",
-  "damage_tier": 7,
+  "damage_tier": 0,
   "effects_on_opponent": [],
   "effects_on_self": [
-    { "id": "shield", "params": [1.0] }
+    {
+      "id": "shield",
+      "params": [
+        1
+      ]
+    }
   ],
   "traits": [],
-  "golden_bonus": ["self:shield:1.2"]
+  "golden_bonus": [
+    "self:heal:0.2"
+  ]
 }

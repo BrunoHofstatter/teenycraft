@@ -1,0 +1,12 @@
+{
+  "id": "titans_east",
+  "name": "Titans East",
+  "priority": 1,
+  "figures": [
+    "bumblebee",
+    "speedy"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

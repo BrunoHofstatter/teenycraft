@@ -32,12 +32,13 @@ Each figure JSON currently provides:
 - `name`
 - `description`
 - `class`
-- `groups`
 - `price`
 - `model_type`
 - `attributes`
 - `abilities`
 - `ability_cost_tiers`
+
+The current shipped figure library contains 65 registered figures synchronized from the `Figures Data` source sheet. Rows without authored stats are intentionally not shipped yet. New rows also require all three slot costs before they are added; existing figures may retain their current slot costs when the sheet leaves those cells blank.
 
 Current authored battle classes in shipped content are:
 
@@ -67,11 +68,11 @@ When a fresh figure is created, `ItemFigure.initializeFigure` writes the long-te
 
 Implemented persistent fields:
 
-- Identity: figure id, display name, description, class, groups, and price
+- Identity: figure id, display name, description, class, and price
 - Progression: level, XP, `PendingUpgradePoints`, and `LastUpgrade`
 - Stats: health, power, dodge, and luck inside a nested `Stats` tag
 - Abilities: the figure's ability pool, current ability order, and per-slot cost tiers
-- Golden progression: a compound mapping ability id to a `0.0` to `1.0` progress value
+- Golden progression: a compound mapping ability id to integer points; legacy normalized progress migrates when read
 - Chip slot: an equipped chip item serialized into the figure item
 
 Important current behavior:
@@ -155,6 +156,8 @@ The original `ItemStack` is still kept on the `BattleFigure`, so battle systems 
 - Team slot validation only accepts `ItemFigure` items.
 - The three team slots reject duplicate figure ids.
 - Starting a battle reads the current team stacks from the Titan Manager and wraps each one in a `BattleFigure`.
+- Group membership is resolved from separate group JSON rather than the figure item. See [figure-groups.md](figure-groups.md).
+- The Silkie Station advances one ability by atomically consuming one to five figures from normal Titan Manager storage. See [golden-abilities.md](../progression/golden-abilities.md).
 
 ## Design Notes
 - Persistent figure state belongs on the item side.
@@ -164,10 +167,9 @@ The original `ItemStack` is still kept on the `BattleFigure`, so battle systems 
 
 ## Open Questions
 - whether nickname editing should become a real player-facing feature rather than stored-only data
-- whether figure groups should gain gameplay meaning beyond metadata and filtering
-- how the normal player loop should eventually unlock or advance golden progress
+- whether golden acquisition should gain a progression unlock after its initial creative-only block access
 
 ## Planned Additions
 - add a dedicated figure JSON schema reference if the content library grows
 - document collectible acquisition once the drop or shop loop is more stable
-- expand the progression cross-links once normal battle XP rewards and golden earning flows are implemented
+- add the Silkie Station's survival acquisition path when the economy and world progression are ready

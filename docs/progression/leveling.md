@@ -25,7 +25,8 @@ Figure items now have an implemented player-facing level-up choice flow through 
 - Keep progression state on the figure item, not in transient battle state.
 - The current code separates level gain from stat gains. Leveling up does not automatically grant stats.
 - Upgrade math should continue to flow through `TeenyBalance` rather than hardcoded feature logic.
-- Golden progression is implemented as per-ability state on the figure item, not as a whole-figure toggle.
+- Golden progression is implemented as integer, per-ability state on the figure item, not as a whole-figure toggle.
+- The implemented Silkie sacrifice loop and its balance rules are documented in [golden-abilities.md](golden-abilities.md).
 
 ## Implemented Now
 - Level is clamped between 1 and `MAX_LEVEL`.
@@ -43,18 +44,18 @@ Figure items now have an implemented player-facing level-up choice flow through 
 - `applyUpgrades` directly increases HP, Power, Dodge, or Luck using the `H`, `P`, `D`, and `L` code letters.
 - `LastUpgrade` is stored on the item when upgrades are applied.
 - NPC team data can spawn figures with predefined level, upgrades, ability order, and golden abilities.
+- The Silkie Station provides the normal player-facing golden acquisition loop and migrates legacy normalized progress when it is read.
 
 ## Not Fully Wired Yet
 - I did not find battle victory code that writes XP back into player figures.
-- Golden progress can be stored and read, but the normal loop for earning that progress is not yet documented in code as a complete system.
 - Ability descriptions and golden descriptions are now supported in ability JSON, but the current content library may still use screen fallbacks until those fields are authored per move.
 
 ## Open Questions
 - what the normal post-battle XP reward flow should be
 - how level-up stat choices should be presented to the player
-- what the intended distinction is between "golden", "mastery", and any future duplicate-figure progression loop
+- what the intended distinction is between golden abilities and any separate future mastery system
 
 ## Planned Additions
 - tune or expand the XP curve array if the level cap changes
 - wire battle reward XP into the normal player loop
-- document the final golden earning loop once it exists outside commands and NPC presets
+- add the presentation polish and future economy hooks described in [golden-abilities.md](golden-abilities.md)

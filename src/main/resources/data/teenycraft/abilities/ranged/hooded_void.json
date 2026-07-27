@@ -1,0 +1,26 @@
+{
+  "id": "hooded_void",
+  "name": "Hooded Void",
+  "description": "Activate this ability, then throw the opponent into the void and deal damage",
+  "golden_description": "Undodgeable & Shield Piercing",
+  "texture_index": 105,
+  "particle": "minecraft:reverse_portal",
+  "particle_count": 8,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 2,
+  "range_tier": 3,
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "activate",
+      "params": [
+        3
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "trait:undodgeable"
+  ]
+}

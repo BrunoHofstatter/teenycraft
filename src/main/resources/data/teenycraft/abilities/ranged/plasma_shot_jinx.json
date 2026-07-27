@@ -1,0 +1,32 @@
+{
+  "id": "plasma_shot_jinx",
+  "name": "Plasma Shot",
+  "description": "Charge Up and shoot multiple plasma shots at the opponent",
+  "golden_description": "Waffle Chance (blocks a random ability)",
+  "texture_index": 123,
+  "particle": "minecraft:flame",
+  "particle_count": 7,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 1,
+  "range_tier": 6,
+  "damage_tier": 6,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "charge_up",
+      "params": [
+        0.6
+      ]
+    },
+    {
+      "id": "multi_hit",
+      "params": [
+        2
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "opponent:waffle_chance:0.5,1.0"
+  ]
+}

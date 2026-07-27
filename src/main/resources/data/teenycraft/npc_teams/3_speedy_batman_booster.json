@@ -1,0 +1,53 @@
+{
+  "id": "teenycraft:3_speedy_batman_booster",
+  "figures": [
+    {
+      "figure_id": "speedy",
+      "level": 11,
+      "upgrades": "HHHHHPPPPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "quick_shot"
+      ]
+    },
+    {
+      "figure_id": "batman",
+      "level": 11,
+      "upgrades": "HHHHPPPDDD",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "bat_mine"
+      ]
+    },
+    {
+      "figure_id": "booster_gold",
+      "level": 11,
+      "upgrades": "HHHHPPPLLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "skeets"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 3,
+    "aggression": 0.35,
+    "swap_bias": 0.6,
+    "preferred_range": "mid",
+    "mana_discipline": 0.75,
+    "risk_tolerance": 0.25
+  }
+}
+

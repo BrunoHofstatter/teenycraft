@@ -19,7 +19,7 @@ This page documents the live loader contract, effect ids, trait ids, parameter u
 
 ## Minimal Shape
 ```json
-{
+{ 
   "id": "example_ability",
   "name": "Example Ability",
   "description": "Optional tooltip text",
@@ -98,6 +98,12 @@ Current note:
 | `11` | `1.12` |
 | `12` | `1.15` |
 | `13` | `1.18` |
+| `14` | `1.21` |
+| `15` | `1.24` |
+| `16` | `1.27` |
+| `17` | `1.30` |
+| `18` | `1.33` |
+| `19` | `1.36` |
 
 ### `raycast_delay_tier`
 If `raycast_delay_tier > 0`, runtime schedules a delayed projectile.

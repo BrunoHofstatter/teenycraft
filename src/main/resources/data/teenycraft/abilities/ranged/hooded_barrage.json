@@ -1,0 +1,26 @@
+{
+  "id": "hooded_barrage",
+  "name": "Hooded Barrage",
+  "description": "Throw some spiked balls at your opponent dealing damage in multiple hits",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 7,
+  "particle": "minecraft:smoke",
+  "particle_count": 8,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 3,
+  "range_tier": 4,
+  "damage_tier": 8,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "multi_hit",
+      "params": [
+        5
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "opponent:bar_deplete:1.0"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "bubble_shield",
+  "name": "Bubble Shield",
+  "description": "Create a Shield around yourself that blocks 1 attack",
+  "golden_description": "Heal",
+  "texture_index": 25,
+  "particle": "minecraft:bubble",
+  "particle_count": 10,
+  "hit_type": "none",
+  "damage_tier": 0,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    {
+      "id": "shield",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "traits": [],
+  "golden_bonus": [
+    "self:heal:0.2"
+  ]
+}

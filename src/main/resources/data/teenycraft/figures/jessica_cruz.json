@@ -1,0 +1,24 @@
+{
+    "id":  "jessica_cruz",
+    "name":  "Jessica Cruz",
+    "description":  "Green Lantern rookie who fights fear with courage and anxiety",
+    "class":  "Super",
+    "price":  600,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1.5,
+                       "power_scale":  3,
+                       "dodge_scale":  2.5,
+                       "luck_scale":  1
+                   },
+    "abilities":  [
+                      "flight",
+                      "construct_beam",
+                      "construct_blaster"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "c",
+                               "d"
+                           ]
+}

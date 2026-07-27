@@ -1,0 +1,48 @@
+{
+  "id": "teenycraft:1_billy_moth_cyborg",
+  "figures": [
+    {
+      "figure_id": "billy_numerous",
+      "level": 1,
+      "upgrades": "",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "killer_moth",
+      "level": 1,
+      "upgrades": "",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "cyborg",
+      "level": 1,
+      "upgrades": "",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    }
+  ],
+  "ai": {
+    "difficulty": 1,
+    "aggression": 0.85,
+    "preferred_range": "close",
+    "mana_discipline": 0.15,
+    "risk_tolerance": 0.9,
+    "move_speed_mult": 1.1,
+    "consider_swap": false
+  }
+}
+

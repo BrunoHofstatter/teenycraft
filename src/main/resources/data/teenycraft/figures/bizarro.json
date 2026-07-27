@@ -1,0 +1,24 @@
+{
+    "id":  "bizarro",
+    "name":  "Bizarro",
+    "description":  "Superman’s unstrange unopposite, terrible heart and excelent at grammar",
+    "class":  "Super",
+    "price":  9000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  3,
+                       "power_scale":  3,
+                       "dodge_scale":  0,
+                       "luck_scale":  1.5
+                   },
+    "abilities":  [
+                      "laser_sneeze",
+                      "freeze_breath",
+                      "butterfly"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "d",
+                               "e"
+                           ]
+}

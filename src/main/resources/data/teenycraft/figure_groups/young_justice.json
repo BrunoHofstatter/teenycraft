@@ -1,0 +1,14 @@
+{
+  "id": "young_justice",
+  "name": "Young Justice",
+  "priority": 1,
+  "figures": [
+    "artemis",
+    "blue_beetle",
+    "kid_flash",
+    "red_arrow"
+  ],
+  "combo_effects": [
+    "stat_power"
+  ]
+}

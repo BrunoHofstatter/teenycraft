@@ -1,19 +1,24 @@
 {
   "id": "jokers_mallet",
   "name": "Joker's Mallet",
-  "texture_index": 142,
+  "description": "Get your mallet and swing it onto the opponent. You Stun them",
+  "golden_description": "More Stun duration",
+  "texture_index": 70,
   "particle": "minecraft:crit",
   "particle_count": 8,
   "hit_type": "melee",
-  "raycast_delay_tier": 0,
-  "damage_tier": 5,
+  "damage_tier": 7,
   "effects_on_opponent": [
     {
       "id": "stun",
-      "params": [1.0]
+      "params": [
+        1
+      ]
     }
   ],
   "effects_on_self": [],
   "traits": [],
-  "golden_bonus": ["opponent:stun:1.3"]
+  "golden_bonus": [
+    "opponent:stun:1.3"
+  ]
 }

@@ -118,11 +118,13 @@ public final class FigurePreviewHelper {
         return switch (effectId) {
             case "heal", "group_heal" -> {
                 float magnitude = params.isEmpty() ? 1.0f : params.get(0);
-                yield EffectCalculator.calculateHealMagnitude(previewFigure, manaCost, magnitude);
+                yield Math.round(EffectCalculator.calculateHealMagnitude(previewFigure, manaCost, magnitude)
+                        * ChipExecutor.getAbilityHealMultiplier(previewFigure));
             }
             case "health_radio" -> {
                 float magnitude = params.size() > 1 ? params.get(1) : 1.0f;
-                yield EffectCalculator.calculateHealMagnitude(previewFigure, manaCost, magnitude);
+                yield Math.round(EffectCalculator.calculateHealMagnitude(previewFigure, manaCost, magnitude)
+                        * ChipExecutor.getAbilityHealMultiplier(previewFigure));
             }
             default -> 0;
         };

@@ -1,15 +1,24 @@
 {
   "id": "mighty_punch",
   "name": "Mighty Punch",
-  "texture_index": 11,
+  "description": "Activate this ability, then punch your opponent and deal damage",
+  "golden_description": "More Tofu chance (increases the natural chance of getting tofu)",
+  "texture_index": 76,
   "particle": "minecraft:crit",
-  "particle_count": 5,
+  "particle_count": 6,
   "hit_type": "melee",
-  "damage_tier": 10,
+  "damage_tier": 11,
   "effects_on_opponent": [],
   "effects_on_self": [],
   "traits": [
-    { "id": "activate", "params":[2.0,1.0] }
+    {
+      "id": "activate",
+      "params": [
+        2
+      ]
+    }
   ],
-  "golden_bonus": ["trait:tofu_chance:1.5,1.2"]
+  "golden_bonus": [
+    "trait:tofu_chance:1.5,1.2"
+  ]
 }

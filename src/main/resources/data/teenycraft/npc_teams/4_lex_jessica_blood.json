@@ -1,0 +1,56 @@
+{
+  "id": "teenycraft:4_lex_jessica_blood",
+  "figures": [
+    {
+      "figure_id": "lex_luthor",
+      "level": 16,
+      "upgrades": "HHHHHHPPPPPPLLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "luthorbot",
+        "kryptonite_beam"
+      ]
+    },
+    {
+      "figure_id": "jessica_cruz",
+      "level": 16,
+      "upgrades": "HHHHHHPPPPPDDLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "flight",
+        "construct_beam"
+      ]
+    },
+    {
+      "figure_id": "robotic_brother_blood",
+      "level": 16,
+      "upgrades": "HHHHHHHHPPPPPPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "battery_drain",
+        "soopah_laser"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 4,
+    "aggression": 0.25,
+    "preferred_range": "far",
+    "mana_discipline": 0.85,
+    "risk_tolerance": 0.2,
+    "choice_window": 0.9
+  }
+}
+

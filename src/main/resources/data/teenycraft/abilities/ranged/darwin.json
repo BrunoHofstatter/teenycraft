@@ -1,0 +1,19 @@
+{
+  "id": "darwin",
+  "name": "Darwin",
+  "description": "Throw a book at your opponent (to show you're smart I guess)",
+  "golden_description": "Stun",
+  "texture_index": 88,
+  "particle": "minecraft:enchant",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 6,
+  "range_tier": 4,
+  "damage_tier": 10,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:stun:0.5"
+  ]
+}

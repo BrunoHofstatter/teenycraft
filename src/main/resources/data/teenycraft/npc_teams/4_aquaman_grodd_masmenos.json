@@ -1,0 +1,55 @@
+{
+  "id": "teenycraft:4_aquaman_grodd_masmenos",
+  "figures": [
+    {
+      "figure_id": "aquaman",
+      "level": 16,
+      "upgrades": "HHHHHHPPPPPPDDD",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "starfish_chuck",
+        "dance"
+      ]
+    },
+    {
+      "figure_id": "gorilla_grodd",
+      "level": 16,
+      "upgrades": "HHHHHHPPPPPPLLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "science",
+        "mind_control"
+      ]
+    },
+    {
+      "figure_id": "mas_y_menos",
+      "level": 16,
+      "upgrades": "HHHHHHPPPPPDDLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "pattycake",
+        "brother_shake"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 4,
+    "aggression": 0.85,
+    "preferred_range": "close",
+    "mana_discipline": 0.25,
+    "risk_tolerance": 0.75,
+    "move_speed_mult": 1.15
+  }
+}

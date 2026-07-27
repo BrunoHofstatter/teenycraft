@@ -1,0 +1,6 @@
+{
+  "parent": "teenycraft:item/ability_display/throwable",
+  "textures": {
+    "layer0": "teenycraft:item/ability_birdarang"
+  }
+}

@@ -1,0 +1,24 @@
+{
+    "id":  "terra",
+    "name":  "Terra",
+    "description":  "Earth-moving teen with a sharp temper and a complicated Titan past",
+    "class":  "Super",
+    "price":  450,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1.5,
+                       "power_scale":  2.5,
+                       "dodge_scale":  2,
+                       "luck_scale":  2
+                   },
+    "abilities":  [
+                      "raspberry",
+                      "rock_shot",
+                      "boulder_toss"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "b",
+                               "d"
+                           ]
+}

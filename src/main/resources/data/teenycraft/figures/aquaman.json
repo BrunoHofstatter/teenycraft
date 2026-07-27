@@ -1,0 +1,24 @@
+{
+  "id": "aquaman",
+  "name": "Aquaman",
+  "description": "King of Atlantis, ocean hero, and proud friend of every fish",
+  "class": "Beast",
+  "price": 10000,
+  "model_type": "default",
+  "attributes": {
+    "hp_scale": 2.5,
+    "power_scale": 2.5,
+    "dodge_scale": 1.5,
+    "luck_scale": 1.5
+  },
+  "abilities": [
+    "starfish_chuck",
+    "dance",
+    "whale_drop"
+  ],
+  "ability_cost_tiers": [
+    "d",
+    "d",
+    "c"
+  ]
+}

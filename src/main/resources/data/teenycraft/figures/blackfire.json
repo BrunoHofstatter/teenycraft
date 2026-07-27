@@ -1,0 +1,24 @@
+﻿{
+    "id":  "blackfire",
+    "name":  "Blackfire",
+    "description":  "Starfire’s ruthless sister, Tamaranian princess, and jealous rival",
+    "class":  "Super",
+    "price":  200,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1,
+                       "power_scale":  3,
+                       "dodge_scale":  2.5,
+                       "luck_scale":  2
+                   },
+    "abilities":  [
+                      "laser_eyes",
+                      "raspberry",
+                      "super_dash"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "c",
+                               "a"
+                           ]
+}

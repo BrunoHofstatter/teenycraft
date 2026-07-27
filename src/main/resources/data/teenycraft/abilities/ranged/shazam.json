@@ -1,0 +1,38 @@
+{
+  "id": "shazam",
+  "name": "Shazam!",
+  "description": "Charge Up a massive energy pulse that deals Group Damage and applies Shock",
+  "golden_description": "Instant Cast Chance (chance of no Charge Up time)",
+  "texture_index": 34,
+  "particle": "minecraft:electric_spark",
+  "particle_count": 12,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 3,
+  "effects_on_opponent": [
+    {
+      "id": "shock",
+      "params": [
+        1.2,
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "charge_up",
+      "params": [
+        0.7
+      ]
+    },
+    {
+      "id": "group_damage",
+      "params": []
+    }
+  ],
+  "golden_bonus": [
+    "trait:instant_cast_chance"
+  ]
+}

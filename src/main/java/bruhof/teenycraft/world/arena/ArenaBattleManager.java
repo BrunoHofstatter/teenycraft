@@ -3,6 +3,9 @@ package bruhof.teenycraft.world.arena;
 import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.battle.ai.BattleAiProfile;
 import bruhof.teenycraft.battle.BattleFigure;
+import bruhof.teenycraft.battle.presentation.BattleUiEventPayload;
+import bruhof.teenycraft.battle.presentation.BattleUiFeedbackBroadcaster;
+import bruhof.teenycraft.accessory.AccessoryMilestoneService;
 import bruhof.teenycraft.capability.BattleState;
 import bruhof.teenycraft.capability.BattleStateProvider;
 import bruhof.teenycraft.capability.TitanManagerProvider;
@@ -137,15 +140,24 @@ public final class ArenaBattleManager {
     }
 
     public static void finishBattleForPlayer(ServerPlayer player) {
+        finishBattleForPlayer(player, false);
+    }
+
+    public static void abandonBattleForPlayer(ServerPlayer player) {
+        finishBattleForPlayer(player, true);
+    }
+
+    private static void finishBattleForPlayer(ServerPlayer player, boolean abandoned) {
         ArenaBattleSession session = SESSIONS_BY_PARTICIPANT.get(player.getUUID());
         if (session == null) {
-            fallbackFinish(player);
+            fallbackFinish(player, abandoned);
             return;
         }
 
         ServerLevel teenyverse = player.getServer().getLevel(ModDimensions.TEENYVERSE_KEY);
         ServerLevel returnLevel = player.getServer().getLevel(session.returnDimension());
 
+        finishPlayerMilestones(player, abandoned);
         endBattleState(player);
         ModMessages.sendToPlayer(PacketSyncBattleData.off(), player);
 
@@ -194,7 +206,8 @@ public final class ArenaBattleManager {
         }
     }
 
-    private static void fallbackFinish(ServerPlayer player) {
+    private static void fallbackFinish(ServerPlayer player, boolean abandoned) {
+        finishPlayerMilestones(player, abandoned);
         endBattleState(player);
         ModMessages.sendToPlayer(PacketSyncBattleData.off(), player);
 
@@ -260,7 +273,10 @@ public final class ArenaBattleManager {
             throw new IllegalStateException("Opponent team is empty.");
         }
 
-        playerState.setActiveFigure(0);
+        int leadTeamSlot = player.getCapability(bruhof.teenycraft.capability.TitanManagerProvider.TITAN_MANAGER)
+                .map(bruhof.teenycraft.capability.ITitanManager::getLeadTeamSlot)
+                .orElse(0);
+        playerState.setActiveFigureByTeamSlot(leadTeamSlot);
         opponentState.setActiveFigure(0);
         playerState.refreshPlayerInventory(player);
         syncDummyPresentation(dummy, opponentState.getActiveFigure());
@@ -299,6 +315,14 @@ public final class ArenaBattleManager {
         entity.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(state -> {
             if (state.isBattling()) {
                 state.endBattle();
+            }
+        });
+    }
+
+    private static void finishPlayerMilestones(ServerPlayer player, boolean abandoned) {
+        player.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(state -> {
+            if (state.isBattling()) {
+                AccessoryMilestoneService.finishBattle(state, player, state.didWinBattle(), abandoned);
             }
         });
     }
@@ -605,6 +629,14 @@ public final class ArenaBattleManager {
             case LAUNCH -> beginLaunch(session, collector, battleState, activePickup.worldPosition(), variant);
             case WALL -> placeWall(level, session, variant);
         }
+        BattleUiFeedbackBroadcaster.emitToViewers(battleState, new BattleUiEventPayload(
+                BattleUiEventPayload.Type.PICKUP,
+                collector.getId(),
+                variant.amount(),
+                0,
+                variant.type().name().toLowerCase(java.util.Locale.ROOT),
+                false
+        ));
     }
 
     private static void beginLaunch(ArenaBattleSession session,

@@ -1,0 +1,24 @@
+{
+  "id": "slime_ball",
+  "name": "Slime Ball",
+  "description": "Chuck a smily ball at your oppoent, dealing Group Damage (oh sorry it's slimy)",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 10,
+  "particle": "minecraft:composter",
+  "particle_count": 6,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 6,
+  "range_tier": 3,
+  "damage_tier": 10,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "group_damage",
+      "params": []
+    }
+  ],
+  "golden_bonus": [
+    "opponent:bar_deplete:1.0"
+  ]
+}

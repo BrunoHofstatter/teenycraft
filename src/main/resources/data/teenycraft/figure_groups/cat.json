@@ -1,0 +1,12 @@
+{
+  "id": "cat",
+  "name": "Cat",
+  "priority": 1,
+  "figures": [
+    "cat_beast_boy",
+    "catwoman"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

@@ -14,11 +14,7 @@ public class ShuffleBag {
 
     public ShuffleBag(int totalSize, int successCount) {
         this.totalSize = Math.max(1, totalSize);
-        this.successCount = Math.max(1, successCount); // At least 1 success card? Or can be 0?
-        // Let's assume stats can result in 0 success if low enough, but user said "1 is Dodge, 9 are Hit".
-        // Actually, user said "Higher stats improve the odds (e.g. deck size gets smaller)".
-        // So success count is fixed (1), total size varies.
-        this.successCount = 1; 
+        this.successCount = Math.max(0, Math.min(successCount, this.totalSize));
         reshuffle();
     }
 

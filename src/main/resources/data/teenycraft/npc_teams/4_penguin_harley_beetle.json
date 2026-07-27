@@ -1,0 +1,53 @@
+{
+  "id": "teenycraft:4_penguin_harley_beetle",
+  "figures": [
+    {
+      "figure_id": "the_penguin",
+      "level": 16,
+      "upgrades": "HHHHHHPPPPPDDLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "stinky_fish",
+        "lilpenguin_pal"
+      ]
+    },
+    {
+      "figure_id": "harley_quinn",
+      "level": 16,
+      "upgrades": "HHHHHHPPPPPPLLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "bang",
+        "puddin_pucker"
+      ]
+    },
+    {
+      "figure_id": "blue_beetle",
+      "level": 16,
+      "upgrades": "HHHHHHHHPPPPPPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "sonic_cannon",
+        "scarab_swords"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 4,
+    "swap_bias": 0.9,
+    "swap_reconsideration_ticks": 18
+  }
+}
+

@@ -1,17 +1,24 @@
-{
-  "id": "joker",
-  "name": "The Joker",
-  "description": "The Clown Prince of Crime is here to have the last laugh!",
-  "class": "none",
-  "groups": [ "Mad Love", "Villains" ],
-  "price": 10000,
-  "model_type": "slim",
-  "attributes": {
-    "hp_scale": 2.0,
-    "power_scale": 2.0,
-    "dodge_scale": 0.5,
-    "luck_scale": 4.0
-  },
-  "abilities": ["chattering_teeth", "evil_laugh", "jokers_mallet"],
-  "ability_cost_tiers": ["c", "c", "e"]
+﻿{
+    "id":  "joker",
+    "name":  "Joker",
+    "description":  "Gotham’s clown prince of crime, smiling through every terrible idea",
+    "class":  "none",
+    "price":  10000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1.5,
+                       "power_scale":  2,
+                       "dodge_scale":  0.5,
+                       "luck_scale":  4
+                   },
+    "abilities":  [
+                      "chattering_teeth",
+                      "evil_laugh",
+                      "jokers_mallet"
+                  ],
+    "ability_cost_tiers":  [
+                               "b",
+                               "c",
+                               "e"
+                           ]
 }

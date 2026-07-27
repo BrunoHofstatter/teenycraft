@@ -1,0 +1,30 @@
+{
+  "id": "team_laser_eyes",
+  "name": "Team Laser Eyes",
+  "description": "Charge Up your eyes and shoot a laser that deals Group Damage",
+  "golden_description": "Instant Cast Chance (chance of no Charge Up time)",
+  "texture_index": 35,
+  "particle": "minecraft:flame",
+  "particle_count": 12,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 5,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "charge_up",
+      "params": [
+        0.7
+      ]
+    },
+    {
+      "id": "group_damage",
+      "params": []
+    }
+  ],
+  "golden_bonus": [
+    "trait:instant_cast_chance"
+  ]
+}

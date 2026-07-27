@@ -1,0 +1,23 @@
+{
+  "id": "teenycraft:1_trigon",
+  "figures": [
+    {
+      "figure_id": "trigon",
+      "level": 1,
+      "upgrades": "",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    }
+  ],
+  "ai": {
+    "difficulty": 1,
+    "consider_swap": false,
+    "aggression": 0.35,
+    "preferred_range": "mid"
+  }
+}
+

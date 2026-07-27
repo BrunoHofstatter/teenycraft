@@ -1,0 +1,17 @@
+{
+  "id": "quick_punch_raw",
+  "name": "Quick Punch",
+  "description": "Give one punch to the opponent (at the face)",
+  "golden_description": "Power Down",
+  "texture_index": 84,
+  "particle": "minecraft:crit",
+  "particle_count": 3,
+  "hit_type": "melee",
+  "damage_tier": 11,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:power_down:1.0"
+  ]
+}

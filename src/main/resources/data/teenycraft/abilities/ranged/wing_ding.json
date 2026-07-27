@@ -1,0 +1,26 @@
+{
+  "id": "wing_ding",
+  "name": "Wing-ding",
+  "description": "Wing Ding, a batarang was Charged Up and thown at your opponent",
+  "golden_description": "Instant Cast Chance (chance of no Charge Up time)",
+  "texture_index": 36,
+  "particle": "minecraft:crit",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 2,
+  "range_tier": 6,
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "charge_up",
+      "params": [
+        2.4
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "trait:instant_cast_chance"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "journalism",
+  "name": "Journalism",
+  "description": "Throw a pencil at the opponent (and that deals damage, should be low, but for balancing purposes it isn't)",
+  "golden_description": "Undodgeable & Shield Piercing",
+  "texture_index": 107,
+  "particle": "minecraft:crit",
+  "particle_count": 3,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 6,
+  "range_tier": 4,
+  "damage_tier": 10,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "trait:undodgeable"
+  ]
+}

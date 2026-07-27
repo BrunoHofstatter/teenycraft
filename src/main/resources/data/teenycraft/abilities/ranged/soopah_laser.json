@@ -1,0 +1,26 @@
+{
+  "id": "soopah_laser",
+  "name": "Soopah Laser",
+  "description": "Activate this ability, then shoot a massive laser at your opponent",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 11,
+  "particle": "minecraft:end_rod",
+  "particle_count": 10,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 1,
+  "range_tier": 7,
+  "damage_tier": 6,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "activate",
+      "params": [
+        2
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "opponent:bar_deplete:1.0"
+  ]
+}

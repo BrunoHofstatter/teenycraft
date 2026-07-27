@@ -19,6 +19,9 @@ Document the implemented chip customization layer: how chips are stored on figur
 - Chips are installed by opening the figure screen, placing a chip in the preview slot, and clicking `INSTALL`.
 - Loose chip items can be stored in the Titan Manager `Chips` tab.
 - Chip effects can modify battle stats, trigger the first time that figure becomes active in a battle, trigger when that figure faints, trigger when that figure defeats an opponent, or react to critical hits.
+- Chip effects can also react when that figure dodges.
+- Chip effects can also react when that figure takes direct runtime hit damage.
+- Self-targeted chip hooks resolve on the figure that actually earned the hook, even if delayed damage later resolves after that participant has swapped to a different active figure.
 - Chip values are fixed by rank and come from `TeenyBalance`, not from the normal ability-effect scaling formulas.
 - The current Chip Fuser accepts only chips in its two input slots, shows an output preview, and uses a Fuse button to finalize the fusion.
 - The current fuser supports both duplicate same-rank upgrades and curated special fusions that combine two different same-rank chips into a hybrid chip of that same rank.
@@ -48,9 +51,11 @@ Document the implemented chip customization layer: how chips are stored on figur
 - Titan Manager chip storage is only for loose chip items; installed chips still live inside the figure item NBT.
 - Runtime hook points are centralized instead of scattering chip-id checks across battle code.
 - Stat modifiers are resolved into the hot `BattleFigure` snapshot at battle start.
+- Chip-applied self buffs and summons should stay attached to the credited source figure, not just whichever figure is currently active when the hook finishes resolving.
 - Percentage stat modifiers are always calculated from the figure's base item stat, not from other chip multipliers or chip-added flat bonuses.
 - Chips reuse battle systems like effect application, pet slots, mana, and battery when those already fit the intended behavior.
 - Hybrid chips are built by inheriting and scaling other chip behaviors, so every numeric part of the source chip behavior is reduced together unless explicitly authored differently later.
+- Chips can also author lightweight scalar modifiers for battle systems that already exist, such as tofu spawn chance, direct-stun duration reduction, active-only regeneration, low-health finisher damage, healing output for authored healing abilities, and bench-heal splash on self-heal.
 - The current fuser supports:
   - exact duplicate fusion: same chip item plus same rank produces the next rank when that chip has a higher rank available
   - curated special fusion: two different chips of the same rank produce a named hybrid chip of that same rank when a recipe exists
@@ -60,6 +65,8 @@ Document the implemented chip customization layer: how chips are stored on figur
 - Snapshot stat modifiers
 - First appearance in battle
 - Critical-hit reactions
+- Dodge reactions
+- On-damaged reactions
 - Extra charge-up instant-cast roll
 - On faint
 - On kill
@@ -67,15 +74,51 @@ Document the implemented chip customization layer: how chips are stored on figur
 ## Current Implemented Chips
 - `Tough Guy`: increases Power and lowers max HP.
 - `Smokescreen`: increases Dodge.
-- `Tough Smokescreen`: hybrid chip that combines scaled `Tough Guy` and `Smokescreen` behavior.
-- `Lucky Hearts`: heals the owner when a crit lands.
+- `Power`: increases Power.
+- `Health`: increases max HP.
+- `Luck`: increases Luck.
+- `Ninja Skills`: increases Dodge and lowers max HP.
+- `Loaded Dice`: increases Luck and lowers Power.
+- `Tough Stuff`: increases max HP and sets Dodge to `0`.
+- `Healthy Duck`: heals the owner when a crit lands. Runtime id and existing item registration still use `lucky_hearts`.
+- `Mana Steal Duck`: steals mana from the opponent when a crit lands and grants the same amount to the owner.
+- `Lucky Steal Duck`: hybrid chip that combines scaled `Luck` and `Mana Steal Duck` behavior.
+- `Healthy Dodge`: heals the owner when the chipped figure dodges.
+- `Dodgy Healthy Dodge`: hybrid chip that combines scaled `Smokescreen` and `Healthy Dodge` behavior.
+- `Second Chance`: once per battle, when the chipped figure would faint, it instead survives at authored HP, clears its own active effects like a normal faint reset, and if another ally can swap in, that next active ally is forced in and receives `speed_down` plus `curse`.
+- `Speedy Dodge`: grants a short `speed_up` buff when the chipped figure dodges.
+- `Dodgy Speedy Dodge`: hybrid chip that combines scaled `Smokescreen` and `Speedy Dodge` behavior.
+- `Healthy Second Chance`: special `Health` hybrid with custom authored behavior, not inherited `Health` stats; it uses the same once-per-battle rescue flow as `Second Chance` but survives at more HP and applies stronger swap-in debuffs.
+- `Pointy Health`: hybrid chip that combines scaled `Health` and `Pointy` behavior.
+- `Lucky Healthy Duck`: hybrid chip that combines scaled `Luck` and `Healthy Duck` behavior.
 - `Insta Cast Chance`: adds an extra charge-up instant-cast roll that stacks separately from the existing trait-based roll.
+- `Fast Cast`: reduces `charge_up` delay by a chip-authored speed bonus.
+- `Fast Draw`: reduces delayed projectile travel time by a chip-authored speed bonus.
+- `Fast DrawCast`: hybrid chip that combines scaled `Fast Draw` and `Fast Cast` behavior.
+- `Clean Entry`: applies `cleanse` the first time the figure becomes active in a battle.
+- `Beastly Entry`: applies `power_up` the first time the figure becomes active in a battle.
+- `Curse Entry`: applies `curse` to the opposing active figure the first time the chipped figure becomes active.
 - `Dance`: applies fixed-duration `dance` the first time the figure becomes active in a battle.
 - `Mana Boost`: grants fixed mana the first time the figure becomes active in a battle.
+- `Momentum`: grants mana when the chipped figure gets a kill.
+- `Finishing Momentum`: hybrid chip that combines scaled `Finisher` and `Momentum` behavior.
+- `Victory Dance`: applies `dance` when the chipped figure gets a kill.
+- `Powered Beastly Entry`: hybrid chip that combines scaled `Power` and `Beastly Entry` behavior.
+- `Powered Finisher`: hybrid chip that combines scaled `Power` and `Finisher` behavior.
+- `Energetic Battery`: increases passive battery charge per tick while the chipped figure is active.
 - `Death Energy`: grants accessory battery charge when the chipped figure faints.
 - `Self Explosion`: deals fixed group damage to the opposing team when the chipped figure faints.
+- `Last Laugh`: on faint, applies one equal-weight random opposing effect from a curated list of `curse`, `shock`, `poison`, `freeze`, and `waffle`.
 - `Necromancer`: summons a fixed-strength pet when the chipped figure gets a kill.
 - `Vampire`: heals for a percentage of the owner's max HP when the chipped figure gets a kill.
+- `Regenerative Cuteness`: while active, regenerates fixed HP at a fixed interval.
+- `Tofu Lover`: increases tofu spawn chance from damaging ability use while the chipped figure is active.
+- `Lucky Tofu Lover`: hybrid chip that combines scaled `Luck` and `Tofu Lover` behavior.
+- `Hello Nurse`: increases healing output for authored healing abilities used by the chipped figure.
+- `Team Medic`: when the chipped figure heals itself, bench allies receive a smaller non-recursive splash heal.
+- `Pointy`: when the chipped figure takes direct hit damage, the attacker takes fixed retaliation damage once for that reaction sequence.
+- `Stun Resister`: reduces duration from direct `stun` applications only; it does not reduce `shock`'s periodic mini-stuns.
+- `Finisher`: increases damage dealt to low-health enemies, evaluated separately for each hit as the target's HP changes.
 
 ## NPC Support
 - NPC team JSON can now set `chip_id` and `chip_rank` per figure.

@@ -1,0 +1,13 @@
+{
+  "id": "superfamily",
+  "name": "Superfamily",
+  "priority": 1,
+  "figures": [
+    "clark_kent",
+    "supergirl",
+    "superman"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

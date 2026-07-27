@@ -7,6 +7,8 @@ import bruhof.teenycraft.battle.StatType;
 import bruhof.teenycraft.battle.damage.DamagePipeline;
 import bruhof.teenycraft.battle.damage.DamagePipeline.DamageResult;
 import bruhof.teenycraft.battle.effect.EffectApplierRegistry;
+import bruhof.teenycraft.battle.presentation.BattleUiEventPayload;
+import bruhof.teenycraft.battle.presentation.BattleUiFeedbackBroadcaster;
 import bruhof.teenycraft.capability.BattleStateProvider;
 import bruhof.teenycraft.capability.IBattleState;
 import bruhof.teenycraft.chip.ChipExecutor;
@@ -130,6 +132,7 @@ public final class BattleDamageResolver {
 
     private static int applyDamageToFigure(DamageApplicationContext context) {
         BattleFigure attackerFigure = context.attackerState() != null ? context.attackerState().getActiveFigure() : null;
+        ChipExecutor.applyOutgoingDamageModifiers(attackerFigure, context.victimFigure(), context.result());
         DamagePipeline.populateClassBonus(context.result(), attackerFigure, context.victimFigure());
         stripFlightForGroupDamage(context);
 
@@ -146,6 +149,11 @@ public final class BattleDamageResolver {
         int instantDamage = resolveInstantDamage(context, mitigation);
         announceBlockState(context, mitigation);
 
+        if (mitigation.isDodged && context.victimState() != null && context.targetEntity() != null && context.victimFigure() != null) {
+            ChipExecutor.onDodge(context.victimState(), context.targetEntity(), context.victimFigure(),
+                    context.attackerState(), context.attacker());
+        }
+
         IBattleState.CombatMutationResult mutation = null;
         if (instantDamage > 0) {
             instantDamage = AccessoryExecutor.onIncomingDamage(
@@ -157,11 +165,18 @@ public final class BattleDamageResolver {
                     context.accessoryReactionId(),
                     context.canTriggerBirdarang()
             );
+            AccessoryExecutor.onAbilityDamageApplied(
+                    context.attackerState(), context.attacker(), context.victimState(), context.victimFigure(),
+                    context.result(), instantDamage);
             mutation = context.victimState().applyCombatFigureDelta(
                     context.victimFigure(),
                     -instantDamage,
                     combatSource(context.attackerState(), context.attacker(), attackerFigure)
             );
+            if (context.targetEntity() != null && context.victimFigure() != null) {
+                ChipExecutor.onDamaged(context.victimState(), context.targetEntity(), context.victimFigure(),
+                        context.attackerState(), context.attacker(), context.accessoryReactionId());
+            }
 
             if (mitigation.isCritical && context.attackerState() != null && context.attacker() != null && attackerFigure != null) {
                 ChipExecutor.onCritHit(context.attackerState(), context.attacker(), attackerFigure, context.victimState(), context.targetEntity());
@@ -174,6 +189,7 @@ public final class BattleDamageResolver {
         if (instantDamage > 0 || mitigation.isDodged || mitigation.isBlocked) {
             announceDamage(context.attacker(), context.targetEntity(), context.victimFigure(), mitigation,
                     context.data() != null ? context.data().name : "Attack");
+            emitDamageFeedback(context, mitigation, instantDamage);
         }
 
         if (mutation != null) {
@@ -392,7 +408,57 @@ public final class BattleDamageResolver {
         if (attackerState == null || attacker == null || attackerFigure == null) {
             return null;
         }
-        return new IBattleState.CombatMutationSource(attackerState, attacker, attackerFigure);
+        return new IBattleState.CombatMutationSource(attackerState, attacker, attackerFigure, false);
+    }
+
+    private static void emitDamageFeedback(DamageApplicationContext context, DamagePipeline.MitigationResult mitigation, int instantDamage) {
+        if (context.targetEntity() == null) {
+            return;
+        }
+
+        if (mitigation.isDodged && mitigation.dodgeReduction > 0) {
+            BattleUiFeedbackBroadcaster.emitToViewers(context.victimState(), new BattleUiEventPayload(
+                    BattleUiEventPayload.Type.DAMAGE_GHOST,
+                    context.targetEntity().getId(),
+                    mitigation.finalDamage + mitigation.dodgeReduction,
+                    0,
+                    "",
+                    false
+            ));
+        }
+
+        if (instantDamage > 0) {
+            BattleUiFeedbackBroadcaster.emitToViewers(context.victimState(), new BattleUiEventPayload(
+                    BattleUiEventPayload.Type.DAMAGE,
+                    context.targetEntity().getId(),
+                    instantDamage,
+                    0,
+                    "",
+                    false
+            ));
+        }
+
+        if (mitigation.isCritical && mitigation.critBonus > 0) {
+            BattleUiFeedbackBroadcaster.emitToViewers(context.victimState(), new BattleUiEventPayload(
+                    BattleUiEventPayload.Type.CRIT,
+                    context.targetEntity().getId(),
+                    mitigation.critBonus,
+                    0,
+                    "",
+                    false
+            ));
+        }
+
+        if (mitigation.finalClassBonusDamage > 0) {
+            BattleUiFeedbackBroadcaster.emitToViewers(context.victimState(), new BattleUiEventPayload(
+                    BattleUiEventPayload.Type.CLASS_BONUS,
+                    context.targetEntity().getId(),
+                    mitigation.finalClassBonusDamage,
+                    0,
+                    "",
+                    false
+            ));
+        }
     }
 
     private record DamageApplicationContext(@Nullable IBattleState attackerState, LivingEntity attacker, LivingEntity targetEntity,

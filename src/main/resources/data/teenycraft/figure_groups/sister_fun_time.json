@@ -1,0 +1,12 @@
+{
+  "id": "sister_fun_time",
+  "name": "Sister Fun Time",
+  "priority": 1,
+  "figures": [
+    "blackfire",
+    "starfire"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

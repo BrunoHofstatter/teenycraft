@@ -1,0 +1,59 @@
+{
+  "id": "teenycraft:5_batgirl_croc_riddler",
+  "figures": [
+    {
+      "figure_id": "batgirl",
+      "level": 20,
+      "upgrades": "HHHHHHHHPPPPPPPDDLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "heroic_pose",
+        "ultimate_batarang",
+        "staff_slam"
+      ]
+    },
+    {
+      "figure_id": "killer_croc",
+      "level": 20,
+      "upgrades": "HHHHHHHHHHPPPPPPPPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "slime_ball",
+        "shockwave_stomp",
+        "killer_claws"
+      ]
+    },
+    {
+      "figure_id": "the_riddler",
+      "level": 20,
+      "upgrades": "HHHHHHHHHPPPPPPPLLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "good_luck",
+        "riddle_me_this",
+        "ponder"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 5,
+    "reaction_ticks": 6,
+    "action_commit_ticks": 6,
+    "choice_window": 0.35,
+    "aggression": 0.55,
+    "mana_discipline": 0.65
+  }
+}
+

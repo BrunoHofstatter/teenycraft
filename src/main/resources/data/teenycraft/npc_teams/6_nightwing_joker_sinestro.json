@@ -1,0 +1,69 @@
+{
+  "id": "teenycraft:6_nightwing_joker_sinestro",
+  "figures": [
+    {
+      "figure_id": "nightwing",
+      "level": 20,
+      "upgrades": "HHHHHHHHHHHHHPPPPPPPPPPPDDDDDD",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "wing_ding",
+        "poison_pellet",
+        "staff_slam"
+      ]
+    },
+    {
+      "figure_id": "joker",
+      "level": 20,
+      "upgrades": "HHHHHHHHHHHHHPPPPPPPPPPPLLLLLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "chattering_teeth",
+        "evil_laugh",
+        "jokers_mallet"
+      ]
+    },
+    {
+      "figure_id": "sinestro",
+      "level": 20,
+      "upgrades": "HHHHHHHHHHHHPPPPPPPPPPDDDDLLLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "construct_beam",
+        "fear",
+        "axe_to_grind"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 5,
+    "aggression": 0.6,
+    "swap_bias": 0.8,
+    "preferred_range": "auto",
+    "mana_discipline": 0.75,
+    "risk_tolerance": 0.45,
+    "move_speed_mult": 1.1,
+    "reaction_ticks": 5,
+    "action_commit_ticks": 5,
+    "choice_window": 0.4,
+    "consider_swap": true,
+    "counter_awareness": true,
+    "advanced_swap_logic": true,
+    "consider_class_disadvantage_swap": true,
+    "consider_class_advantage_swap": true,
+    "swap_reconsideration_ticks": 12
+  }
+}
+

@@ -1,0 +1,17 @@
+{
+  "id": "break_the_bat",
+  "name": "Break the Bat",
+  "description": "Break your bat and throw it onto the enemy",
+  "golden_description": "Undodgeable & Shield Piercing",
+  "texture_index": 98,
+  "particle": "minecraft:crit",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 5,
+  "range_tier": 4,
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": ["trait:undodgeable"]
+}

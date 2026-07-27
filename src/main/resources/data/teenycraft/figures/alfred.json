@@ -1,0 +1,24 @@
+{
+    "id":  "alfred",
+    "name":  "Alfred",
+    "description":  "Batman’s loyal butler, father figure, and master of dry wit",
+    "class":  "Martial Arts",
+    "price":  4000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2.5,
+                       "power_scale":  2,
+                       "dodge_scale":  1,
+                       "luck_scale":  2.5
+                   },
+    "abilities":  [
+                      "tea_time",
+                      "tea_chi",
+                      "tea_toss"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "b",
+                               "e"
+                           ]
+}

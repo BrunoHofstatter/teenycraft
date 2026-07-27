@@ -1,0 +1,24 @@
+{
+    "id":  "lex_luthor",
+    "name":  "Lex Luthor",
+    "description":  "Billionaire genius, Superman’s rival, and bald master of bad plans",
+    "class":  "Tech",
+    "price":  20000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  3,
+                       "power_scale":  3,
+                       "dodge_scale":  1.5,
+                       "luck_scale":  2.5
+                   },
+    "abilities":  [
+                      "luthorbot",
+                      "kryptonite_beam",
+                      "cash_blaster"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "a",
+                               "e"
+                           ]
+}

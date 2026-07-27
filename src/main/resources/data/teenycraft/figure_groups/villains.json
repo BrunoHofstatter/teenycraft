@@ -1,0 +1,40 @@
+{
+  "id": "villains",
+  "name": "Villains",
+  "priority": 1,
+  "figures": [
+    "argyle_trigon",
+    "bane",
+    "billy_numerous",
+    "bizarro",
+    "black_manta",
+    "blackfire",
+    "catwoman",
+    "darkseid",
+    "dr_light",
+    "gizmo",
+    "gorilla_grodd",
+    "harley_quinn",
+    "jinx",
+    "joker",
+    "killer_croc",
+    "killer_moth",
+    "lex_luthor",
+    "mammoth",
+    "poison_ivy",
+    "red_x",
+    "robotic_brother_blood",
+    "rose_wilson",
+    "see_more",
+    "sinestro",
+    "slade",
+    "terra",
+    "the_hooded_hood",
+    "the_penguin",
+    "the_riddler",
+    "trigon"
+  ],
+  "combo_effects": [
+    "stat_power"
+  ]
+}

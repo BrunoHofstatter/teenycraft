@@ -4,9 +4,12 @@ import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.battle.BattleFigure;
 import bruhof.teenycraft.battle.ai.BattleAiProfile;
 import bruhof.teenycraft.capability.BattleStateProvider;
+import bruhof.teenycraft.capability.AccessoryMasteryProvider;
 import bruhof.teenycraft.capability.TeenyCoinsProvider;
 import bruhof.teenycraft.capability.TitanManagerProvider;
 import bruhof.teenycraft.item.ModItems;
+import bruhof.teenycraft.accessory.AccessoryMasteryService;
+import bruhof.teenycraft.accessory.AccessoryRegistry;
 import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.networking.ModMessages;
 import bruhof.teenycraft.networking.PacketSyncTeenyCoins;
@@ -96,7 +99,34 @@ public class CommandTeeny {
                                                 .executes(CommandTeeny::setFigureGolden)))))
                 .then(Commands.literal("coins")
                         .then(Commands.argument("amount", IntegerArgumentType.integer())
-                                .executes(CommandTeeny::modifyCoins))));
+                                .executes(CommandTeeny::modifyCoins)))
+                .then(Commands.literal("accessory")
+                        .then(Commands.literal("status")
+                                .then(Commands.argument("accessoryId", StringArgumentType.word())
+                                        .suggests(CommandTeeny::suggestAccessories)
+                                        .executes(CommandTeeny::accessoryStatus)))
+                        .then(Commands.literal("tier")
+                                .then(Commands.argument("accessoryId", StringArgumentType.word())
+                                        .suggests(CommandTeeny::suggestAccessories)
+                                        .then(Commands.argument("tier", IntegerArgumentType.integer(1, 5))
+                                                .executes(CommandTeeny::setAccessoryTier))))
+                        .then(Commands.literal("progress")
+                                .then(Commands.argument("accessoryId", StringArgumentType.word())
+                                        .suggests(CommandTeeny::suggestAccessories)
+                                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                .executes(CommandTeeny::setAccessoryProgress))))
+                        .then(Commands.literal("complete")
+                                .then(Commands.argument("accessoryId", StringArgumentType.word())
+                                        .suggests(CommandTeeny::suggestAccessories)
+                                        .executes(CommandTeeny::completeAccessoryMilestone)))
+                        .then(Commands.literal("purchase")
+                                .then(Commands.argument("accessoryId", StringArgumentType.word())
+                                        .suggests(CommandTeeny::suggestAccessories)
+                                        .executes(CommandTeeny::purchaseAccessoryTier)))
+                        .then(Commands.literal("reset")
+                                .then(Commands.argument("accessoryId", StringArgumentType.word())
+                                        .suggests(CommandTeeny::suggestAccessories)
+                                        .executes(CommandTeeny::resetAccessoryMastery)))));
     }
 
     private static CompletableFuture<Suggestions> suggestAbilities(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
@@ -113,6 +143,10 @@ public class CommandTeeny {
 
     private static CompletableFuture<Suggestions> suggestArenas(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         return SharedSuggestionProvider.suggest(ArenaLoader.getLoadedArenaIds().stream().map(ResourceLocation::toString), builder);
+    }
+
+    private static CompletableFuture<Suggestions> suggestAccessories(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
+        return SharedSuggestionProvider.suggest(AccessoryRegistry.getIds().stream().sorted(), builder);
     }
 
     private static int debugCast(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -244,6 +278,132 @@ public class CommandTeeny {
         return 1;
     }
 
+    private static int accessoryStatus(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String accessoryId = StringArgumentType.getString(context, "accessoryId");
+        if (!isKnownAccessory(context, accessoryId)) {
+            return 0;
+        }
+
+        player.getCapability(AccessoryMasteryProvider.ACCESSORY_MASTERY).ifPresent(mastery -> {
+            int tier = mastery.getTier(accessoryId);
+            int cost = TeenyBalance.getAccessoryTierUpgradeCost(tier + 1);
+            String milestoneId = mastery.getCurrentMilestoneId(accessoryId);
+            String status = "Accessory " + accessoryId
+                    + ": Tier " + tier
+                    + ", milestone=" + (milestoneId.isEmpty() ? "mastered" : milestoneId)
+                    + ", progress=" + mastery.getMilestoneProgress(accessoryId)
+                    + ", complete=" + mastery.isCurrentMilestoneComplete(accessoryId)
+                    + (cost > 0 ? ", next cost=" + cost : "");
+            context.getSource().sendSuccess(() -> Component.literal(status), false);
+        });
+        return 1;
+    }
+
+    private static int setAccessoryTier(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String accessoryId = StringArgumentType.getString(context, "accessoryId");
+        int tier = IntegerArgumentType.getInteger(context, "tier");
+        if (!isKnownAccessory(context, accessoryId)) {
+            return 0;
+        }
+
+        player.getCapability(AccessoryMasteryProvider.ACCESSORY_MASTERY).ifPresent(mastery -> {
+            mastery.setTier(accessoryId, tier);
+            AccessoryMasteryService.syncMastery(player, mastery);
+            context.getSource().sendSuccess(() -> Component.literal("Set " + accessoryId + " to Tier " + tier + "."), true);
+        });
+        return 1;
+    }
+
+    private static int setAccessoryProgress(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String accessoryId = StringArgumentType.getString(context, "accessoryId");
+        int amount = IntegerArgumentType.getInteger(context, "amount");
+        if (!isKnownAccessory(context, accessoryId)) {
+            return 0;
+        }
+
+        player.getCapability(AccessoryMasteryProvider.ACCESSORY_MASTERY).ifPresent(mastery -> {
+            String milestoneId = mastery.getCurrentMilestoneId(accessoryId);
+            if (milestoneId.isEmpty()) {
+                context.getSource().sendFailure(Component.literal(accessoryId + " is already Tier 5."));
+                return;
+            }
+            mastery.setMilestoneProgress(accessoryId, milestoneId, amount);
+            AccessoryMasteryService.syncMastery(player, mastery);
+            context.getSource().sendSuccess(() -> Component.literal("Set " + milestoneId + " progress to " + amount + "."), true);
+        });
+        return 1;
+    }
+
+    private static int completeAccessoryMilestone(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String accessoryId = StringArgumentType.getString(context, "accessoryId");
+        if (!isKnownAccessory(context, accessoryId)) {
+            return 0;
+        }
+
+        player.getCapability(AccessoryMasteryProvider.ACCESSORY_MASTERY).ifPresent(mastery -> {
+            String milestoneId = mastery.getCurrentMilestoneId(accessoryId);
+            if (milestoneId.isEmpty()) {
+                context.getSource().sendFailure(Component.literal(accessoryId + " is already Tier 5."));
+                return;
+            }
+            mastery.completeMilestone(accessoryId, milestoneId);
+            AccessoryMasteryService.syncMastery(player, mastery);
+            context.getSource().sendSuccess(() -> Component.literal("Completed " + milestoneId + ". The next tier can now be purchased."), true);
+        });
+        return 1;
+    }
+
+    private static int purchaseAccessoryTier(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String accessoryId = StringArgumentType.getString(context, "accessoryId");
+        AccessoryMasteryService.PurchaseResult result = AccessoryMasteryService.purchaseNextTier(player, accessoryId);
+        if (result == AccessoryMasteryService.PurchaseResult.SUCCESS) {
+            int tier = player.getCapability(AccessoryMasteryProvider.ACCESSORY_MASTERY)
+                    .map(mastery -> mastery.getTier(accessoryId))
+                    .orElse(1);
+            context.getSource().sendSuccess(() -> Component.literal("Purchased " + accessoryId + " Tier " + tier + "."), true);
+            return 1;
+        }
+
+        context.getSource().sendFailure(Component.literal(switch (result) {
+            case UNKNOWN_ACCESSORY -> "Unknown accessory: " + accessoryId;
+            case MAX_TIER -> accessoryId + " is already Tier 5.";
+            case MILESTONE_INCOMPLETE -> "Complete the current milestone before purchasing the next tier.";
+            case NOT_ENOUGH_COINS -> "Not enough Teeny Coins for the next tier.";
+            case MASTERY_UPGRADE_UNAVAILABLE -> "The Tier 5 mastery upgrade is not implemented yet.";
+            case MISSING_CAPABILITY -> "Accessory mastery data is unavailable.";
+            case SUCCESS -> "";
+        }));
+        return 0;
+    }
+
+    private static int resetAccessoryMastery(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        String accessoryId = StringArgumentType.getString(context, "accessoryId");
+        if (!isKnownAccessory(context, accessoryId)) {
+            return 0;
+        }
+
+        player.getCapability(AccessoryMasteryProvider.ACCESSORY_MASTERY).ifPresent(mastery -> {
+            mastery.reset(accessoryId);
+            AccessoryMasteryService.syncMastery(player, mastery);
+            context.getSource().sendSuccess(() -> Component.literal("Reset mastery for " + accessoryId + "."), true);
+        });
+        return 1;
+    }
+
+    private static boolean isKnownAccessory(CommandContext<CommandSourceStack> context, String accessoryId) {
+        if (AccessoryRegistry.get(accessoryId) != null) {
+            return true;
+        }
+        context.getSource().sendFailure(Component.literal("Unknown accessory: " + accessoryId));
+        return false;
+    }
+
     private static int startBattle(CommandContext<CommandSourceStack> context, String npcId, ResourceLocation arenaId) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
         player.getCapability(TitanManagerProvider.TITAN_MANAGER).ifPresent(manager -> {
@@ -289,7 +449,7 @@ public class CommandTeeny {
         } else {
             ItemStack bossStack = new ItemStack(ModItems.ROBIN.get());
             ItemFigure.initializeFigure(bossStack, "robin", "Boss Robin", "The Gatekeeper", "Titan",
-                    new ArrayList<>(), 0, TeenyBalance.BOSS_ROBIN_BASE_HP, TeenyBalance.BOSS_ROBIN_BASE_POWER,
+                    0, TeenyBalance.BOSS_ROBIN_BASE_HP, TeenyBalance.BOSS_ROBIN_BASE_POWER,
                     TeenyBalance.BOSS_ROBIN_BASE_DODGE, TeenyBalance.BOSS_ROBIN_BASE_LUCK,
                     List.of("birdarang", "staff_slam", "smoke_bomb"), List.of("a", "a", "a"));
             ItemFigure.setLevel(bossStack, TeenyBalance.BOSS_ROBIN_LEVEL);
@@ -333,7 +493,7 @@ public class CommandTeeny {
     private static int endBattle(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         Player player = context.getSource().getPlayerOrException();
         if (player instanceof ServerPlayer serverPlayer) {
-            ArenaBattleManager.finishBattleForPlayer(serverPlayer);
+            ArenaBattleManager.abandonBattleForPlayer(serverPlayer);
             context.getSource().sendSuccess(() -> Component.literal("Battle Ended manually."), true);
         }
         return 1;

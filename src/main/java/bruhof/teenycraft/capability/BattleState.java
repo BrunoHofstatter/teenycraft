@@ -3,13 +3,24 @@ package bruhof.teenycraft.capability;
 import bruhof.teenycraft.accessory.AccessoryExecutor;
 import bruhof.teenycraft.accessory.AccessoryRegistry;
 import bruhof.teenycraft.accessory.AccessorySpec;
+import bruhof.teenycraft.accessory.AccessoryTierResolver;
+import bruhof.teenycraft.accessory.ResolvedAccessorySpec;
+import bruhof.teenycraft.accessory.AccessoryBattleProgressTracker;
+import bruhof.teenycraft.accessory.AccessoryMilestoneService;
 import bruhof.teenycraft.battle.effect.EffectInstance;
 import bruhof.teenycraft.battle.effect.EffectRegistry;
 import bruhof.teenycraft.battle.BattleFigure;
+import bruhof.teenycraft.battle.presentation.BattleHudEffectSnapshot;
+import bruhof.teenycraft.battle.presentation.BattleUiEventPayload;
+import bruhof.teenycraft.battle.presentation.BattleUiFeedbackBroadcaster;
 import bruhof.teenycraft.chip.ChipExecutor;
 import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.entity.custom.EntityTeenyDummy;
 import bruhof.teenycraft.item.custom.ItemFigure;
+import bruhof.teenycraft.group.FigureGroupDefinition;
+import bruhof.teenycraft.group.FigureGroupResolver;
+import bruhof.teenycraft.group.GroupComboExecutor;
+import bruhof.teenycraft.group.GroupComboStatBonus;
 import bruhof.teenycraft.world.arena.ArenaBattleManager;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -39,6 +50,9 @@ public class BattleState implements IBattleState {
 
     private static final UUID DODGE_SPEED_UUID = UUID.fromString("6f6c94a5-6a5e-4c7b-8b9a-7a5d1b6e2f4c");
     private static final UUID ARENA_SPEED_UUID = UUID.fromString("0fc2d7f0-2b52-4ed4-b1f5-8b54c7a1cc2f");
+    private static final UUID CHIP_SPEED_UUID = UUID.fromString("454c4db1-b1d3-4dfc-a4a7-4a71fce31f20");
+    private static final UUID RAVENS_SLOW_UUID = UUID.fromString("589549df-af4d-4cc0-ad51-94f422def7ba");
+    private static final UUID KRYPTONITE_SLOW_UUID = UUID.fromString("52dd6be4-3175-48f5-925b-dbc9994fbb6e");
     static final int BATTLE_ACCESSORY_SLOT = 5;
     public static final String TAG_BATTLE_FIGURE_INDEX = "BattleFigureIndex";
     private static final Set<String> PARTICIPANT_EFFECT_IDS = Set.of("reset_lock", "arena_speed", "arena_launch_lock", "arena_launch_movement_lock");
@@ -54,6 +68,8 @@ public class BattleState implements IBattleState {
     // Participant State
     private float currentMana = 0;
     private float currentTofuMana = 0;
+    private String currentTofuPreviewEffectId = "";
+    private boolean currentTofuPreviewSelfTarget = true;
     
     // Battery State
     private float batteryCharge = 0;
@@ -62,8 +78,11 @@ public class BattleState implements IBattleState {
     private boolean accessoryActive = false;
     private int accessoryActiveTicks = 0;
     private String activeAccessoryId = null;
+    private int activeAccessoryTier = 1;
+    private final AccessoryBattleProgressTracker accessoryBattleProgressTracker = new AccessoryBattleProgressTracker();
 
     private final Map<String, EffectInstance> participantEffects = new HashMap<>();
+    private final Map<BattleFigure, Integer> activeChipTickCounters = new java.util.IdentityHashMap<>();
     private BattleFigure effectContextFigure;
 
     public Player getPlayer() { return this.player; }
@@ -88,6 +107,11 @@ public class BattleState implements IBattleState {
     }
 
     @Override
+    public boolean didWinBattle() {
+        return battleWon;
+    }
+
+    @Override
     public void setBattling(boolean battling) {
         this.isBattling = battling;
         if (!battling) {
@@ -106,15 +130,27 @@ public class BattleState implements IBattleState {
         this.player = ownerEntity instanceof Player ownerPlayer ? ownerPlayer : null;
         this.opponentEntityId = opponentEntity != null ? opponentEntity.getUUID() : null;
         this.team.clear();
-        for (ItemStack stack : teamStacks) {
+        this.activeChipTickCounters.clear();
+        String selectedGroupId = this.player == null ? "" : this.player.getCapability(TitanManagerProvider.TITAN_MANAGER)
+                .map(ITitanManager::getSelectedComboGroupId).orElse("");
+        FigureGroupDefinition activeCombo = resolveComboForTeam(teamStacks, selectedGroupId).orElse(null);
+        GroupComboStatBonus comboBonus = GroupComboExecutor.resolveStatBonus(activeCombo);
+        for (int teamSlot = 0; teamSlot < teamStacks.size(); teamSlot++) {
+            ItemStack stack = teamStacks.get(teamSlot);
             if (!stack.isEmpty()) {
-                this.team.add(new BattleFigure(stack));
+                GroupComboStatBonus figureBonus = teamSlot < 2 && activeCombo != null
+                        ? comboBonus
+                        : GroupComboStatBonus.NONE;
+                this.team.add(new BattleFigure(stack, figureBonus, teamSlot));
             }
         }
         this.activeFigureIndex = 0;
         this.isBattling = true;
         this.swapCooldown = 0;
         this.currentMana = 0;
+        this.currentTofuMana = 0;
+        this.currentTofuPreviewEffectId = "";
+        this.currentTofuPreviewSelfTarget = true;
         this.participantEffects.clear();
         this.effectContextFigure = null;
         
@@ -124,6 +160,8 @@ public class BattleState implements IBattleState {
         this.accessoryActive = false;
         this.accessoryActiveTicks = 0;
         this.activeAccessoryId = null;
+        this.activeAccessoryTier = 1;
+        AccessoryMilestoneService.beginBattle(this);
         
         // Reset Victory
         this.battleWon = false;
@@ -148,6 +186,27 @@ public class BattleState implements IBattleState {
         if (index >= 0 && index < team.size()) {
             activateFigureInternal(index);
         }
+    }
+
+    public void setActiveFigureByTeamSlot(int teamSlot) {
+        for (int i = 0; i < team.size(); i++) {
+            if (team.get(i).getTeamSlotIndex() == teamSlot) {
+                setActiveFigure(i);
+                return;
+            }
+        }
+        setActiveFigure(0);
+    }
+
+    private static Optional<FigureGroupDefinition> resolveComboForTeam(List<ItemStack> teamStacks, String selectedGroupId) {
+        if (teamStacks.size() < 2 || teamStacks.get(0).isEmpty() || teamStacks.get(1).isEmpty()) {
+            return Optional.empty();
+        }
+        return FigureGroupResolver.resolve(
+                ItemFigure.getFigureID(teamStacks.get(0)),
+                ItemFigure.getFigureID(teamStacks.get(1)),
+                selectedGroupId
+        );
     }
 
     @Override
@@ -210,7 +269,8 @@ public class BattleState implements IBattleState {
         return figure != null ? figure.getActiveEffects().get(effectId) : null;
     }
 
-    private LivingEntity getBattleEntity() {
+    @Override
+    public LivingEntity getBattleEntity() {
         return ownerEntity != null ? ownerEntity : player;
     }
 
@@ -227,6 +287,9 @@ public class BattleState implements IBattleState {
 
         speedAttr.removeModifier(DODGE_SPEED_UUID);
         speedAttr.removeModifier(ARENA_SPEED_UUID);
+        speedAttr.removeModifier(CHIP_SPEED_UUID);
+        speedAttr.removeModifier(RAVENS_SLOW_UUID);
+        speedAttr.removeModifier(KRYPTONITE_SLOW_UUID);
 
         if (!isBattling) {
             return;
@@ -242,6 +305,36 @@ public class BattleState implements IBattleState {
                     multiplierValue,
                     AttributeModifier.Operation.MULTIPLY_BASE
             ));
+
+            int chipSpeedPercent = getEffectMagnitude("speed_up") - getEffectMagnitude("speed_down");
+            if (chipSpeedPercent != 0) {
+                speedAttr.addTransientModifier(new AttributeModifier(
+                        CHIP_SPEED_UUID,
+                        "Battle Speed Modifier",
+                        chipSpeedPercent / 100.0d,
+                        AttributeModifier.Operation.MULTIPLY_BASE
+                ));
+            }
+
+            int ravenSlowPercent = getEffectMagnitude("ravens_slow");
+            if (ravenSlowPercent > 0) {
+                speedAttr.addTransientModifier(new AttributeModifier(
+                        RAVENS_SLOW_UUID,
+                        "Raven's Spellbook Slow",
+                        -(ravenSlowPercent / 100.0d),
+                        AttributeModifier.Operation.MULTIPLY_TOTAL
+                ));
+            }
+
+            int kryptonitePenaltyPercent = getEffectMagnitude("kryptonite_mastery");
+            if (kryptonitePenaltyPercent > 0) {
+                speedAttr.addTransientModifier(new AttributeModifier(
+                        KRYPTONITE_SLOW_UUID,
+                        "Kryptonite Mastery Slow",
+                        -(kryptonitePenaltyPercent / 100.0d),
+                        AttributeModifier.Operation.MULTIPLY_TOTAL
+                ));
+            }
         }
 
         if (hasEffect("arena_speed")) {
@@ -269,7 +362,7 @@ public class BattleState implements IBattleState {
 
         AttributeInstance maxHealth = dummy.getAttribute(Attributes.MAX_HEALTH);
         if (maxHealth != null) {
-            maxHealth.setBaseValue(active.getMaxHp());
+            maxHealth.setBaseValue(Math.max(active.getMaxHp(), active.getCurrentHp()));
         }
 
         dummy.setHealth(Math.min(dummy.getMaxHealth(), active.getCurrentHp()));
@@ -341,6 +434,7 @@ public class BattleState implements IBattleState {
 
         activateFigureInternal(newIndex);
         this.swapCooldown = TeenyBalance.SWAP_COOLDOWN * 20;
+        applySwapItemCooldown(player);
 
         BattleFigure newActive = getActiveFigure();
         if (player == null) {
@@ -474,10 +568,12 @@ public class BattleState implements IBattleState {
 
         if (swapCooldown > 0) swapCooldown--;
         regenMana();
+        tickActiveChipRuntime();
 
         // Battery Passive Charge
         if (batteryCharge < TeenyBalance.BATTERY_MAX_CHARGE) {
-            batteryCharge += TeenyBalance.BATTERY_PASSIVE_CHARGE_RATE;
+            batteryCharge += TeenyBalance.BATTERY_PASSIVE_CHARGE_RATE
+                    * ChipExecutor.getPassiveBatteryChargeMultiplier(getActiveFigure());
             if (batteryCharge > TeenyBalance.BATTERY_MAX_CHARGE) {
                 batteryCharge = TeenyBalance.BATTERY_MAX_CHARGE;
             }
@@ -499,9 +595,13 @@ public class BattleState implements IBattleState {
             deactivateAccessory();
         }
         if (accessoryActive && equippedAccessory.isPresent()) {
+            ResolvedAccessorySpec resolved = AccessoryTierResolver.resolve(equippedAccessory.get(), activeAccessoryTier);
             accessoryActiveTicks++;
-            AccessoryExecutor.onTick(this, player, equippedAccessory.get(), accessoryActiveTicks);
-            addBatteryCharge(-TeenyBalance.ACCESSORY_DRAIN_PER_TICK);
+            AccessoryExecutor.onTick(this, player, resolved, accessoryActiveTicks);
+            boolean masteredUnderpants = "supermans_underpants".equals(resolved.id()) && resolved.tier() >= 5;
+            if (!masteredUnderpants) {
+                addBatteryChargeInternal(-resolved.batteryDrainPerTick(), false);
+            }
             if (batteryCharge <= 0) {
                 deactivateAccessory();
             }
@@ -539,6 +639,27 @@ public class BattleState implements IBattleState {
         }
     }
 
+    private void tickActiveChipRuntime() {
+        BattleFigure active = getActiveFigure();
+        if (active == null || active.getCurrentHp() <= 0) {
+            return;
+        }
+
+        int regenInterval = ChipExecutor.getActiveRegenInterval(active);
+        int regenHeal = ChipExecutor.getActiveRegenHeal(active);
+        if (regenInterval <= 0 || regenHeal <= 0) {
+            return;
+        }
+
+        int tickCount = activeChipTickCounters.getOrDefault(active, 0) + 1;
+        if (tickCount >= regenInterval) {
+            activeChipTickCounters.put(active, 0);
+            applyResolvedCombatFigureDelta(active, regenHeal, new CombatMutationSource(this, ownerEntity, active));
+        } else {
+            activeChipTickCounters.put(active, tickCount);
+        }
+    }
+
     @Override
     public CombatMutationResult applyCombatFigureDelta(BattleFigure figure, int amount, @Nullable CombatMutationSource source) {
         if (figure == null || amount == 0) {
@@ -555,16 +676,59 @@ public class BattleState implements IBattleState {
     }
 
     @Override
+    public CombatMutationResult applyAccessoryOverheal(BattleFigure figure, int amount, float overhealPct) {
+        if (figure == null || amount == 0) {
+            int currentHp = figure != null ? figure.getCurrentHp() : 0;
+            return new CombatMutationResult(figure, amount, currentHp, currentHp, null);
+        }
+
+        int hpBefore = figure.getCurrentHp();
+        figure.applyOverheal(amount, overhealPct);
+        if (figure == getActiveFigure()) {
+            syncOwnerPresentation();
+        }
+        return new CombatMutationResult(figure, amount, hpBefore, figure.getCurrentHp(), null);
+    }
+
+    @Override
     public void resolveCombatFigureDelta(CombatMutationResult mutation) {
-        if (mutation == null || mutation.figure() == null || !mutation.isDamage()) {
+        if (mutation == null || mutation.figure() == null) {
+            return;
+        }
+
+        CombatMutationResult effectiveMutation = mutation;
+        boolean rescuedBySecondChance = false;
+        if (mutation.isDamage() && mutation.fainted()) {
+            rescuedBySecondChance = tryResolveSecondChance(mutation);
+            if (rescuedBySecondChance) {
+                effectiveMutation = new CombatMutationResult(
+                        mutation.figure(),
+                        mutation.requestedDelta(),
+                        mutation.previousHp(),
+                        mutation.figure().getCurrentHp(),
+                        mutation.source()
+                );
+            }
+        }
+
+        CombatMutationSource source = mutation.source();
+        if (source == null || source.emitDefaultHpEvent()) {
+            emitHpMutationEvent(effectiveMutation);
+        }
+
+        if (rescuedBySecondChance) {
+            return;
+        }
+
+        if (!effectiveMutation.isDamage()) {
+            triggerTeamMedicSplash(effectiveMutation);
             return;
         }
 
         LivingEntity targetEntity = getBattleEntity();
-        CombatMutationSource source = mutation.source();
-        if (mutation.fainted()) {
+        if (effectiveMutation.fainted()) {
             if (targetEntity != null) {
-                ChipExecutor.onFaint(this, targetEntity, mutation.figure(),
+                ChipExecutor.onFaint(this, targetEntity, effectiveMutation.figure(),
                         source != null ? source.state() : null,
                         source != null ? source.entity() : null);
             }
@@ -573,8 +737,34 @@ public class BattleState implements IBattleState {
             }
         }
 
-        if (mutation.figure() == getActiveFigure() && mutation.currentHp() <= 0 && targetEntity != null) {
+        if (effectiveMutation.figure() == getActiveFigure() && effectiveMutation.currentHp() <= 0 && targetEntity != null) {
             checkFaint(targetEntity);
+        }
+    }
+
+    private void triggerTeamMedicSplash(CombatMutationResult mutation) {
+        int actualHeal = mutation.currentHp() - mutation.previousHp();
+        if (actualHeal <= 0) {
+            return;
+        }
+
+        CombatMutationSource source = mutation.source();
+        if (source == null || source.figure() == null || source.figure() != mutation.figure()) {
+            return;
+        }
+
+        float benchHealPct = ChipExecutor.getTeamMedicBenchHealPct(mutation.figure());
+        if (benchHealPct <= 0.0f) {
+            return;
+        }
+
+        int splashHeal = Math.max(1, Math.round(actualHeal * benchHealPct));
+        for (BattleFigure ally : team) {
+            if (ally == mutation.figure() || ally.getCurrentHp() <= 0) {
+                continue;
+            }
+            applyResolvedCombatFigureDelta(ally, splashHeal,
+                    new CombatMutationSource(source.state(), source.entity(), source.figure(), false));
         }
     }
 
@@ -598,20 +788,115 @@ public class BattleState implements IBattleState {
         return null;
     }
 
+    private boolean tryResolveSecondChance(CombatMutationResult mutation) {
+        BattleFigure figure = mutation.figure();
+        if (figure == null || !ChipExecutor.tryConsumeSecondChance(figure)) {
+            return false;
+        }
+
+        int surviveHp = Math.max(1, ChipExecutor.getSecondChanceSurviveHp(figure));
+        figure.modifyHp(surviveHp - figure.getCurrentHp());
+        if (figure == getActiveFigure()) {
+            syncOwnerPresentation();
+        }
+
+        clearFigureEffects(figure);
+
+        if (figure != getActiveFigure()) {
+            return true;
+        }
+
+        LivingEntity entity = getBattleEntity();
+        if (entity != null) {
+            entity.removeEffect(net.minecraft.world.effect.MobEffects.LEVITATION);
+            entity.removeEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);
+        }
+
+        int nextIndex = findNextLivingFigureIndex();
+        if (nextIndex == -1) {
+            return true;
+        }
+
+        applyEffect("reset_lock", TeenyBalance.DEATH_SWAP_RESET_TICKS, 1);
+        activateFigureInternal(nextIndex);
+
+        BattleFigure newActive = getActiveFigure();
+        if (newActive != null) {
+            int debuffDuration = ChipExecutor.getSecondChanceDebuffDuration(figure);
+            int slowMagnitude = ChipExecutor.getSecondChanceSlowMagnitude(figure);
+            if (debuffDuration > 0) {
+                applyEffect(newActive, "speed_down", debuffDuration, slowMagnitude);
+                applyEffect(newActive, "curse", debuffDuration, 1);
+            }
+        }
+
+        if (entity != null) {
+            if (entity instanceof EntityTeenyDummy dummy && newActive != null) {
+                dummy.setCustomName(Component.literal("Â§c" + newActive.getNickname()));
+            }
+            entity.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                    net.minecraft.world.effect.MobEffects.GLOWING,
+                    TeenyBalance.DEATH_SWAP_RESET_TICKS,
+                    0
+            ));
+            entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(),
+                    net.minecraft.sounds.SoundEvents.FIREWORK_ROCKET_BLAST,
+                    net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
+            if (entity.level() instanceof ServerLevel sl) {
+                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.CAMPFIRE_COSY_SMOKE,
+                        entity.getX(), entity.getY() + 1, entity.getZ(), 600, 0.5, 0.5, 0.5, 0.05);
+            }
+        }
+
+        LivingEntity opponent = getOpponentEntity();
+        IBattleState opponentState = getOpponentBattleState();
+        if (opponent != null) {
+            if (opponentState != null) {
+                opponentState.applyEffect("reset_lock", TeenyBalance.DEATH_SWAP_RESET_TICKS, 1);
+            }
+            opponent.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                    net.minecraft.world.effect.MobEffects.GLOWING,
+                    TeenyBalance.DEATH_SWAP_RESET_TICKS,
+                    0
+            ));
+            opponent.level().playSound(null, opponent.getX(), opponent.getY(), opponent.getZ(),
+                    net.minecraft.sounds.SoundEvents.FIREWORK_ROCKET_BLAST,
+                    net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
+            if (opponent.level() instanceof ServerLevel sl) {
+                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                        opponent.getX(), opponent.getY() + 1, opponent.getZ(), 60, 0.5, 0.5, 0.5, 0.05);
+            }
+        }
+
+        if (entity instanceof ServerPlayer sp) {
+            sp.sendSystemMessage(Component.literal(
+                    "Â§e" + figure.getNickname() + " triggered Second Chance! Â§c--- ROUND RESET ---"
+            ));
+            refreshPlayerInventory(sp);
+        }
+        if (entity instanceof Player playerEntity && !(entity instanceof ServerPlayer)) {
+            refreshPlayerInventory(playerEntity);
+        }
+
+        return true;
+    }
+
+    private int findNextLivingFigureIndex() {
+        for (int i = 1; i < team.size(); i++) {
+            int check = (activeFigureIndex + i) % team.size();
+            if (team.get(check).getCurrentHp() > 0) {
+                return check;
+            }
+        }
+        return -1;
+    }
+
     @Override
     public void checkFaint(LivingEntity entity) {
         BattleFigure active = getActiveFigure();
         if (active == null || active.getCurrentHp() > 0) return;
 
-        // Search for next alive figure
-        int nextIndex = -1;
-        for (int i = 1; i < team.size(); i++) {
-            int check = (activeFigureIndex + i) % team.size();
-            if (team.get(check).getCurrentHp() > 0) {
-                nextIndex = check;
-                break;
-            }
-        }
+        int nextIndex = findNextLivingFigureIndex();
 
         if (nextIndex != -1) {
             // SWAP CASE (Round Reset)
@@ -692,6 +977,16 @@ public class BattleState implements IBattleState {
     
     @Override
     public float getCurrentTofuMana() { return currentTofuMana; }
+
+    @Override
+    public String getCurrentTofuPreviewEffectId() {
+        return currentTofuPreviewEffectId;
+    }
+
+    @Override
+    public boolean isCurrentTofuPreviewSelfTarget() {
+        return currentTofuPreviewSelfTarget;
+    }
     
     @Override
     public int getLockedSlot() {
@@ -709,8 +1004,25 @@ public class BattleState implements IBattleState {
 
     @Override
     public void spawnTofu(float power) {
-        if (power > 0 && this.currentTofuMana > 0) return; 
-        this.currentTofuMana = power; 
+        if (power > 0 && this.currentTofuMana > 0) return;
+        boolean gainedTofu = power > 0 && this.currentTofuMana <= 0;
+        this.currentTofuMana = power;
+        if (power <= 0) {
+            this.currentTofuPreviewEffectId = "";
+            this.currentTofuPreviewSelfTarget = true;
+        } else if (gainedTofu) {
+            assignTofuPreview();
+        }
+        if (gainedTofu) {
+            emitUiEvent(new BattleUiEventPayload(
+                    BattleUiEventPayload.Type.TOFU_GAINED,
+                    getBattleEntity() != null ? getBattleEntity().getId() : 0,
+                    Math.round(power),
+                    0,
+                    "tofu",
+                    false
+            ));
+        }
     }
 
     @Override
@@ -718,11 +1030,29 @@ public class BattleState implements IBattleState {
     
     @Override
     public void addBatteryCharge(float amount) {
+        addBatteryChargeInternal(amount, true);
+    }
+
+    private void addBatteryChargeInternal(float amount, boolean emitFeedback) {
+        float before = this.batteryCharge;
         this.batteryCharge += amount;
         if (this.batteryCharge > TeenyBalance.BATTERY_MAX_CHARGE) {
             this.batteryCharge = TeenyBalance.BATTERY_MAX_CHARGE;
         } else if (this.batteryCharge < 0) {
             this.batteryCharge = 0;
+        }
+        if (emitFeedback) {
+            int displayDelta = Math.round((this.batteryCharge - before) * 2.0f);
+            if (displayDelta != 0) {
+                emitUiEvent(new BattleUiEventPayload(
+                        BattleUiEventPayload.Type.BATTERY,
+                        getBattleEntity() != null ? getBattleEntity().getId() : 0,
+                        displayDelta,
+                        0,
+                        "",
+                        false
+                ));
+            }
         }
     }
     
@@ -740,6 +1070,21 @@ public class BattleState implements IBattleState {
     @Override
     public String getActiveAccessoryId() {
         return activeAccessoryId;
+    }
+
+    @Override
+    public int getActiveAccessoryTier() {
+        return activeAccessoryTier;
+    }
+
+    @Override
+    public AccessoryBattleProgressTracker getAccessoryBattleProgressTracker() {
+        return accessoryBattleProgressTracker;
+    }
+
+    @Override
+    public String getEquippedAccessoryId() {
+        return getEquippedAccessorySpec().map(AccessorySpec::getId).orElse("");
     }
 
     @Override
@@ -847,14 +1192,18 @@ public class BattleState implements IBattleState {
 
     @Override
     public void consumeMana(float amount) {
+        float before = this.currentMana;
         this.currentMana -= amount;
         if (this.currentMana < 0) this.currentMana = 0;
+        emitManaDelta(before, this.currentMana);
     }
 
     @Override
     public void consumeMana(int amount) {
+        float before = this.currentMana;
         this.currentMana -= amount;
         if (this.currentMana < 0) this.currentMana = 0;
+        emitManaDelta(before, this.currentMana);
     }
 
     private void checkBatteryCollection() {
@@ -874,13 +1223,67 @@ public class BattleState implements IBattleState {
 
     @Override
     public void addMana(int amount) {
+        float before = this.currentMana;
         this.currentMana += amount;
         if (this.currentMana > TeenyBalance.BATTLE_MANA_MAX) {
             this.currentMana = TeenyBalance.BATTLE_MANA_MAX;
         } else if (this.currentMana < 0) {
             this.currentMana = 0;
         }
+        emitManaDelta(before, this.currentMana);
         checkBatteryCollection();
+    }
+
+    private void emitManaDelta(float before, float after) {
+        int displayDelta = Math.round(after) - Math.round(before);
+        if (displayDelta == 0) {
+            return;
+        }
+
+        emitUiEvent(new BattleUiEventPayload(
+                BattleUiEventPayload.Type.MANA,
+                getBattleEntity() != null ? getBattleEntity().getId() : 0,
+                displayDelta,
+                0,
+                "",
+                false
+        ));
+    }
+
+    private void emitUiEvent(BattleUiEventPayload payload) {
+        if (!isBattling || getBattleEntity() == null) {
+            return;
+        }
+        BattleUiFeedbackBroadcaster.emitToViewers(this, payload);
+    }
+
+    private void emitHpMutationEvent(CombatMutationResult mutation) {
+        int amount = Math.abs(mutation.currentHp() - mutation.previousHp());
+        if (amount <= 0) {
+            return;
+        }
+
+        emitUiEvent(new BattleUiEventPayload(
+                mutation.isDamage() ? BattleUiEventPayload.Type.DAMAGE : BattleUiEventPayload.Type.HEAL,
+                getBattleEntity() != null ? getBattleEntity().getId() : 0,
+                amount,
+                0,
+                "",
+                false
+        ));
+    }
+
+    private void applySwapItemCooldown(Player player) {
+        if (player == null || swapCooldown <= 0) {
+            return;
+        }
+
+        for (BattleFigure figure : team) {
+            if (figure == null || figure.getOriginalStack().isEmpty()) {
+                continue;
+            }
+            player.getCooldowns().addCooldown(figure.getOriginalStack().getItem(), swapCooldown);
+        }
     }
     
     @Override
@@ -889,9 +1292,15 @@ public class BattleState implements IBattleState {
         if (currentMana < TeenyBalance.BATTLE_MANA_MAX) {
             float regenRate = (float) TeenyBalance.BATTLE_MANA_REGEN_PER_SEC / 20.0f;
             if (hasEffect("curse")) {
-                regenRate *= TeenyBalance.CURSE_EFFICIENCY;
+                int reductionPct = getEffectMagnitude("curse");
+                regenRate *= reductionPct > 1
+                        ? Math.max(0.0f, 1.0f - reductionPct / 100.0f)
+                        : TeenyBalance.CURSE_EFFICIENCY;
             } else if (hasEffect("dance")) {
                 regenRate *= TeenyBalance.DANCE_MANA_REGEN_MULTIPLIER;
+            }
+            if (hasEffect("kryptonite_mastery")) {
+                regenRate *= TeenyBalance.ACCESSORY_KRYPTONITE_TIER_5_PENALTY_MULT;
             }
             currentMana += regenRate;
             if (currentMana > TeenyBalance.BATTLE_MANA_MAX) {
@@ -924,6 +1333,36 @@ public class BattleState implements IBattleState {
             applyEffectToFigure(targetFigure, effectId, duration, magnitude, power, caster, casterFigureIndex);
         }
     }
+
+    @Override
+    public boolean applyAccessoryEffect(String accessoryId, String effectId, int duration, int magnitude) {
+        if (accessoryId == null || accessoryId.isBlank()) {
+            return false;
+        }
+        if (isParticipantEffect(effectId)) {
+            applyParticipantEffect(effectId, duration, magnitude, 0, null, EffectInstance.NO_CASTER_FIGURE_INDEX,
+                    accessoryId);
+            return true;
+        }
+
+        BattleFigure targetFigure = getScopedFigure();
+        return targetFigure != null && applyEffectToFigure(targetFigure, effectId, duration, magnitude, 0, null,
+                EffectInstance.NO_CASTER_FIGURE_INDEX, accessoryId);
+    }
+
+    @Override
+    public void applyEffect(BattleFigure targetFigure, String effectId, int duration, int magnitude, float power, UUID caster,
+                            @Nullable BattleFigure casterFigure) {
+        int casterFigureIndex = resolveAppliedEffectSourceFigureIndex(caster, casterFigure);
+        if (isParticipantEffect(effectId)) {
+            applyParticipantEffect(effectId, duration, magnitude, power, caster, casterFigureIndex);
+            return;
+        }
+
+        if (targetFigure != null) {
+            applyEffectToFigure(targetFigure, effectId, duration, magnitude, power, caster, casterFigureIndex);
+        }
+    }
     
     @Override
     public boolean hasEffect(String effectId) {
@@ -931,6 +1370,14 @@ public class BattleState implements IBattleState {
             return true;
         }
         return hasFigureEffect(getScopedFigure(), effectId);
+    }
+
+    @Override
+    public boolean hasEffect(BattleFigure targetFigure, String effectId) {
+        if (participantEffects.containsKey(effectId)) {
+            return true;
+        }
+        return hasFigureEffect(targetFigure, effectId);
     }
 
     @Override
@@ -953,6 +1400,18 @@ public class BattleState implements IBattleState {
         }
         return (instance != null) ? instance.magnitude : 0;
     }
+
+    @Override
+    public String getEffectSourceAccessoryId(String effectId) {
+        EffectInstance instance = getEffectInstance(effectId);
+        return instance != null ? instance.sourceAccessoryId : "";
+    }
+
+    @Override
+    public int getEffectAccessoryMagnitude(String effectId, String accessoryId) {
+        EffectInstance instance = getEffectInstance(effectId);
+        return instance != null ? instance.getAccessoryMagnitude(accessoryId) : 0;
+    }
     
     @Override
     public EffectInstance getEffectInstance(String effectId) {
@@ -961,6 +1420,15 @@ public class BattleState implements IBattleState {
             return participantInstance;
         }
         return getFigureEffectInstance(getScopedFigure(), effectId);
+    }
+
+    @Override
+    public EffectInstance getEffectInstance(BattleFigure targetFigure, String effectId) {
+        EffectInstance participantInstance = participantEffects.get(effectId);
+        if (participantInstance != null) {
+            return participantInstance;
+        }
+        return getFigureEffectInstance(targetFigure, effectId);
     }
     
     @Override
@@ -984,19 +1452,26 @@ public class BattleState implements IBattleState {
     }
     
     private void applyParticipantEffect(String effectId, int duration, int magnitude, float power, UUID caster, int casterFigureIndex) {
+        applyParticipantEffect(effectId, duration, magnitude, power, caster, casterFigureIndex, "");
+    }
+
+    private void applyParticipantEffect(String effectId, int duration, int magnitude, float power, UUID caster,
+                                        int casterFigureIndex, String sourceAccessoryId) {
         if (participantEffects.containsKey(effectId)) {
             EffectInstance existing = participantEffects.get(effectId);
             existing.magnitude = magnitude;
             existing.power = Math.max(existing.power, power);
             existing.casterUUID = caster;
             existing.casterFigureIndex = casterFigureIndex;
+            existing.replaceAccessoryMagnitude(sourceAccessoryId, magnitude);
             if (duration == -1) {
                 existing.duration = -1;
             } else if (duration > existing.duration && existing.duration != -1) {
                 existing.duration = duration;
             }
         } else {
-            participantEffects.put(effectId, new EffectInstance(duration, magnitude, power, caster, casterFigureIndex));
+            participantEffects.put(effectId, new EffectInstance(duration, magnitude, power, caster, casterFigureIndex,
+                    sourceAccessoryId));
         }
 
         if ("arena_speed".equals(effectId)) {
@@ -1005,14 +1480,19 @@ public class BattleState implements IBattleState {
     }
 
     private void applyEffectToFigure(BattleFigure figure, String effectId, int duration, int magnitude, float power, UUID caster, int casterFigureIndex) {
+        applyEffectToFigure(figure, effectId, duration, magnitude, power, caster, casterFigureIndex, "");
+    }
+
+    private boolean applyEffectToFigure(BattleFigure figure, String effectId, int duration, int magnitude, float power,
+                                        UUID caster, int casterFigureIndex, String sourceAccessoryId) {
         if (figure == null) {
-            return;
+            return false;
         }
 
-        withFigureContext(figure, () -> {
+        return withFigureContext(figure, () -> {
             bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(effectId);
             if (effect != null && !effect.onApply(this, figure, duration, magnitude)) {
-                return;
+                return false;
             }
 
             Map<String, EffectInstance> figureEffects = figure.getActiveEffects();
@@ -1020,8 +1500,16 @@ public class BattleState implements IBattleState {
                 EffectInstance existing = figureEffects.get(effectId);
                 if (effect != null && effect.canStackMagnitude()) {
                     existing.magnitude += magnitude;
+                    if (!sourceAccessoryId.isEmpty()) {
+                        existing.addAccessoryMagnitude(sourceAccessoryId, magnitude);
+                    }
                 } else {
                     existing.magnitude = magnitude;
+                    if (sourceAccessoryId.isEmpty()) {
+                        existing.clearAccessoryMagnitudes();
+                    } else {
+                        existing.replaceAccessoryMagnitude(sourceAccessoryId, magnitude);
+                    }
                 }
                 existing.power = Math.max(existing.power, power);
                 existing.casterUUID = caster;
@@ -1032,7 +1520,8 @@ public class BattleState implements IBattleState {
                     existing.duration = duration;
                 }
             } else {
-                figureEffects.put(effectId, new EffectInstance(duration, magnitude, power, caster, casterFigureIndex));
+                figureEffects.put(effectId, new EffectInstance(duration, magnitude, power, caster, casterFigureIndex,
+                        sourceAccessoryId));
             }
 
             if (player != null && figure == getActiveFigure() && "flight".equals(effectId)) {
@@ -1042,6 +1531,7 @@ public class BattleState implements IBattleState {
             if (figure == getActiveFigure()) {
                 updateOwnerSpeedInternal();
             }
+            return true;
         });
     }
 
@@ -1166,6 +1656,12 @@ public class BattleState implements IBattleState {
     }
 
     @Override
+    public int getChargeTotalTicks() {
+        BattleFigure active = getActiveFigure();
+        return active != null ? active.getChargeTotalTicks() : 0;
+    }
+
+    @Override
     public void startCharge(int ticks, bruhof.teenycraft.util.AbilityLoader.AbilityData data, int slot, boolean isGolden, UUID targetUUID) {
         BattleFigure active = getActiveFigure();
         if (active != null) {
@@ -1224,6 +1720,14 @@ public class BattleState implements IBattleState {
             return;
         }
 
+        int retainedRedPowerUp = 0;
+        EffectInstance powerUp = targetFigure.getActiveEffects().get("power_up");
+        if (powerUp != null && player != null
+                && AccessoryTierResolver.getTier(player, "red_lantern_battery") >= 5) {
+            retainedRedPowerUp = Math.round(powerUp.getAccessoryMagnitude("red_lantern_battery")
+                    * TeenyBalance.ACCESSORY_RED_LANTERN_TIER_5_POWER_UP_RETENTION);
+        }
+
         List<String> removals = new ArrayList<>();
         for (Map.Entry<String, EffectInstance> entry : targetFigure.getActiveEffects().entrySet()) {
             bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(entry.getKey());
@@ -1234,6 +1738,9 @@ public class BattleState implements IBattleState {
 
         for (String effectId : removals) {
             removeEffectFromFigure(targetFigure, effectId);
+        }
+        if (retainedRedPowerUp > 0 && removals.contains("power_up")) {
+            applyAccessoryEffect("red_lantern_battery", "power_up", -1, retainedRedPowerUp);
         }
     }
 
@@ -1248,6 +1755,17 @@ public class BattleState implements IBattleState {
         return list;
     }
 
+    @Override
+    public List<BattleHudEffectSnapshot> getEffectSnapshots() {
+        List<BattleHudEffectSnapshot> list = new ArrayList<>();
+        appendEffectSnapshots(list, participantEffects);
+        BattleFigure active = getActiveFigure();
+        if (active != null) {
+            appendEffectSnapshots(list, active.getActiveEffects());
+        }
+        return list;
+    }
+
     private void appendEffectDescriptions(List<String> list, Map<String, EffectInstance> effects) {
         for (Map.Entry<String, EffectInstance> entry : effects.entrySet()) {
             bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(entry.getKey());
@@ -1257,6 +1775,20 @@ public class BattleState implements IBattleState {
                 float seconds = entry.getValue().duration / 20.0f;
                 list.add(entry.getKey() + " (" + String.format("%.1fs", seconds) + ")");
             }
+        }
+    }
+
+    private void appendEffectSnapshots(List<BattleHudEffectSnapshot> list, Map<String, EffectInstance> effects) {
+        for (Map.Entry<String, EffectInstance> entry : effects.entrySet()) {
+            bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(entry.getKey());
+            boolean infinite = effect != null
+                    && effect.getType() == bruhof.teenycraft.battle.effect.BattleEffect.EffectType.INFINITE;
+            list.add(new BattleHudEffectSnapshot(
+                    entry.getKey(),
+                    Math.max(0, entry.getValue().duration),
+                    entry.getValue().magnitude,
+                    infinite
+            ));
         }
     }
     
@@ -1406,6 +1938,7 @@ public class BattleState implements IBattleState {
         LivingEntity battleEntity = getBattleEntity();
         this.isBattling = false;
         this.team.clear();
+        this.activeChipTickCounters.clear();
         this.activeFigureIndex = 0;
         this.ownerEntity = null;
         this.opponentEntityId = null;
@@ -1417,11 +1950,16 @@ public class BattleState implements IBattleState {
             if (speedAttr != null) {
                 speedAttr.removeModifier(DODGE_SPEED_UUID);
                 speedAttr.removeModifier(ARENA_SPEED_UUID);
+                speedAttr.removeModifier(CHIP_SPEED_UUID);
+                speedAttr.removeModifier(RAVENS_SLOW_UUID);
+                speedAttr.removeModifier(KRYPTONITE_SLOW_UUID);
             }
         }
 
         this.currentMana = 0;
         this.currentTofuMana = 0;
+        this.currentTofuPreviewEffectId = "";
+        this.currentTofuPreviewSelfTarget = true;
         this.participantEffects.clear();
         
         this.batteryCharge = 0;
@@ -1432,6 +1970,16 @@ public class BattleState implements IBattleState {
         this.victoryTimer = 0;
         this.winnerPlayer = null;
         deactivateAccessory();
+        accessoryBattleProgressTracker.reset();
+    }
+
+    private void assignTofuPreview() {
+        String[] selfEffects = {"power_up", "heal", "bar_fill", "cleanse", "dance"};
+        String[] opponentEffects = {"freeze", "stun", "waffle"};
+        boolean selfTarget = Math.random() < (5.0 / 8.0);
+        String[] pool = selfTarget ? selfEffects : opponentEffects;
+        this.currentTofuPreviewSelfTarget = selfTarget;
+        this.currentTofuPreviewEffectId = pool[(int) (Math.random() * pool.length)];
     }
 
     private Optional<AccessorySpec> getEquippedAccessorySpec() {
@@ -1458,7 +2006,10 @@ public class BattleState implements IBattleState {
         accessoryActive = true;
         accessoryActiveTicks = 0;
         activeAccessoryId = spec.getId();
-        AccessoryExecutor.onActivated(this, player, spec, getEquippedAccessoryStack().getHoverName());
+        activeAccessoryTier = AccessoryTierResolver.getTier(player, spec.getId());
+        ResolvedAccessorySpec resolved = AccessoryTierResolver.resolve(spec, activeAccessoryTier);
+        AccessoryMilestoneService.beginActivation(this, player, resolved);
+        AccessoryExecutor.onActivated(this, player, resolved, getEquippedAccessoryStack().getHoverName());
         if (player != null && isBattling && !team.isEmpty()) {
             refreshPlayerInventory(player);
         }
@@ -1467,11 +2018,16 @@ public class BattleState implements IBattleState {
     private void deactivateAccessory() {
         if (!accessoryActive) return;
         AccessorySpec currentSpec = AccessoryRegistry.get(activeAccessoryId);
+        ResolvedAccessorySpec resolved = currentSpec != null
+                ? AccessoryTierResolver.resolve(currentSpec, activeAccessoryTier)
+                : null;
         Component accessoryName = getEquippedAccessoryStack().isEmpty() ? null : getEquippedAccessoryStack().getHoverName();
-        AccessoryExecutor.onDeactivated(this, player, currentSpec, accessoryName);
+        AccessoryExecutor.onDeactivated(this, player, resolved, accessoryName);
+        AccessoryMilestoneService.endActivation(this, player);
         accessoryActive = false;
         accessoryActiveTicks = 0;
         activeAccessoryId = null;
+        activeAccessoryTier = 1;
         if (player != null && isBattling && !team.isEmpty()) {
             refreshPlayerInventory(player);
         }
@@ -1482,7 +2038,7 @@ public class BattleState implements IBattleState {
 
         AccessorySpec currentSpec = AccessoryRegistry.get(activeAccessoryId);
         if (currentSpec != null) {
-            AccessoryExecutor.onActiveFigureChanged(this, currentSpec);
+            AccessoryExecutor.onActiveFigureChanged(this, AccessoryTierResolver.resolve(currentSpec, activeAccessoryTier));
         }
     }
 

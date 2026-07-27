@@ -1,0 +1,24 @@
+{
+  "id": "katana_slam",
+  "name": "Katana Slam",
+  "description": "Slice your opponent and Stun them",
+  "golden_description": "More Stun duration",
+  "texture_index": 71,
+  "particle": "minecraft:sweep_attack",
+  "particle_count": 5,
+  "hit_type": "melee",
+  "damage_tier": 7,
+  "effects_on_opponent": [
+    {
+      "id": "stun",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:stun:1.3"
+  ]
+}

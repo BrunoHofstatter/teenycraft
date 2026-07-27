@@ -1,0 +1,26 @@
+{
+  "id": "laser_eyes_drlight",
+  "name": "Laser Eyes",
+  "description": "Charge Up your eyes, and shoot a beam of light with your hands (yeah its called eyes but uses hands to shoot, no idea why)",
+  "golden_description": "Instant Cast Chance (chance of no Charge Up time)",
+  "texture_index": 31,
+  "particle": "minecraft:glow",
+  "particle_count": 8,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 0,
+  "range_tier": 6,
+  "damage_tier": 6,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "charge_up",
+      "params": [
+        0.6
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "trait:instant_cast_chance"
+  ]
+}

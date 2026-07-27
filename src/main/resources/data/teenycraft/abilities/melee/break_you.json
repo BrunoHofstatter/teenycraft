@@ -1,0 +1,24 @@
+{
+  "id": "break_you",
+  "name": "Break You",
+  "description": "Punch your opponent and make them Disabled (cannot be active)",
+  "golden_description": "Disables PERMANENTLY",
+  "texture_index": 24,
+  "particle": "minecraft:crit",
+  "particle_count": 7,
+  "hit_type": "melee",
+  "damage_tier": 9,
+  "effects_on_opponent": [
+    {
+      "id": "disable",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:disable:999.0"
+  ]
+}

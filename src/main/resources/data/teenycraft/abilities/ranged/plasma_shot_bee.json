@@ -1,0 +1,26 @@
+{
+  "id": "plasma_shot_bee",
+  "name": "Plasma Shot",
+  "description": "Shoot multiple plasma shots at the opponent",
+  "golden_description": "Waffle Chance (blocks a random ability)",
+  "texture_index": 122,
+  "particle": "minecraft:flame",
+  "particle_count": 7,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 2,
+  "range_tier": 5,
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "multi_hit",
+      "params": [
+        2
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "opponent:waffle_chance:0.5,1.0"
+  ]
+}

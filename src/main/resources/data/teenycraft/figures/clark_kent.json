@@ -1,0 +1,24 @@
+{
+    "id":  "clark_kent",
+    "name":  "Clark Kent",
+    "description":  "Mild-mannered reporter, secret Kryptonian, and suspiciously strong",
+    "class":  "Cute",
+    "price":  200,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2,
+                       "power_scale":  1,
+                       "dodge_scale":  1,
+                       "luck_scale":  3.5
+                   },
+    "abilities":  [
+                      "camera_flash",
+                      "journalism",
+                      "dance"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "c",
+                               "b"
+                           ]
+}

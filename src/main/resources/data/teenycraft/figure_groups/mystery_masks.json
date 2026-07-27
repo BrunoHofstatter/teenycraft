@@ -1,0 +1,13 @@
+{
+  "id": "mystery_masks",
+  "name": "Mystery Masks",
+  "priority": 1,
+  "figures": [
+    "batman_beyond",
+    "red_x",
+    "the_hooded_hood"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

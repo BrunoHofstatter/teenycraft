@@ -1,0 +1,57 @@
+{
+  "id": "teenycraft:5_slade_lightning_gizmo",
+  "figures": [
+    {
+      "figure_id": "slade",
+      "level": 20,
+      "upgrades": "HHHHHHHHHPPPPPPPDDD",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "counterattack",
+        "shuriken_storm",
+        "deathstrike"
+      ]
+    },
+    {
+      "figure_id": "black_lightning",
+      "level": 20,
+      "upgrades": "HHHHHHHHPPPPPPPDDLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "lightning_shot",
+        "lightning_bubble",
+        "lightning_fists"
+      ]
+    },
+    {
+      "figure_id": "gizmo",
+      "level": 20,
+      "upgrades": "HHHHHHHHHPPPPPPPLLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "robo_buddy",
+        "raspberry",
+        "missile_barrage"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 5,
+    "aggression": 0.55,
+    "swap_bias": 1,
+    "swap_reconsideration_ticks": 10
+  }
+}
+

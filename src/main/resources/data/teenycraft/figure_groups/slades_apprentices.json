@@ -1,0 +1,13 @@
+{
+  "id": "slades_apprentices",
+  "name": "Slade's Apprentices",
+  "priority": 1,
+  "figures": [
+    "rose_wilson",
+    "slade",
+    "terra"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

@@ -32,6 +32,7 @@ public class TeenyCraft {
         bruhof.teenycraft.battle.effect.EffectApplierRegistry.init();
         bruhof.teenycraft.battle.trait.TraitRegistry.init();
         bruhof.teenycraft.chip.ChipRegistry.init();
+        bruhof.teenycraft.group.GroupComboEffectRegistry.init();
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::clientSetup);
@@ -50,11 +51,14 @@ public class TeenyCraft {
             net.minecraft.client.gui.screens.MenuScreens.register(bruhof.teenycraft.screen.ModMenuTypes.TITAN_MANAGER_MENU.get(), bruhof.teenycraft.screen.TitanManagerScreen::new);
             net.minecraft.client.gui.screens.MenuScreens.register(bruhof.teenycraft.screen.ModMenuTypes.CHIP_FUSER_MENU.get(), bruhof.teenycraft.screen.ChipFuserScreen::new);
             net.minecraft.client.gui.screens.MenuScreens.register(bruhof.teenycraft.screen.ModMenuTypes.FIGURE_SCREEN_MENU.get(), bruhof.teenycraft.screen.FigureScreen::new);
+            net.minecraft.client.gui.screens.MenuScreens.register(bruhof.teenycraft.screen.ModMenuTypes.ACCESSORY_SCREEN_MENU.get(), bruhof.teenycraft.screen.AccessoryScreen::new);
+            net.minecraft.client.gui.screens.MenuScreens.register(bruhof.teenycraft.screen.ModMenuTypes.SILKIE_STATION_MENU.get(), bruhof.teenycraft.screen.SilkieStationScreen::new);
         });
     }
 
     private void onAddReloadListener(net.minecraftforge.event.AddReloadListenerEvent event) {
         event.addListener(new bruhof.teenycraft.util.FigureLoader());
+        event.addListener(new bruhof.teenycraft.util.FigureGroupLoader());
         event.addListener(new bruhof.teenycraft.util.AbilityLoader());
         event.addListener(new bruhof.teenycraft.util.NPCTeamLoader());
         event.addListener(new bruhof.teenycraft.world.arena.ArenaLoader());

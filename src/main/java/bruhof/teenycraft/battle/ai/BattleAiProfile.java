@@ -15,7 +15,8 @@ public record BattleAiProfile(int difficulty,
                               boolean advancedSwapLogic,
                               boolean considerClassDisadvantageSwap,
                               boolean considerClassAdvantageSwap,
-                              int swapReconsiderationTicks) {
+                              int swapReconsiderationTicks,
+                              boolean enabled) {
     public static final BattleAiProfile DEFAULT = forDifficulty(3);
 
     public BattleAiProfile {
@@ -74,7 +75,8 @@ public record BattleAiProfile(int difficulty,
                     case 3 -> 48;
                     case 4 -> 30;
                     default -> 18;
-                }
+                },
+                true
         );
     }
 

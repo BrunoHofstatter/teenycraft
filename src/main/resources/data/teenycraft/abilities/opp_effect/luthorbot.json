@@ -1,0 +1,26 @@
+{
+  "id": "luthorbot",
+  "name": "Luthorbot",
+  "description": "Summon a luthorbot that deals damage periodically to the opponent",
+  "golden_description": "More bot duration",
+  "texture_index": 38,
+  "particle": "minecraft:smoke",
+  "particle_count": 5,
+  "hit_type": "ranged",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 8,
+  "effects_on_opponent": [
+    {
+      "id": "poison",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:poison:1.3"
+  ]
+}

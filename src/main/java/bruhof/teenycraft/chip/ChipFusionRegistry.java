@@ -23,8 +23,28 @@ public final class ChipFusionRegistry {
     }
 
     private static final List<SpecialFusionRecipe> SPECIAL_RECIPES = List.of(
-            new SpecialFusionRecipe("tough_guy", "smokescreen", "tough_smokescreen",
-                    TeenyBalance.CHIP_SPECIAL_TOUGH_SMOKESCREEN_COST_BY_RANK)
+            new SpecialFusionRecipe("luck", "lucky_hearts", "lucky_healthy_duck",
+                    TeenyBalance.CHIP_SPECIAL_LUCKY_HEALTHY_DUCK_COST_BY_RANK),
+            new SpecialFusionRecipe("power", "beastly_entry", "powered_beastly_entry",
+                    TeenyBalance.CHIP_SPECIAL_POWERED_BEASTLY_ENTRY_COST_BY_RANK),
+            new SpecialFusionRecipe("health", "second_chance", "healthy_second_chance",
+                    TeenyBalance.CHIP_SPECIAL_HEALTHY_SECOND_CHANCE_COST_BY_RANK),
+            new SpecialFusionRecipe("luck", "mana_steal_duck", "lucky_steal_duck",
+                    TeenyBalance.CHIP_STANDARD_HYBRID_SPECIAL_COST_BY_RANK),
+            new SpecialFusionRecipe("health", "pointy", "pointy_health",
+                    TeenyBalance.CHIP_STANDARD_HYBRID_SPECIAL_COST_BY_RANK),
+            new SpecialFusionRecipe("smokescreen", "healthy_dodge", "dodgy_healthy_dodge",
+                    TeenyBalance.CHIP_STANDARD_HYBRID_SPECIAL_COST_BY_RANK),
+            new SpecialFusionRecipe("smokescreen", "speedy_dodge", "dodgy_speedy_dodge",
+                    TeenyBalance.CHIP_STANDARD_HYBRID_SPECIAL_COST_BY_RANK),
+            new SpecialFusionRecipe("power", "finisher", "powered_finisher",
+                    TeenyBalance.CHIP_STANDARD_HYBRID_SPECIAL_COST_BY_RANK),
+            new SpecialFusionRecipe("luck", "tofu_lover", "lucky_tofu_lover",
+                    TeenyBalance.CHIP_STANDARD_HYBRID_SPECIAL_COST_BY_RANK),
+            new SpecialFusionRecipe("fast_draw", "fast_cast", "fast_drawcast",
+                    TeenyBalance.CHIP_STANDARD_HYBRID_SPECIAL_COST_BY_RANK),
+            new SpecialFusionRecipe("finisher", "momentum", "finishing_momentum",
+                    TeenyBalance.CHIP_STANDARD_HYBRID_SPECIAL_COST_BY_RANK)
     );
 
     private ChipFusionRegistry() {

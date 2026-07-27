@@ -1,0 +1,26 @@
+{
+  "id": "cash_blaster",
+  "name": "Cash Blaster",
+  "description": "Throw cash at them in multiple hits. (gives you 100 coins per use) (im joking, sorry)",
+  "golden_description": "Stun",
+  "texture_index": 87,
+  "particle": "minecraft:happy_villager",
+  "particle_count": 7,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 4,
+  "range_tier": 4,
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "multi_hit",
+      "params": [
+        3
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "opponent:stun:0.5"
+  ]
+}

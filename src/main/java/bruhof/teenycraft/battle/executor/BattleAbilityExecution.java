@@ -5,9 +5,12 @@ import bruhof.teenycraft.battle.AbilityExecutor;
 import bruhof.teenycraft.battle.BattleFigure;
 import bruhof.teenycraft.battle.damage.DamagePipeline.DamageResult;
 import bruhof.teenycraft.battle.effect.EffectApplierRegistry;
+import bruhof.teenycraft.battle.presentation.BattleUiEventPayload;
+import bruhof.teenycraft.battle.presentation.BattleUiFeedbackBroadcaster;
 import bruhof.teenycraft.battle.trait.TraitRegistry;
 import bruhof.teenycraft.capability.BattleStateProvider;
 import bruhof.teenycraft.capability.IBattleState;
+import bruhof.teenycraft.chip.ChipExecutor;
 import bruhof.teenycraft.util.AbilityLoader;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
@@ -69,11 +72,6 @@ public final class BattleAbilityExecution {
                 return;
             }
 
-            if (context.isRanged() && context.data().raycastDelayTier > 0) {
-                scheduleProjectile(context, target);
-                return;
-            }
-
             attemptImmediateCast(context, target, true, true);
         });
     }
@@ -105,18 +103,18 @@ public final class BattleAbilityExecution {
             return;
         }
 
+        boolean selfTarget = state.isCurrentTofuPreviewSelfTarget();
+        String effectId = state.getCurrentTofuPreviewEffectId();
+        if (effectId.isEmpty()) {
+            TofuOutcome fallbackOutcome = rollTofuOutcome();
+            selfTarget = fallbackOutcome.selfTarget();
+            effectId = fallbackOutcome.effectId();
+        }
+
         state.spawnTofu(0);
         if (caster instanceof ServerPlayer sp) {
             state.refreshPlayerInventory(sp);
         }
-
-        String[] selfEffects = {"power_up", "heal", "bar_fill", "cleanse", "dance"};
-        String[] opponentEffects = {"freeze", "stun", "waffle"};
-
-        boolean selfTarget = Math.random() < (5.0 / 8.0);
-        String effectId = selfTarget
-                ? selfEffects[(int) (Math.random() * selfEffects.length)]
-                : opponentEffects[(int) (Math.random() * opponentEffects.length)];
 
         float multiplier = switch (effectId) {
             case "heal" -> TeenyBalance.TOFU_HEAL_MULT;
@@ -138,6 +136,14 @@ public final class BattleAbilityExecution {
         if (caster instanceof ServerPlayer sp) {
             sp.sendSystemMessage(Component.literal("Â§6Â§lTOFU USED! Â§fIt was: Â§e" + effectId.toUpperCase()));
         }
+        BattleUiFeedbackBroadcaster.emitToViewers(state, new BattleUiEventPayload(
+                BattleUiEventPayload.Type.TOFU_RESULT,
+                caster.getId(),
+                Math.round(virtualMana),
+                0,
+                effectId,
+                false
+        ));
 
         if (selfTarget) {
             EffectApplierRegistry.getValidated(effectId).apply(
@@ -197,7 +203,19 @@ public final class BattleAbilityExecution {
                 BattleAbilityContext.resolveEffectiveManaCost(figure, slotIndex),
                 isGolden
         );
-        runResolvedCast(context, target, false, true, false);
+        if (state.getCurrentMana() < context.actualManaCost()) {
+            if (attacker instanceof ServerPlayer sp) {
+                sp.sendSystemMessage(Component.literal("Ã‚Â§cCharge failed: Not enough Mana!"));
+            }
+            return;
+        }
+        // charge_up now spends mana on successful resolution instead of at charge start
+        if (context.isRanged() && context.data().raycastDelayTier > 0) {
+            scheduleProjectile(context, target, true, true);
+            return;
+        }
+
+        runResolvedCast(context, target, true, true, false);
     }
 
     public static void tickBlueChannel(IBattleState state, LivingEntity attacker) {
@@ -288,8 +306,8 @@ public final class BattleAbilityExecution {
             return false;
         }
 
-        if (context.state().hasEffect("waffle")) {
-            int blockedSlot = context.state().getEffectMagnitude("waffle");
+        if (isWaffledSlot(context.state(), context.slotIndex())) {
+            int blockedSlot = context.slotIndex();
             if (blockedSlot == context.slotIndex()) {
                 if (context.attacker() instanceof ServerPlayer sp) {
                     sp.sendSystemMessage(Component.literal("Â§eSlot " + (context.slotIndex() + 1) + " is Waffled!"));
@@ -331,6 +349,11 @@ public final class BattleAbilityExecution {
                 target,
                 context.isGolden()
         )) {
+            return;
+        }
+
+        if (context.isRanged() && context.data().raycastDelayTier > 0) {
+            scheduleProjectile(context, target, consumeManaNow, true);
             return;
         }
 
@@ -437,8 +460,19 @@ public final class BattleAbilityExecution {
                     int damageSum = 0;
                     if (!alive.isEmpty()) {
                         int[] groupSplits = bruhof.teenycraft.battle.damage.DistributionHelper.split(damagePart, alive.size());
+                        java.util.Map<String, int[]> accessoryBonusSplits = new java.util.HashMap<>();
+                        singleHit.accessoryBonusDamage.forEach((accessoryId, amount) ->
+                                accessoryBonusSplits.put(accessoryId,
+                                        bruhof.teenycraft.battle.damage.DistributionHelper.split(amount, alive.size())));
                         for (int i = 0; i < alive.size(); i++) {
                             DamageResult enemyHit = new DamageResult(groupSplits[i], 1, false, result.canCrit);
+                            enemyHit.forcedCriticalMultiplier = singleHit.forcedCriticalMultiplier;
+                            int targetIndex = i;
+                            accessoryBonusSplits.forEach((accessoryId, splits) -> {
+                                if (splits[targetIndex] > 0) {
+                                    enemyHit.accessoryBonusDamage.put(accessoryId, splits[targetIndex]);
+                                }
+                            });
                             enemyHit.classBonusEligible = singleHit.classBonusEligible;
                             enemyHit.undodgeable = singleHit.undodgeable;
                             damageSum += BattleDamageResolver.applyDamageToFigure(
@@ -522,6 +556,14 @@ public final class BattleAbilityExecution {
     }
 
     private static void announceCast(BattleAbilityContext context) {
+        BattleUiFeedbackBroadcaster.emitToViewers(context.state(), new BattleUiEventPayload(
+                BattleUiEventPayload.Type.ABILITY,
+                context.attacker().getId(),
+                context.actualManaCost(),
+                0,
+                context.data().id,
+                context.isGolden()
+        ));
         if (context.attacker() instanceof ServerPlayer sp) {
             sp.sendSystemMessage(Component.literal("Â§aUsed " + context.data().name + "!"));
         }
@@ -641,15 +683,19 @@ public final class BattleAbilityExecution {
         return damageDealt;
     }
 
-    private static void scheduleProjectile(BattleAbilityContext context, @Nullable LivingEntity target) {
+    private static void scheduleProjectile(BattleAbilityContext context, @Nullable LivingEntity target,
+                                           boolean consumeManaNow, boolean announceAndApplySelfEffects) {
         if (target == null) {
             failNoTarget(context);
             return;
         }
 
-        context.state().consumeMana(context.actualManaCost());
+        if (consumeManaNow) {
+            context.state().consumeMana(context.actualManaCost());
+        }
         double distance = context.attacker().getEyePosition().distanceTo(target.getEyePosition());
-        int delayTicks = (int) (distance * TeenyBalance.getRaycastDelay(context.data().raycastDelayTier));
+        int delayTicks = Math.round((float) (distance * TeenyBalance.getRaycastDelay(context.data().raycastDelayTier)
+                * bruhof.teenycraft.chip.ChipExecutor.getProjectileDelayMultiplier(context.figure())));
         if (delayTicks < 1) {
             delayTicks = 1;
         }
@@ -671,9 +717,13 @@ public final class BattleAbilityExecution {
             sp.sendSystemMessage(Component.literal("Â§eProjectile fired! (" + (delayTicks / 20.0f) + "s)"));
         }
 
-        applySelfEffects(context);
+        if (announceAndApplySelfEffects) {
+            applySelfEffects(context);
+        }
         resetAttackStrength(context.attacker());
-        announceCast(context);
+        if (announceAndApplySelfEffects) {
+            announceCast(context);
+        }
     }
 
     private static void failNoTarget(BattleAbilityContext context) {
@@ -794,7 +844,8 @@ public final class BattleAbilityExecution {
         }
 
         if (healPerInterval > 0) {
-            state.applyEffect("heal", 0, healPerInterval);
+            state.applyResolvedCombatFigureDelta(figure, healPerInterval,
+                    new IBattleState.CombatMutationSource(state, attacker, figure));
             if (!awardedBatteryThisInterval) {
                 awardBatteryFromManaSpent(state, manaPerTick * interval);
             }
@@ -853,6 +904,7 @@ public final class BattleAbilityExecution {
             }
         }
 
+        chanceMultiplier *= ChipExecutor.getTofuChanceMultiplier(context.figure());
         float chance = (context.actualManaCost() * TeenyBalance.TOFU_CHANCE_HIT_PERMANA) * chanceMultiplier;
         if (Math.random() * 100.0 < chance) {
             context.state().spawnTofu(TeenyBalance.TOFU_BASE_MANA * powerMultiplier);
@@ -867,5 +919,22 @@ public final class BattleAbilityExecution {
         if (attacker instanceof Player player) {
             player.resetAttackStrengthTicker();
         }
+    }
+
+    private static boolean isWaffledSlot(IBattleState state, int slotIndex) {
+        return (state.hasEffect("waffle") && state.getEffectMagnitude("waffle") == slotIndex)
+                || (state.hasEffect("waffle_secondary")
+                && state.getEffectMagnitude("waffle_secondary") == slotIndex);
+    }
+
+    private static TofuOutcome rollTofuOutcome() {
+        String[] selfEffects = {"power_up", "heal", "bar_fill", "cleanse", "dance"};
+        String[] opponentEffects = {"freeze", "stun", "waffle"};
+        boolean selfTarget = Math.random() < (5.0 / 8.0);
+        String[] pool = selfTarget ? selfEffects : opponentEffects;
+        return new TofuOutcome(selfTarget, pool[(int) (Math.random() * pool.length)]);
+    }
+
+    private record TofuOutcome(boolean selfTarget, String effectId) {
     }
 }

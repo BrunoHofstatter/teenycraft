@@ -26,7 +26,6 @@ public class ItemFigure extends Item {
     private static final String TAG_NAME = "Name";
     private static final String TAG_DESC = "Description";
     private static final String TAG_CLASS = "FigureClass";
-    private static final String TAG_GROUPS = "FigureGroups"; // List of strings
     private static final String TAG_PRICE = "Price";
 
     private static final String TAG_NICKNAME = "Nickname";
@@ -47,7 +46,8 @@ public class ItemFigure extends Item {
     private static final String TAG_ABILITIES = "Abilities"; // List of ability IDs
     private static final String TAG_ABILITY_ORDER = "AbilityOrder"; // Ordered list of IDs
     private static final String TAG_ABILITY_TIERS = "AbilityTiers"; // List of cost letters (a, b, c, d, e)
-    private static final String TAG_GOLDEN_PROGRESS = "GoldenProgress"; // Compound of ID -> Percentage
+    private static final String TAG_GOLDEN_PROGRESS = "GoldenProgress"; // Legacy compound of ID -> normalized float
+    private static final String TAG_GOLDEN_POINTS = "GoldenPoints"; // Compound of ID -> integer points
 
     public ItemFigure(Properties pProperties) {
         super(pProperties.stacksTo(1)); // Figures are unstackable
@@ -143,7 +143,7 @@ public class ItemFigure extends Item {
      * Call this when you spawn a new figure (e.g., from a Mystery Box or Starter).
      * It writes the initial NBT data so the item isn't "empty".
      */
-    public static void initializeFigure(ItemStack stack, String figureId, String name, String desc, String figureClass, List<String> groups, int price, int baseHp, int basePower, int baseDodge, int baseLuck, List<String> abilities, List<String> abilityTiers) {
+    public static void initializeFigure(ItemStack stack, String figureId, String name, String desc, String figureClass, int price, int baseHp, int basePower, int baseDodge, int baseLuck, List<String> abilities, List<String> abilityTiers) {
         CompoundTag tag = stack.getOrCreateTag();
 
         // Identity
@@ -153,13 +153,6 @@ public class ItemFigure extends Item {
         tag.putString(TAG_CLASS, figureClass);
         tag.putInt(TAG_PRICE, price);
         tag.putString(TAG_NICKNAME, name); // Default nickname = Name
-
-        // Groups
-        net.minecraft.nbt.ListTag groupsList = new net.minecraft.nbt.ListTag();
-        for (String group : groups) {
-            groupsList.add(net.minecraft.nbt.StringTag.valueOf(group));
-        }
-        tag.put(TAG_GROUPS, groupsList);
 
         // Progression
         tag.putInt(TAG_LEVEL, 1);
@@ -190,19 +183,19 @@ public class ItemFigure extends Item {
         tag.put(TAG_ABILITY_TIERS, tiersList);
 
         // Golden Progress (Empty map initially)
-        tag.put(TAG_GOLDEN_PROGRESS, new CompoundTag());
+        tag.put(TAG_GOLDEN_POINTS, new CompoundTag());
     }
 
     /**
      * Creates a fresh figure item using the Scaling System.
      */
-    public static ItemStack create(ItemStack stack, String id, String name, String desc, String figureClass, List<String> groups, int price, float hpScale, float powerScale, float dodgeScale, float luckScale, List<String> abilities, List<String> abilityTiers) {
+    public static ItemStack create(ItemStack stack, String id, String name, String desc, String figureClass, int price, float hpScale, float powerScale, float dodgeScale, float luckScale, List<String> abilities, List<String> abilityTiers) {
         int finalHp = (int) (hpScale * TeenyBalance.UPGRADE_GAIN_HP);
         int finalPower = (int) (powerScale * TeenyBalance.UPGRADE_GAIN_POWER);
         int finalDodge = (int) (dodgeScale * TeenyBalance.UPGRADE_GAIN_DODGE);
         int finalLuck = (int) (luckScale * TeenyBalance.UPGRADE_GAIN_LUCK);
 
-        initializeFigure(stack, id, name, desc, figureClass, groups, price, finalHp, finalPower, finalDodge, finalLuck, abilities, abilityTiers);
+        initializeFigure(stack, id, name, desc, figureClass, price, finalHp, finalPower, finalDodge, finalLuck, abilities, abilityTiers);
         return stack;
     }
 
@@ -281,14 +274,42 @@ public class ItemFigure extends Item {
     public static int getLuck(ItemStack stack) { return getStat(stack, TAG_STAT_LUCK); }
 
     // Golden Progress
+    public static int getGoldenPoints(ItemStack stack, String abilityId) {
+        if (!stack.hasTag() || abilityId == null || abilityId.isBlank()) return 0;
+        CompoundTag tag = stack.getTag();
+        if (tag.contains(TAG_GOLDEN_POINTS)
+                && tag.getCompound(TAG_GOLDEN_POINTS).contains(abilityId)) {
+            return Math.max(0, tag.getCompound(TAG_GOLDEN_POINTS).getInt(abilityId));
+        }
+
+        if (!tag.contains(TAG_GOLDEN_PROGRESS)) return 0;
+        CompoundTag legacy = tag.getCompound(TAG_GOLDEN_PROGRESS);
+        if (!legacy.contains(abilityId)) return 0;
+        float legacyProgress = Math.max(0.0f, Math.min(1.0f, legacy.getFloat(abilityId)));
+        int requirement = getGoldenRequirement(stack, abilityId);
+        int migrated = requirement <= 0 ? 0 : Math.round(legacyProgress * requirement);
+        setGoldenPoints(stack, abilityId, migrated);
+        legacy.remove(abilityId);
+        if (legacy.isEmpty()) {
+            tag.remove(TAG_GOLDEN_PROGRESS);
+        }
+        return migrated;
+    }
+
+    public static int getGoldenRequirement(ItemStack stack, String abilityId) {
+        int index = getAbilities(stack).indexOf(abilityId);
+        return TeenyBalance.getGoldenRequiredPoints(index);
+    }
+
     public static float getGoldenProgress(ItemStack stack, String abilityId) {
-        if (!stack.hasTag() || !stack.getTag().contains(TAG_GOLDEN_PROGRESS)) return 0.0f;
-        CompoundTag golden = stack.getTag().getCompound(TAG_GOLDEN_PROGRESS);
-        return golden.getFloat(abilityId);
+        int requirement = getGoldenRequirement(stack, abilityId);
+        if (requirement <= 0) return 0.0f;
+        return Math.min(1.0f, getGoldenPoints(stack, abilityId) / (float) requirement);
     }
 
     public static boolean isAbilityGolden(ItemStack stack, String abilityId) {
-        return getGoldenProgress(stack, abilityId) >= 1.0f; // 1.0 = 100%
+        int requirement = getGoldenRequirement(stack, abilityId);
+        return requirement > 0 && getGoldenPoints(stack, abilityId) >= requirement;
     }
 
     public static ArrayList<String> getAbilities(ItemStack stack) {
@@ -387,12 +408,33 @@ public class ItemFigure extends Item {
     }
 
     public static void setGoldenProgress(ItemStack stack, String abilityId, float value) {
-        if (!stack.hasTag()) return;
-        CompoundTag tag = stack.getTag();
-        if (!tag.contains(TAG_GOLDEN_PROGRESS)) tag.put(TAG_GOLDEN_PROGRESS, new CompoundTag());
+        int requirement = getGoldenRequirement(stack, abilityId);
+        if (requirement <= 0) return;
+        float clamped = Math.max(0.0f, Math.min(1.0f, value));
+        setGoldenPoints(stack, abilityId, Math.round(clamped * requirement));
+    }
 
-        CompoundTag golden = tag.getCompound(TAG_GOLDEN_PROGRESS);
-        golden.putFloat(abilityId, Math.max(0.0f, Math.min(1.0f, value)));
+    public static void setGoldenPoints(ItemStack stack, String abilityId, int points) {
+        if (!stack.hasTag() || abilityId == null || abilityId.isBlank()) return;
+        int requirement = getGoldenRequirement(stack, abilityId);
+        if (requirement <= 0) return;
+        CompoundTag tag = stack.getTag();
+        if (!tag.contains(TAG_GOLDEN_POINTS)) tag.put(TAG_GOLDEN_POINTS, new CompoundTag());
+
+        CompoundTag golden = tag.getCompound(TAG_GOLDEN_POINTS);
+        golden.putInt(abilityId, Math.max(0, Math.min(requirement, points)));
+    }
+
+    public static int addGoldenPoints(ItemStack stack, String abilityId, int points) {
+        if (points <= 0) return 0;
+        int requirement = getGoldenRequirement(stack, abilityId);
+        if (requirement <= 0) return 0;
+        int current = getGoldenPoints(stack, abilityId);
+        int applied = Math.min(points, Math.max(0, requirement - current));
+        if (applied > 0) {
+            setGoldenPoints(stack, abilityId, current + applied);
+        }
+        return applied;
     }
 
     public static void setAbilityOrderString(ItemStack stack, String orderCode) {
@@ -400,13 +442,7 @@ public class ItemFigure extends Item {
     }
 
     public static void updateGoldenProgress(ItemStack stack, String abilityId, float increment) {
-        if (!stack.hasTag()) return;
-        CompoundTag tag = stack.getTag();
-        if (!tag.contains(TAG_GOLDEN_PROGRESS)) tag.put(TAG_GOLDEN_PROGRESS, new CompoundTag());
-        
-        CompoundTag golden = tag.getCompound(TAG_GOLDEN_PROGRESS);
-        float current = golden.getFloat(abilityId);
-        golden.putFloat(abilityId, Math.min(1.0f, current + increment));
+        setGoldenProgress(stack, abilityId, getGoldenProgress(stack, abilityId) + increment);
     }
 
     public static boolean setAbilityOrderFromPoolCode(ItemStack stack, String orderCode) {

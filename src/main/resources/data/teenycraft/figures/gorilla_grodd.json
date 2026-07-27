@@ -1,0 +1,24 @@
+{
+    "id":  "gorilla_grodd",
+    "name":  "Gorilla Grodd",
+    "description":  "Telepathic gorilla supervillain with genius plans and zero chill",
+    "class":  "Beast",
+    "price":  5000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  4,
+                       "power_scale":  2,
+                       "dodge_scale":  0,
+                       "luck_scale":  0.5
+                   },
+    "abilities":  [
+                      "science",
+                      "mind_control",
+                      "darwin"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "c",
+                               "b"
+                           ]
+}

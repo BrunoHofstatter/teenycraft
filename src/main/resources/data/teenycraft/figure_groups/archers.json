@@ -1,0 +1,13 @@
+{
+  "id": "archers",
+  "name": "Archers",
+  "priority": 1,
+  "figures": [
+    "artemis",
+    "red_arrow",
+    "speedy"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

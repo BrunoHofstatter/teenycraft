@@ -1,0 +1,24 @@
+{
+    "id":  "robotic_brother_blood",
+    "name":  "Robotic Brother Blood",
+    "description":  "Brother Blood rebuilt as a robot, still creepy and still obsessed",
+    "class":  "Tech",
+    "price":  3000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2.5,
+                       "power_scale":  2.5,
+                       "dodge_scale":  1.5,
+                       "luck_scale":  1.5
+                   },
+    "abilities":  [
+                      "battery_drain",
+                      "soopah_laser",
+                      "mind_control"
+                  ],
+    "ability_cost_tiers":  [
+                               "b",
+                               "e",
+                               "d"
+                           ]
+}

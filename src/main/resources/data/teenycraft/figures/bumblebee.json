@@ -1,0 +1,24 @@
+{
+    "id":  "bumblebee",
+    "name":  "Bumblebee",
+    "description":  "Tiny Titan tech genius, cheerful hero, and master of shrinking down",
+    "class":  "Super",
+    "price":  500,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1,
+                       "power_scale":  2,
+                       "dodge_scale":  2.5,
+                       "luck_scale":  2.5
+                   },
+    "abilities":  [
+                      "heroic_pose",
+                      "plasma_shot_bee",
+                      "super_dash"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "d",
+                               "c"
+                           ]
+}

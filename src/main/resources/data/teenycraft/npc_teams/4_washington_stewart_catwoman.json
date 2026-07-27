@@ -1,0 +1,57 @@
+{
+  "id": "teenycraft:4_washington_stewart_catwoman",
+  "figures": [
+    {
+      "figure_id": "george_washington",
+      "level": 16,
+      "upgrades": "HHHHHHHHPPPPPPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "heroic_pose",
+        "presidential_slam"
+      ]
+    },
+    {
+      "figure_id": "john_stewart",
+      "level": 16,
+      "upgrades": "HHHHHHPPPPPDDLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "construct_beam",
+        "construct_chains"
+      ]
+    },
+    {
+      "figure_id": "catwoman",
+      "level": 16,
+      "upgrades": "HHHHHHPPPPPPDDD",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "counterattack",
+        "deadly_kiss"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 4,
+    "aggression": 0.5,
+    "preferred_range": "auto",
+    "mana_discipline": 0.6,
+    "risk_tolerance": 0.5,
+    "move_speed_mult": 0.95,
+    "choice_window": 0.6
+  }
+}
+

@@ -1,0 +1,24 @@
+{
+    "id":  "black_lightning",
+    "name":  "Black Lightning",
+    "description":  "Jefferson Pierce, electric hero, teacher, and protector of families",
+    "class":  "Super",
+    "price":  400,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2.5,
+                       "power_scale":  3,
+                       "dodge_scale":  1,
+                       "luck_scale":  1
+                   },
+    "abilities":  [
+                      "lightning_shot",
+                      "lightning_bubble",
+                      "lightning_fists"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "c",
+                               "c"
+                           ]
+}

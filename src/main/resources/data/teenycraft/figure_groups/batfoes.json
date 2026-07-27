@@ -1,0 +1,19 @@
+{
+  "id": "batfoes",
+  "name": "Batfoes",
+  "priority": 1,
+  "figures": [
+    "bane",
+    "catwoman",
+    "harley_quinn",
+    "joker",
+    "killer_croc",
+    "killer_moth",
+    "poison_ivy",
+    "the_penguin",
+    "the_riddler"
+  ],
+  "combo_effects": [
+    "stat_power"
+  ]
+}

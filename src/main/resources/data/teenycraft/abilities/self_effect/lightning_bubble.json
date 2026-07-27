@@ -1,0 +1,24 @@
+{
+  "id": "lightning_bubble",
+  "name": "Lightning Bubble",
+  "description": "Blow a bubbled Shield around yourself that blocks 1 attack",
+  "golden_description": "Heal",
+  "texture_index": 27,
+  "particle": "minecraft:electric_spark",
+  "particle_count": 5,
+  "hit_type": "none",
+  "damage_tier": 0,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    {
+      "id": "shield",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "traits": [],
+  "golden_bonus": [
+    "self:heal:0.2"
+  ]
+}

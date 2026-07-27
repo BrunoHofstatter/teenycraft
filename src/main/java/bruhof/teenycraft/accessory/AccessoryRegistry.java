@@ -6,6 +6,7 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class AccessoryRegistry {
     private static final Map<String, AccessorySpec> REGISTRY = new HashMap<>();
@@ -41,6 +42,10 @@ public class AccessoryRegistry {
 
     public static AccessorySpec get(String id) {
         return REGISTRY.get(id);
+    }
+
+    public static Set<String> getIds() {
+        return Set.copyOf(REGISTRY.keySet());
     }
 
     public static AccessorySpec get(ItemStack stack) {

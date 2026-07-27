@@ -1,0 +1,12 @@
+{
+  "id": "bbterra",
+  "name": "BBTerra",
+  "priority": 1,
+  "figures": [
+    "beast_boy",
+    "terra"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

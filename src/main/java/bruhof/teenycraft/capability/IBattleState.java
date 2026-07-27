@@ -1,6 +1,8 @@
 package bruhof.teenycraft.capability;
 
+import bruhof.teenycraft.accessory.AccessoryBattleProgressTracker;
 import bruhof.teenycraft.battle.BattleFigure;
+import bruhof.teenycraft.battle.presentation.BattleHudEffectSnapshot;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -14,6 +16,7 @@ public interface IBattleState {
     // Is the player currently in a battle context?
     boolean isBattling();
     void setBattling(boolean battling);
+    boolean didWinBattle();
 
     // The team of 3 figures
     List<BattleFigure> getTeam();
@@ -32,6 +35,7 @@ public interface IBattleState {
     void setActiveFigure(int index);
 
     UUID getOpponentEntityId();
+    LivingEntity getBattleEntity();
     LivingEntity getOpponentEntity();
     IBattleState getOpponentBattleState();
     
@@ -46,6 +50,7 @@ public interface IBattleState {
     void tick();
     void checkFaint(LivingEntity entity);
     CombatMutationResult applyCombatFigureDelta(BattleFigure figure, int amount, @Nullable CombatMutationSource source);
+    CombatMutationResult applyAccessoryOverheal(BattleFigure figure, int amount, float overhealPct);
     void resolveCombatFigureDelta(CombatMutationResult mutation);
     @Nullable CombatMutationSource resolveCombatMutationSource(@Nullable UUID entityId, int figureIndex);
 
@@ -63,6 +68,12 @@ public interface IBattleState {
         return mutation;
     }
 
+    default CombatMutationResult applyResolvedAccessoryOverheal(BattleFigure figure, int amount, float overhealPct) {
+        CombatMutationResult mutation = applyAccessoryOverheal(figure, amount, overhealPct);
+        resolveCombatFigureDelta(mutation);
+        return mutation;
+    }
+
     default @Nullable CombatMutationSource resolveCombatMutationSource(@Nullable UUID entityId) {
         return resolveCombatMutationSource(entityId, bruhof.teenycraft.battle.effect.EffectInstance.NO_CASTER_FIGURE_INDEX);
     }
@@ -76,6 +87,8 @@ public interface IBattleState {
     
     // Tofu Logic
     float getCurrentTofuMana();
+    String getCurrentTofuPreviewEffectId();
+    boolean isCurrentTofuPreviewSelfTarget();
     void spawnTofu(float power);
     
     // Battery / Accessory Logic
@@ -85,8 +98,11 @@ public interface IBattleState {
     int getBatterySpawnTimer();
     boolean isAccessoryActive();
     String getActiveAccessoryId();
+    int getActiveAccessoryTier();
+    String getEquippedAccessoryId();
     boolean tryActivateAccessory();
     void forceDeactivateAccessory();
+    AccessoryBattleProgressTracker getAccessoryBattleProgressTracker();
 
     int getLockedSlot();
     void setLockedSlot(int slot);
@@ -106,20 +122,40 @@ public interface IBattleState {
     void applyEffect(String effectId, int duration, int magnitude);
     void applyEffect(String effectId, int duration, int magnitude, float power);
     void applyEffect(String effectId, int duration, int magnitude, float power, java.util.UUID caster, @Nullable BattleFigure casterFigure);
+    boolean applyAccessoryEffect(String accessoryId, String effectId, int duration, int magnitude);
+    void applyEffect(BattleFigure targetFigure, String effectId, int duration, int magnitude, float power,
+                     java.util.UUID caster, @Nullable BattleFigure casterFigure);
     boolean hasEffect(String effectId);
+    boolean hasEffect(BattleFigure targetFigure, String effectId);
     void removeEffect(String effectId);
     int getEffectMagnitude(String effectId);
+    String getEffectSourceAccessoryId(String effectId);
+    int getEffectAccessoryMagnitude(String effectId, String accessoryId);
     bruhof.teenycraft.battle.effect.EffectInstance getEffectInstance(String effectId);
+    bruhof.teenycraft.battle.effect.EffectInstance getEffectInstance(BattleFigure targetFigure, String effectId);
     void removeEffectsByCategory(bruhof.teenycraft.battle.effect.BattleEffect.EffectCategory category);
     void triggerOnAttack(bruhof.teenycraft.battle.BattleFigure attacker); // Pass attacker context
 
     default void applyEffect(String effectId, int duration, int magnitude, float power, java.util.UUID caster) {
         applyEffect(effectId, duration, magnitude, power, caster, null);
     }
+
+    default void applyEffect(BattleFigure targetFigure, String effectId, int duration, int magnitude) {
+        applyEffect(targetFigure, effectId, duration, magnitude, 0, null, null);
+    }
+
+    default void applyEffect(BattleFigure targetFigure, String effectId, int duration, int magnitude, float power) {
+        applyEffect(targetFigure, effectId, duration, magnitude, power, null, null);
+    }
+
+    default void applyEffect(BattleFigure targetFigure, String effectId, int duration, int magnitude, float power, java.util.UUID caster) {
+        applyEffect(targetFigure, effectId, duration, magnitude, power, caster, null);
+    }
     
     // Charge Up logic
     boolean isCharging();
     int getChargeTicks();
+    int getChargeTotalTicks();
     void startCharge(int ticks, bruhof.teenycraft.util.AbilityLoader.AbilityData data, int slot, boolean isGolden, java.util.UUID targetUUID);
     void cancelCharge();
     bruhof.teenycraft.util.AbilityLoader.AbilityData getPendingAbility();
@@ -175,6 +211,7 @@ public interface IBattleState {
 
     // UI Helpers
     List<String> getEffectList();
+    List<BattleHudEffectSnapshot> getEffectSnapshots();
     List<String> getBenchInfoList();
     List<Integer> getBenchIndicesList();
     List<String> getBenchFigureIds();
@@ -192,7 +229,12 @@ public interface IBattleState {
     // Clean up
     void endBattle();
 
-    record CombatMutationSource(@Nullable IBattleState state, @Nullable LivingEntity entity, @Nullable BattleFigure figure) {
+    record CombatMutationSource(@Nullable IBattleState state, @Nullable LivingEntity entity, @Nullable BattleFigure figure,
+                                boolean emitDefaultHpEvent) {
+        public CombatMutationSource(@Nullable IBattleState state, @Nullable LivingEntity entity, @Nullable BattleFigure figure) {
+            this(state, entity, figure, true);
+        }
+
         public boolean hasAttackerFigure() {
             return state != null && entity != null && figure != null;
         }

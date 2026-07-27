@@ -1,0 +1,12 @@
+{
+  "id": "dynamic_duo",
+  "name": "Dynamic Duo",
+  "priority": 1,
+  "figures": [
+    "batman",
+    "robin"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

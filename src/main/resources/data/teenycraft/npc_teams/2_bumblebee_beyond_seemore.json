@@ -1,0 +1,42 @@
+{
+  "id": "teenycraft:2_bumblebee_beyond_seemore",
+  "figures": [
+    {
+      "figure_id": "bumblebee",
+      "level": 6,
+      "upgrades": "HHHPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "batman_beyond",
+      "level": 6,
+      "upgrades": "HHPDD",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "see_more",
+      "level": 6,
+      "upgrades": "HHPLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    }
+  ],
+  "ai": {
+    "difficulty": 2
+  }
+}
+

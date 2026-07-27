@@ -1,0 +1,26 @@
+{
+  "id": "skeets",
+  "name": "Skeets!",
+  "description": "Booster's robot buddy Skeets attacks with a ray that deals damage and Stuns",
+  "golden_description": "Waffle Chance (blocks a random ability)",
+  "texture_index": 125,
+  "particle": "minecraft:end_rod",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 1,
+  "range_tier": 6,
+  "damage_tier": 4,
+  "effects_on_opponent": [
+    {
+      "id": "stun",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:waffle_chance:0.5,1.0"
+  ]
+}

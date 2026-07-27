@@ -1,0 +1,47 @@
+{
+  "id": "teenycraft:2_darkseid_hawkgirl_ivy",
+  "figures": [
+    {
+      "figure_id": "darkseid",
+      "level": 6,
+      "upgrades": "HHHPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "hawkgirl",
+      "level": 6,
+      "upgrades": "HHHPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "poison_ivy",
+      "level": 6,
+      "upgrades": "HHPDL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    }
+  ],
+  "ai": {
+    "difficulty": 2,
+    "aggression": 0.8,
+    "swap_bias": 0.2,
+    "preferred_range": "close",
+    "risk_tolerance": 0.75,
+    "move_speed_mult": 1.1
+  }
+}
+

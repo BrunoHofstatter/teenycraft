@@ -58,6 +58,7 @@ This repo already contains a working battle foundation, Titan Manager inventory 
   - [`GEMINI.md`](GEMINI.md)
 
 ## Working Rules For Agents
+- User requests may come from voice transcription and contain unintended wording mistakes. Infer the likely meaning from context, and only ask for clarification when an ambiguity could materially change the task.
 - Start from `docs/overview.md`, then open the specific topic doc for the system you are changing.
 - Treat `Current status` sections in docs as design summaries, but verify behavior in code before making assumptions.
 - If a doc and the code disagree, keep the code stable unless explicitly changing behavior, and update the doc to describe the mismatch or the new intended state.

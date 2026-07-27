@@ -1,0 +1,24 @@
+{
+    "id":  "martian_manhunter",
+    "name":  "Martian Manhunter",
+    "description":  "Alien shapeshifter, Martian survivor, and quiet mind-reading hero",
+    "class":  "Super",
+    "price":  5000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2.5,
+                       "power_scale":  2.5,
+                       "dodge_scale":  2,
+                       "luck_scale":  1
+                   },
+    "abilities":  [
+                      "telekinesis",
+                      "teleport_strike",
+                      "mind_control"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "b",
+                               "d"
+                           ]
+}

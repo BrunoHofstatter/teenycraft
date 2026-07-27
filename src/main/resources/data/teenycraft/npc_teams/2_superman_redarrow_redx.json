@@ -1,0 +1,47 @@
+{
+  "id": "teenycraft:2_superman_redarrow_redx",
+  "figures": [
+    {
+      "figure_id": "superman",
+      "level": 6,
+      "upgrades": "HHHPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "red_arrow",
+      "level": 6,
+      "upgrades": "HHHPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "red_x",
+      "level": 6,
+      "upgrades": "HHPDD",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    }
+  ],
+  "ai": {
+    "difficulty": 2,
+    "aggression": 0.45,
+    "preferred_range": "far",
+    "mana_discipline": 0.75,
+    "risk_tolerance": 0.25,
+    "move_speed_mult": 0.95
+  }
+}
+

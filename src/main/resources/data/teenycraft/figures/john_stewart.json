@@ -1,0 +1,24 @@
+{
+    "id":  "john_stewart",
+    "name":  "John Stewart",
+    "description":  "Veteran, architect, and one of Earth’s strongest Green Lanterns",
+    "class":  "Super",
+    "price":  3000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2.5,
+                       "power_scale":  3,
+                       "dodge_scale":  1,
+                       "luck_scale":  0.5
+                   },
+    "abilities":  [
+                      "construct_beam",
+                      "construct_chains",
+                      "construct_blaster"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "b",
+                               "b"
+                           ]
+}

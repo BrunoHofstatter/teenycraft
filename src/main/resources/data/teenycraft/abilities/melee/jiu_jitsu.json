@@ -1,23 +1,28 @@
 {
   "id": "jiu_jitsu",
   "name": "Jiu Jitsu",
-  "texture_index": 102,
+  "description": "Punch your opponent for multiple hits and Group Damage (I know that's not jiu jitsu)",
+  "golden_description": "Undodgeable & Shield Piercing",
+  "texture_index": 106,
   "particle": "minecraft:sweep_attack",
-  "particle_count": 3,
+  "particle_count": 8,
   "hit_type": "melee",
-  "raycast_delay_tier": 0,
-  "damage_tier": 8,
+  "damage_tier": 11,
   "effects_on_opponent": [],
   "effects_on_self": [],
   "traits": [
     {
       "id": "multi_hit",
-      "params": [3.0]
+      "params": [
+        3
+      ]
     },
     {
       "id": "group_damage",
       "params": []
     }
   ],
-  "golden_bonus": ["trait:undodgeable"]
+  "golden_bonus": [
+    "trait:undodgeable"
+  ]
 }

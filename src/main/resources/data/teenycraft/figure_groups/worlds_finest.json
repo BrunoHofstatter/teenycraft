@@ -1,0 +1,12 @@
+{
+  "id": "worlds_finest",
+  "name": "World's Finest",
+  "priority": 1,
+  "figures": [
+    "batman",
+    "superman"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

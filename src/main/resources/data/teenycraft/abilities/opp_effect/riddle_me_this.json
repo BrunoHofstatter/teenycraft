@@ -1,0 +1,46 @@
+{
+  "id": "riddle_me_this",
+  "name": "Riddle Me This",
+  "description": "Charge Up an energy shot with a riddle cannon. Apply Shock, Defense Down and Root (no hacking :( )",
+  "golden_description": "Instant Cast Chance (chance of no Charge Up time)",
+  "texture_index": 33,
+  "particle": "minecraft:electric_spark",
+  "particle_count": 6,
+  "hit_type": "ranged",
+  "raycast_delay_tier": 1,
+  "range_tier": 8,
+  "damage_tier": 0,
+  "effects_on_opponent": [
+    {
+      "id": "shock",
+      "params": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "id": "defense_down",
+      "params": [
+        0.5
+      ]
+    },
+    {
+      "id": "root",
+      "params": [
+        0.5
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "charge_up",
+      "params": [
+        1.4
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "trait:instant_cast_chance"
+  ]
+}

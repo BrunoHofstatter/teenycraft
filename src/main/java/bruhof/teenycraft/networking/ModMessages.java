@@ -39,6 +39,12 @@ public class ModMessages {
                 .consumerMainThread(PacketSyncTeenyCoins::handle)
                 .add();
 
+        net.messageBuilder(PacketSyncAccessoryMastery.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(PacketSyncAccessoryMastery::new)
+                .encoder(PacketSyncAccessoryMastery::toBytes)
+                .consumerMainThread(PacketSyncAccessoryMastery::handle)
+                .add();
+
         net.messageBuilder(PacketTitanManagerAction.class, id(), NetworkDirection.PLAY_TO_SERVER)
                 .decoder(PacketTitanManagerAction::new)
                 .encoder(PacketTitanManagerAction::toBytes)
@@ -51,10 +57,28 @@ public class ModMessages {
                 .consumerMainThread(PacketSyncTitanManagerView::handle)
                 .add();
 
+        net.messageBuilder(PacketSilkieStationAction.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(PacketSilkieStationAction::new)
+                .encoder(PacketSilkieStationAction::toBytes)
+                .consumerMainThread(PacketSilkieStationAction::handle)
+                .add();
+
+        net.messageBuilder(PacketSyncSilkieStation.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(PacketSyncSilkieStation::new)
+                .encoder(PacketSyncSilkieStation::toBytes)
+                .consumerMainThread(PacketSyncSilkieStation::handle)
+                .add();
+
         net.messageBuilder(PacketSyncBattleData.class, id(), NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(PacketSyncBattleData::new)
                 .encoder(PacketSyncBattleData::toBytes)
                 .consumerMainThread(PacketSyncBattleData::handle)
+                .add();
+
+        net.messageBuilder(PacketBattleUiEvent.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(PacketBattleUiEvent::new)
+                .encoder(PacketBattleUiEvent::toBytes)
+                .consumerMainThread(PacketBattleUiEvent::handle)
                 .add();
     }
 

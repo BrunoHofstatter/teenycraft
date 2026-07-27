@@ -1,0 +1,26 @@
+{
+  "id": "deadly_kiss",
+  "name": "Deadly Kiss",
+  "description": "Send a kiss to your opponent, dealing damage and applying Kiss (effect/heal blocker)",
+  "golden_description": "More Kiss duration",
+  "texture_index": 51,
+  "particle": "minecraft:heart",
+  "particle_count": 6,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 7,
+  "range_tier": 3,
+  "damage_tier": 5,
+  "effects_on_opponent": [
+    {
+      "id": "kiss",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:kiss:1.3"
+  ]
+}

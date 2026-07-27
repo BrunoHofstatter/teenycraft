@@ -1,0 +1,44 @@
+{
+  "id": "teenycraft:2_hooded_alfred_drlight",
+  "figures": [
+    {
+      "figure_id": "the_hooded_hood",
+      "level": 6,
+      "upgrades": "HHHPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "alfred",
+      "level": 6,
+      "upgrades": "HHPDL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "dr_light",
+      "level": 6,
+      "upgrades": "HHPDD",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    }
+  ],
+  "ai": {
+    "difficulty": 2,
+    "swap_bias": 0.9,
+    "swap_reconsideration_ticks": 40
+  }
+}
+

@@ -1,0 +1,24 @@
+{
+    "id":  "sinestro",
+    "name":  "Sinestro",
+    "description":  "Former Green Lantern, fear-powered tyrant, and yellow-ring expert",
+    "class":  "Dark Arts",
+    "price":  5000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2,
+                       "power_scale":  3,
+                       "dodge_scale":  2,
+                       "luck_scale":  1
+                   },
+    "abilities":  [
+                      "construct_beam",
+                      "fear",
+                      "axe_to_grind"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "c",
+                               "d"
+                           ]
+}

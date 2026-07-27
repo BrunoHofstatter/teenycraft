@@ -1,0 +1,24 @@
+{
+    "id":  "supergirl",
+    "name":  "Supergirl",
+    "description":  "Kara Zor-El, Superman’s cousin, Kryptonian hero, and fearless optimist",
+    "class":  "Super",
+    "price":  2500,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2.5,
+                       "power_scale":  2.5,
+                       "dodge_scale":  2.5,
+                       "luck_scale":  0.5
+                   },
+    "abilities":  [
+                      "flight",
+                      "super_sockem",
+                      "team_laser_eyes"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "b",
+                               "e"
+                           ]
+}

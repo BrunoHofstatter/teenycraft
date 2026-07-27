@@ -1,0 +1,19 @@
+{
+  "id": "starfish_chuck",
+  "name": "Starfish Chuck",
+  "description": "Throw a starfish at the opponent (yeah apparentely that deals damage)",
+  "golden_description": "Undodgeable & Shield Piercing",
+  "texture_index": 115,
+  "particle": "minecraft:splash",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 5,
+  "range_tier": 4,
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "trait:undodgeable"
+  ]
+}

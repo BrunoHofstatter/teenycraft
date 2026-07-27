@@ -1,17 +1,24 @@
 {
   "id": "whale_drop",
   "name": "Whale Drop",
-  "texture_index": 18,
+  "description": "Make a whale drop above your opponent that deals Group Damage",
+  "golden_description": "Stun",
+  "texture_index": 94,
   "particle": "minecraft:splash",
-  "particle_count": 5,
+  "particle_count": 12,
   "hit_type": "raycasting",
-  "raycast_delay_tier": 6,
-  "range_tier": 4,
-  "damage_tier": 8,
+  "raycast_delay_tier": 7,
+  "range_tier": 8,
+  "damage_tier": 9,
   "effects_on_opponent": [],
   "effects_on_self": [],
   "traits": [
-    { "id": "group_damage" }
+    {
+      "id": "group_damage",
+      "params": []
+    }
   ],
-  "golden_bonus": ["opponent:stun:0.6"]
+  "golden_bonus": [
+    "opponent:stun:0.5"
+  ]
 }

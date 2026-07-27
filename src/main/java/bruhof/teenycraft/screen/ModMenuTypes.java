@@ -23,6 +23,12 @@ public class ModMenuTypes {
     public static final RegistryObject<MenuType<FigureScreenMenu>> FIGURE_SCREEN_MENU =
             registerMenuType("figure_screen_menu", FigureScreenMenu::new);
 
+    public static final RegistryObject<MenuType<AccessoryScreenMenu>> ACCESSORY_SCREEN_MENU =
+            registerMenuType("accessory_screen_menu", AccessoryScreenMenu::new);
+
+    public static final RegistryObject<MenuType<SilkieStationMenu>> SILKIE_STATION_MENU =
+            registerMenuType("silkie_station_menu", SilkieStationMenu::new);
+
     private static <T extends AbstractContainerMenu> RegistryObject<MenuType<T>> registerMenuType(String name, IContainerFactory<T> factory) {
         return MENUS.register(name, () -> IForgeMenuType.create(factory));
     }

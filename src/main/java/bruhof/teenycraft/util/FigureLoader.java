@@ -14,10 +14,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 public class FigureLoader extends SimplePreparableReloadListener<Map<String, JsonObject>> {
     private static final Gson GSON = new Gson();
@@ -88,10 +88,6 @@ public class FigureLoader extends SimplePreparableReloadListener<Map<String, Jso
         float dodge = attrs.get("dodge_scale").getAsFloat();
         float luck = attrs.get("luck_scale").getAsFloat();
 
-        // Parse groups
-        List<String> groups = new ArrayList<>();
-        json.getAsJsonArray("groups").forEach(e -> groups.add(e.getAsString()));
-
         // Parse abilities
         List<String> abilities = new ArrayList<>();
         json.getAsJsonArray("abilities").forEach(e -> abilities.add(e.getAsString()));
@@ -108,7 +104,6 @@ public class FigureLoader extends SimplePreparableReloadListener<Map<String, Jso
             json.get("name").getAsString(),
             json.get("description").getAsString(),
             json.get("class").getAsString(),
-            groups,
             json.get("price").getAsInt(),
             hp, power, dodge, luck,
             abilities,

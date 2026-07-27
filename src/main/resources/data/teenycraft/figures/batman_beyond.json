@@ -1,0 +1,24 @@
+{
+    "id":  "batman_beyond",
+    "name":  "Batman Beyond",
+    "description":  "Terry McGinnis, the high-tech skinny Batman of Gotham’s future",
+    "class":  "Tech",
+    "price":  5000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1.5,
+                       "power_scale":  2,
+                       "dodge_scale":  3,
+                       "luck_scale":  1.5
+                   },
+    "abilities":  [
+                      "counterattack",
+                      "bat_mine",
+                      "batarang_storm"
+                  ],
+    "ability_cost_tiers":  [
+                               "a",
+                               "d",
+                               "b"
+                           ]
+}

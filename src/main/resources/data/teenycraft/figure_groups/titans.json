@@ -1,0 +1,17 @@
+{
+  "id": "titans",
+  "name": "Titans",
+  "priority": 1,
+  "figures": [
+    "beast_boy",
+    "cat_beast_boy",
+    "cyborg",
+    "raven",
+    "robin",
+    "silkie",
+    "starfire"
+  ],
+  "combo_effects": [
+    "stat_health"
+  ]
+}

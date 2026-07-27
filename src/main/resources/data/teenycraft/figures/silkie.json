@@ -1,17 +1,24 @@
-{
-  "id": "silkie",
-  "name": "Silkie",
-  "description": "One of the classic titans, she just burps",
-  "class": "Cute",
-  "groups": [ "Silkie", "Titans", "Trash Lover"],
-  "price": 50,
-  "model_type": "default",
-  "attributes": {
-    "hp_scale": 2.0,
-    "power_scale": 2.0,
-    "dodge_scale": 1.5,
-    "luck_scale": 2.5
-  },
-  "abilities": ["burp_shield", "burp_surprise", "cuteness"],
-  "ability_cost_tiers": ["c", "c", "b"]
+﻿{
+    "id":  "silkie",
+    "name":  "Silkie",
+    "description":  "Starfire’s pet mutant moth larva, adorable and somehow still weird",
+    "class":  "Cute",
+    "price":  400,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2,
+                       "power_scale":  2,
+                       "dodge_scale":  1,
+                       "luck_scale":  3
+                   },
+    "abilities":  [
+                      "burp_shield",
+                      "burp_surprise",
+                      "cuteness"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "c",
+                               "b"
+                           ]
 }

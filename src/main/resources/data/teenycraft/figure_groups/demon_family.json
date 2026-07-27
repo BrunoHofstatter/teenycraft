@@ -1,0 +1,13 @@
+{
+  "id": "demon_family",
+  "name": "Demon Family",
+  "priority": 1,
+  "figures": [
+    "argyle_trigon",
+    "raven",
+    "trigon"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

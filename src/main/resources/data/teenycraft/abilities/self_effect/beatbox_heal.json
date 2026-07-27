@@ -1,0 +1,17 @@
+{
+  "id": "beatbox_heal",
+  "name": "Beatbox Heal",
+  "description": "Summon a Radio that heals overtime",
+  "golden_description": "More Radio duration",
+  "texture_index": 61,
+  "particle": "minecraft:note",
+  "particle_count": 8,
+  "hit_type": "none",
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    { "id": "health_radio", "params": [1.0, 1.0] }
+  ],
+  "traits": [],
+  "golden_bonus": ["self:health_radio:1.2,1.2"]
+}

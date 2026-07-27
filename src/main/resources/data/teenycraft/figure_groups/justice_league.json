@@ -1,0 +1,19 @@
+{
+  "id": "justice_league",
+  "name": "Justice League",
+  "priority": 1,
+  "figures": [
+    "aquaman",
+    "batman",
+    "cyborg",
+    "hawkgirl",
+    "john_stewart",
+    "martian_manhunter",
+    "superman",
+    "the_flash",
+    "wonder_woman"
+  ],
+  "combo_effects": [
+    "stat_power"
+  ]
+}

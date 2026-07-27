@@ -1,17 +1,24 @@
-{
-  "id": "billy_numerous",
-  "name": "Billy Numerous",
-  "description": "One Billy is a problem. A hundred Billies is a Hive.",
-  "class": "Super",
-  "groups": [ "Hive", "Villains" ],
-  "price": 275,
-  "model_type": "slim",
-  "attributes": {
-    "hp_scale": 3.0,
-    "power_scale": 2.5,
-    "dodge_scale": 1.5,
-    "luck_scale": 1.0
-  },
-  "abilities": ["raspberry", "punchies", "quick_punch"],
-  "ability_cost_tiers": ["d", "c", "b"]
+﻿{
+    "id":  "billy_numerous",
+    "name":  "Billy Numerous",
+    "description":  "Silly Billy H.I.V.E. student who can split into an army of himself",
+    "class":  "Super",
+    "price":  225,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1.5,
+                       "power_scale":  1.5,
+                       "dodge_scale":  3,
+                       "luck_scale":  2
+                   },
+    "abilities":  [
+                      "raspberry",
+                      "quick_punch_stun",
+                      "punchies"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "c",
+                               "c"
+                           ]
 }

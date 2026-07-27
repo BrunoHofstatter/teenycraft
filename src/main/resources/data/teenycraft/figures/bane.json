@@ -1,0 +1,24 @@
+{
+    "id":  "bane",
+    "name":  "Bane",
+    "description":  "Mercenary powered by venom (drugs) and obsessed with breaking Batman",
+    "class":  "Martial Arts",
+    "price":  1300,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  3.5,
+                       "power_scale":  3.5,
+                       "dodge_scale":  0,
+                       "luck_scale":  0
+                   },
+    "abilities":  [
+                      "venom",
+                      "break_you",
+                      "break_the_bat"
+                  ],
+    "ability_cost_tiers":  [
+                               "b",
+                               "e",
+                               "e"
+                           ]
+}

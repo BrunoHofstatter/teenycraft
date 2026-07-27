@@ -1,0 +1,13 @@
+{
+  "id": "shapeshifters",
+  "name": "Shapeshifters",
+  "priority": 1,
+  "figures": [
+    "beast_boy",
+    "cat_beast_boy",
+    "martian_manhunter"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

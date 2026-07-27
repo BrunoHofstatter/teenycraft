@@ -1,0 +1,17 @@
+{
+  "id": "butterfly",
+  "name": "Butterfly",
+  "description": "You see a butterly at the opponent, you punch them. Cause you love them",
+  "golden_description": "Undodgeable & Shield Piercing",
+  "texture_index": 99,
+  "particle": "minecraft:cherry_leaves",
+  "particle_count": 6,
+  "hit_type": "melee",
+  "damage_tier": 11,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "trait:undodgeable"
+  ]
+}

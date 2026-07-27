@@ -1,0 +1,12 @@
+{
+  "id": "aquapeeps",
+  "name": "Aquapeeps",
+  "priority": 1,
+  "figures": [
+    "aquaman",
+    "black_manta"
+  ],
+  "combo_effects": [
+    "stat_luck"
+  ]
+}

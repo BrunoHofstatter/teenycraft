@@ -1,0 +1,26 @@
+{
+  "id": "double_slam",
+  "name": "Double Slam",
+  "description": "Hit your opponent twice with your mace",
+  "golden_description": "Undodgeable & Shield Piercing",
+  "texture_index": 103,
+  "particle": "minecraft:sweep_attack",
+  "particle_count": 7,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 4,
+  "range_tier": 2,
+  "damage_tier": 10,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "multi_hit",
+      "params": [
+        2
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "trait:undodgeable"
+  ]
+}

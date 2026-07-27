@@ -91,7 +91,7 @@ public class BattleAiGoal extends Goal {
     @Override
     public boolean canUse() {
         BattleState state = getState();
-        return state != null && state.isBattling();
+        return dummy.getAiProfile().enabled() && state != null && state.isBattling();
     }
 
     @Override

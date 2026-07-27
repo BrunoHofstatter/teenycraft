@@ -1,15 +1,24 @@
 {
   "id": "staff_slam",
   "name": "Staff Slam",
-  "texture_index": 15,
+  "description": "Use your staff to completely SLAM the opponent and Stun them",
+  "golden_description": "More Stun duration",
+  "texture_index": 72,
   "particle": "minecraft:crit",
-  "particle_count": 5,
+  "particle_count": 6,
   "hit_type": "melee",
-  "damage_tier": 6,
+  "damage_tier": 7,
   "effects_on_opponent": [
-    { "id": "stun", "params": [1.0] }
+    {
+      "id": "stun",
+      "params": [
+        1
+      ]
+    }
   ],
   "effects_on_self": [],
   "traits": [],
-  "golden_bonus": ["opponent:stun:1.2"]
+  "golden_bonus": [
+    "opponent:stun:1.3"
+  ]
 }

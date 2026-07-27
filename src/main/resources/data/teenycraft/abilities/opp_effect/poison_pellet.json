@@ -1,0 +1,26 @@
+{
+  "id": "poison_pellet",
+  "name": "Poison Pellet",
+  "description": "Throw a poison pellet at the opponent that deals damage overtime (can stack)",
+  "golden_description": "More poison duration",
+  "texture_index": 56,
+  "particle": "minecraft:witch",
+  "particle_count": 5,
+  "hit_type": "ranged",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 8,
+  "effects_on_opponent": [
+    {
+      "id": "poison",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:poison:1.3"
+  ]
+}

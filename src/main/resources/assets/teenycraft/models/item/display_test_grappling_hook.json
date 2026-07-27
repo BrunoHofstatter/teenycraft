@@ -1,0 +1,6 @@
+{
+  "parent": "teenycraft:item/ability_display/aimed",
+  "textures": {
+    "layer0": "teenycraft:item/ability_grappling_hook"
+  }
+}

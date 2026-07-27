@@ -1,0 +1,47 @@
+{
+  "id": "teenycraft:1_starfire_sticky_clark",
+  "figures": [
+    {
+      "figure_id": "starfire",
+      "level": 1,
+      "upgrades": "",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "sticky_joe",
+      "level": 1,
+      "upgrades": "",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "clark_kent",
+      "level": 1,
+      "upgrades": "",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    }
+  ],
+  "ai": {
+    "difficulty": 1,
+    "aggression": 0.2,
+    "preferred_range": "far",
+    "mana_discipline": 0.8,
+    "risk_tolerance": 0.15,
+    "move_speed_mult": 0.8
+  }
+}
+

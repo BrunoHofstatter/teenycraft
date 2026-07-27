@@ -1,0 +1,19 @@
+{
+  "id": "boulder_toss",
+  "name": "Boulder Toss",
+  "description": "Chuck a boulder at your opponents dealing Group Damage",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 126,
+  "particle": "minecraft:poof",
+  "particle_count": 8,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 6,
+  "range_tier": 3,
+  "damage_tier": 10,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    { "id": "group_damage", "params": [] }
+  ],
+  "golden_bonus": ["opponent:bar_deplete:1.0"]
+}

@@ -3,6 +3,7 @@ package bruhof.teenycraft.battle.validation;
 import bruhof.teenycraft.battle.ai.BattleAiProfile;
 import bruhof.teenycraft.battle.effect.EffectApplierRegistry;
 import bruhof.teenycraft.battle.trait.TraitRegistry;
+import bruhof.teenycraft.group.GroupComboEffectRegistry;
 import bruhof.teenycraft.util.AbilityLoader;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -34,6 +35,13 @@ public final class BattleContentValidation {
     public static ValidationReport validate(Map<String, JsonObject> abilityFiles,
                                             Map<String, JsonObject> figureFiles,
                                             Map<String, JsonObject> npcTeamFiles) {
+        return validate(abilityFiles, figureFiles, npcTeamFiles, Map.of());
+    }
+
+    public static ValidationReport validate(Map<String, JsonObject> abilityFiles,
+                                            Map<String, JsonObject> figureFiles,
+                                            Map<String, JsonObject> npcTeamFiles,
+                                            Map<String, JsonObject> figureGroupFiles) {
         List<Issue> errors = new ArrayList<>();
         List<Issue> warnings = new ArrayList<>();
 
@@ -53,6 +61,11 @@ public final class BattleContentValidation {
 
         for (Map.Entry<String, JsonObject> entry : npcTeamFiles.entrySet()) {
             validateNpcTeam(entry.getKey(), entry.getValue(), figureIds, abilityIds, errors);
+        }
+
+        for (Map.Entry<String, JsonObject> entry : figureGroupFiles.entrySet()) {
+            validateFigureGroup(entry.getKey(), entry.getValue(), figureIds,
+                    GroupComboEffectRegistry.getSupportedIds(), errors);
         }
 
         return new ValidationReport(List.copyOf(errors), List.copyOf(warnings));
@@ -111,6 +124,9 @@ public final class BattleContentValidation {
                                        JsonObject json,
                                        Set<String> abilityIds,
                                        List<Issue> errors) {
+        if (json.has("groups")) {
+            errors.add(new Issue(path, "legacy field 'groups' is not allowed; figure groups belong in figure_groups JSON"));
+        }
         JsonArray abilities = json.getAsJsonArray("abilities");
         if (abilities == null) {
             return;
@@ -128,6 +144,74 @@ public final class BattleContentValidation {
                 errors.add(new Issue(path, "abilities[" + i + "] references unknown ability id '" + abilityId + "'"));
             }
         }
+    }
+
+    private static void validateFigureGroup(String path,
+                                            JsonObject json,
+                                            Set<String> figureIds,
+                                            Set<String> supportedComboEffects,
+                                            List<Issue> errors) {
+        String id = getRequiredString(json, "id", path, errors);
+        String name = getRequiredString(json, "name", path, errors);
+        if (name != null && name.isBlank()) {
+            errors.add(new Issue(path, "name must not be blank"));
+        }
+        if (id != null) {
+            String expectedId = resourceFileId(path);
+            if (!expectedId.isBlank() && !expectedId.equals(id)) {
+                errors.add(new Issue(path, "id '" + id + "' must match resource filename '" + expectedId + "'"));
+            }
+        }
+        if (!json.has("priority") || !json.get("priority").isJsonPrimitive()
+                || !json.get("priority").getAsJsonPrimitive().isNumber()) {
+            errors.add(new Issue(path, "missing required integer field 'priority'"));
+        }
+
+        JsonArray figures = json.getAsJsonArray("figures");
+        if (figures == null || figures.size() < 2) {
+            errors.add(new Issue(path, "figures must contain at least two figure ids"));
+        } else {
+            Set<String> seenFigures = new LinkedHashSet<>();
+            for (int i = 0; i < figures.size(); i++) {
+                JsonElement element = figures.get(i);
+                if (!element.isJsonPrimitive()) {
+                    errors.add(new Issue(path, "figures[" + i + "] must be a string"));
+                    continue;
+                }
+                String figureId = element.getAsString();
+                if (!seenFigures.add(figureId)) {
+                    errors.add(new Issue(path, "figures contains duplicate figure id '" + figureId + "'"));
+                }
+                if (!figureIds.contains(figureId)) {
+                    errors.add(new Issue(path, "figures[" + i + "] references unknown figure id '" + figureId + "'"));
+                }
+            }
+        }
+
+        JsonArray effects = json.getAsJsonArray("combo_effects");
+        if (effects == null || effects.isEmpty()) {
+            errors.add(new Issue(path, "combo_effects must contain at least one registered effect id"));
+        } else {
+            for (int i = 0; i < effects.size(); i++) {
+                JsonElement element = effects.get(i);
+                if (!element.isJsonPrimitive()) {
+                    errors.add(new Issue(path, "combo_effects[" + i + "] must be a string"));
+                    continue;
+                }
+                String effectId = element.getAsString();
+                if (!supportedComboEffects.contains(effectId)) {
+                    errors.add(new Issue(path, "combo_effects[" + i + "] references unknown combo effect id '" + effectId + "'"));
+                }
+            }
+        }
+    }
+
+    private static String resourceFileId(String path) {
+        int slash = path.lastIndexOf('/');
+        int colon = path.lastIndexOf(':');
+        int start = Math.max(slash, colon) + 1;
+        int end = path.endsWith(".json") ? path.length() - 5 : path.length();
+        return start >= 0 && start < end ? path.substring(start, end) : "";
     }
 
     private static void validateNpcTeam(String path,

@@ -1,0 +1,48 @@
+{
+  "id": "teenycraft:3_mammoth_catboy_flash",
+  "figures": [
+    {
+      "figure_id": "mammoth",
+      "level": 11,
+      "upgrades": "HHHHHPPPPP",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "shockwave_stomp"
+      ]
+    },
+    {
+      "figure_id": "cat_beast_boy",
+      "level": 11,
+      "upgrades": "HHHHPPDDLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "waffles"
+      ]
+    },
+    {
+      "figure_id": "the_flash",
+      "level": 11,
+      "upgrades": "HHHHPPPLLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "dance"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 3
+  }
+}
+

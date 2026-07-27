@@ -1,0 +1,12 @@
+{
+  "id": "batcat",
+  "name": "BatCat",
+  "priority": 1,
+  "figures": [
+    "batman",
+    "catwoman"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

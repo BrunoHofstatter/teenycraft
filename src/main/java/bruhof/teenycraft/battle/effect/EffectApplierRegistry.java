@@ -2,6 +2,7 @@ package bruhof.teenycraft.battle.effect;
 
 import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.battle.BattleFigure;
+import bruhof.teenycraft.chip.ChipExecutor;
 import bruhof.teenycraft.capability.BattleStateProvider;
 import bruhof.teenycraft.capability.IBattleState;
 import bruhof.teenycraft.util.AbilityLoader;
@@ -77,13 +78,18 @@ public class EffectApplierRegistry {
         // HEAL
         EffectApplier healApplier = (state, attacker, figure, data, manaCost, params, target) -> {
             float paramMult = (!params.isEmpty()) ? params.get(0) : 1.0f;
-            int magnitude = EffectCalculator.calculateHealMagnitude(figure, manaCost, paramMult);
+            int magnitude = Math.round(EffectCalculator.calculateHealMagnitude(figure, manaCost, paramMult)
+                    * (data != null ? ChipExecutor.getAbilityHealMultiplier(figure) : 1.0f));
             
             target.getCapability(BattleStateProvider.BATTLE_STATE).ifPresent(targetState -> {
                 if (targetState.hasEffect("kiss")) {
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§d§lKISS! §cPositive effects blocked!"));
                 } else {
-                    targetState.applyEffect("heal", 0, magnitude);
+                    BattleFigure targetFigure = targetState.getActiveFigure();
+                    if (targetFigure != null) {
+                        targetState.applyResolvedCombatFigureDelta(targetFigure, magnitude,
+                                new IBattleState.CombatMutationSource(state, attacker, figure));
+                    }
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§aHealed " + magnitude + " HP!"));
                     if (attacker instanceof ServerPlayer sp && target != attacker) sp.sendSystemMessage(Component.literal("§aHealed target for " + magnitude + " HP!"));
                 }
@@ -100,12 +106,26 @@ public class EffectApplierRegistry {
         // GROUP HEAL
         register("group_heal", (state, attacker, figure, data, manaCost, params, target) -> {
             float paramMult = (!params.isEmpty()) ? params.get(0) : 1.0f;
-            int magnitude = EffectCalculator.calculateHealMagnitude(figure, manaCost, paramMult);
+            int magnitude = Math.round(EffectCalculator.calculateHealMagnitude(figure, manaCost, paramMult)
+                    * (data != null ? ChipExecutor.getAbilityHealMultiplier(figure) : 1.0f));
             
             if (state.hasEffect("kiss")) {
                 if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§d§lKISS! §cPositive effects blocked!"));
             } else {
-                state.applyEffect("group_heal", 0, magnitude);
+                java.util.List<BattleFigure> alive = new java.util.ArrayList<>();
+                for (BattleFigure targetFigure : state.getTeam()) {
+                    if (targetFigure.getCurrentHp() > 0) {
+                        alive.add(targetFigure);
+                    }
+                }
+
+                if (!alive.isEmpty()) {
+                    int[] splits = bruhof.teenycraft.battle.damage.DistributionHelper.split(magnitude, alive.size());
+                    for (int i = 0; i < alive.size(); i++) {
+                        state.applyResolvedCombatFigureDelta(alive.get(i), splits[i],
+                                new IBattleState.CombatMutationSource(state, attacker, figure));
+                    }
+                }
                 if (attacker instanceof ServerPlayer sp) sp.sendSystemMessage(Component.literal("§aGroup Heal: " + magnitude + " (Split among team)"));
             }
         });
@@ -352,7 +372,11 @@ public class EffectApplierRegistry {
                 if (targetState.hasEffect("cleanse_immunity")) {
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§b§lIMMUNE! §7Stun blocked."));
                 } else {
-                    targetState.applyEffect("stun", duration, 1);
+                    BattleFigure targetFigure = targetState.getActiveFigure();
+                    int finalDuration = targetFigure != null
+                            ? Math.max(1, Math.round(duration * ChipExecutor.getDirectStunDurationMultiplier(targetFigure)))
+                            : duration;
+                    targetState.applyEffect("stun", finalDuration, 1);
                     if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("§eYou are STUNNED for " + (duration/20.0) + "s!"));
                     if (attacker instanceof ServerPlayer sp && target != attacker) sp.sendSystemMessage(Component.literal("§eStunned target for " + (duration/20.0) + "s!"));
                 }
@@ -638,7 +662,8 @@ public class EffectApplierRegistry {
             float intervalParam = (!params.isEmpty()) ? params.get(0) : 1.0f;
             float magParam = (params.size() > 1) ? params.get(1) : 1.0f;
             
-            int totalMag = EffectCalculator.calculateHealMagnitude(figure, manaCost, magParam);
+            int totalMag = Math.round(EffectCalculator.calculateHealMagnitude(figure, manaCost, magParam)
+                    * (data != null ? ChipExecutor.getAbilityHealMultiplier(figure) : 1.0f));
             int amount = EffectCalculator.calculateRadioAmount(manaCost, 1.0f);
             int interval = EffectCalculator.calculateRadioInterval(figure, state, manaCost, intervalParam);
             

@@ -17,7 +17,7 @@ public class AbilityModelWrapper extends BakedModelWrapper<BakedModel> {
 
     public AbilityModelWrapper(BakedModel originalModel) {
         super(originalModel);
-        this.overrides = new CustomItemOverrides(originalModel.getOverrides());
+        this.overrides = new CustomItemOverrides(originalModel);
     }
 
     @Override
@@ -27,9 +27,11 @@ public class AbilityModelWrapper extends BakedModelWrapper<BakedModel> {
 
     private static class CustomItemOverrides extends ItemOverrides {
         private final ItemOverrides original;
+        private final BakedModel baseModel;
 
-        public CustomItemOverrides(ItemOverrides original) {
-            this.original = original;
+        public CustomItemOverrides(BakedModel baseModel) {
+            this.original = baseModel.getOverrides();
+            this.baseModel = baseModel;
         }
 
         @Override
@@ -46,19 +48,36 @@ public class AbilityModelWrapper extends BakedModelWrapper<BakedModel> {
                     }
                 }
 
-                // 1. Dynamic Vanilla Fallback Logic
                 if (isMineActive) {
-                     // Force the "Detonate Button" look if the mine is currently placed
-                     return Minecraft.getInstance().getItemRenderer().getItemModelShaper().getItemModel(net.minecraft.world.item.Items.LEVER);
-                } else if (AbilityIconManager.FALLBACKS.containsKey(id)) {
+                    if (AbilityIconManager.hasIconModel("bat_mine_button")) {
+                        return original.resolve(pModel, pStack, pLevel, pEntity, pSeed);
+                    }
+
+                    // Preserve a usable detonation icon if the special texture is
+                    // absent from the active resources.
+                    return Minecraft.getInstance().getItemRenderer().getItemModelShaper()
+                            .getItemModel(net.minecraft.world.item.Items.LEVER);
+                }
+
+                // Minecraft numeric predicates match thresholds, so resolving the
+                // wrapper override table directly would let unimplemented indexes
+                // inherit a nearby custom icon. Only ids discovered in the active
+                // resource set are allowed to use that table.
+                if (AbilityIconManager.hasIconModel(id)) {
+                    return original.resolve(pModel, pStack, pLevel, pEntity, pSeed);
+                }
+
+                if (AbilityIconManager.FALLBACKS.containsKey(id)) {
                     Item fallbackItem = AbilityIconManager.FALLBACKS.get(id);
                     if (fallbackItem != null) {
                         return Minecraft.getInstance().getItemRenderer().getItemModelShaper().getItemModel(fallbackItem);
                     }
                 }
+
+                return baseModel;
             }
-            
-            // 2. Otherwise, use standard JSON predicates (original logic)
+
+            // Untagged stacks can use normal item override behavior.
             return original.resolve(pModel, pStack, pLevel, pEntity, pSeed);
         }
     }

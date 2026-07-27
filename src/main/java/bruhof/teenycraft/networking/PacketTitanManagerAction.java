@@ -17,7 +17,10 @@ public class PacketTitanManagerAction {
         SET_PAGE,
         TOGGLE_FAVORITES_ONLY,
         CYCLE_FIGURE_CLASS,
-        TOGGLE_FAVORITE
+        TOGGLE_FAVORITE,
+        SET_COMBO_GROUP,
+        SET_COMBO_AUTO,
+        CYCLE_LEAD_SLOT
     }
 
     private final int containerId;
@@ -60,6 +63,18 @@ public class PacketTitanManagerAction {
         return new PacketTitanManagerAction(containerId, ActionType.TOGGLE_FAVORITE, viewSlotIndex, "");
     }
 
+    public static PacketTitanManagerAction setComboGroup(int containerId, String groupId) {
+        return new PacketTitanManagerAction(containerId, ActionType.SET_COMBO_GROUP, 0, groupId);
+    }
+
+    public static PacketTitanManagerAction setComboAuto(int containerId) {
+        return new PacketTitanManagerAction(containerId, ActionType.SET_COMBO_AUTO, 0, "");
+    }
+
+    public static PacketTitanManagerAction cycleLeadSlot(int containerId) {
+        return new PacketTitanManagerAction(containerId, ActionType.CYCLE_LEAD_SLOT, 0, "");
+    }
+
     public PacketTitanManagerAction(FriendlyByteBuf buf) {
         this.containerId = buf.readVarInt();
         this.actionType = buf.readEnum(ActionType.class);
@@ -98,6 +113,9 @@ public class PacketTitanManagerAction {
                 case TOGGLE_FAVORITES_ONLY -> menu.toggleFavoritesOnly();
                 case CYCLE_FIGURE_CLASS -> menu.cycleFigureClassFilter();
                 case TOGGLE_FAVORITE -> menu.toggleFavorite(intValue);
+                case SET_COMBO_GROUP -> menu.setComboGroup(stringValue);
+                case SET_COMBO_AUTO -> menu.setComboGroup("");
+                case CYCLE_LEAD_SLOT -> menu.cycleLeadTeamSlot();
             }
             menu.broadcastChanges();
         });

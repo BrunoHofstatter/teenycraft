@@ -11,6 +11,7 @@ This folder is for future planning, rough design notes, experiments, and unresol
 ## Current Files
 - [battle-refactor-audit.md](battle-refactor-audit.md)
 - [battle-refactor-plan.md](battle-refactor-plan.md)
+- [golden-ability-held-halo-plan.md](golden-ability-held-halo-plan.md)
 
 ## Suggested Future Files
 - `battle-ideas.md`

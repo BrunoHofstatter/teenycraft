@@ -1,0 +1,12 @@
+{
+  "id": "bumgorf",
+  "name": "Bumgorf",
+  "priority": 1,
+  "figures": [
+    "silkie",
+    "starfire"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

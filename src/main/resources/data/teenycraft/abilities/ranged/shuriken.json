@@ -1,0 +1,19 @@
+{
+  "id": "shuriken",
+  "name": "Shuriken",
+  "description": "Throw a fancy ninja star at your opponent",
+  "golden_description": "Undodgeable & Shield Piercing",
+  "texture_index": 113,
+  "particle": "minecraft:crit",
+  "particle_count": 4,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 3,
+  "range_tier": 4,
+  "damage_tier": 8,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "trait:undodgeable"
+  ]
+}

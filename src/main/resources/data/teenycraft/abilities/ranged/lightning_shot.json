@@ -1,0 +1,19 @@
+{
+  "id": "lightning_shot",
+  "name": "Lightning Shot",
+  "description": "Shoot a lightning shot at the opponent",
+  "golden_description": "Undodgeable & Shield Piercing",
+  "texture_index": 108,
+  "particle": "minecraft:electric_spark",
+  "particle_count": 7,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 1,
+  "range_tier": 5,
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "trait:undodgeable"
+  ]
+}

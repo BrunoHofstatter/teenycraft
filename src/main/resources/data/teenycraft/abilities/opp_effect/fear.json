@@ -1,0 +1,33 @@
+{
+  "id": "fear",
+  "name": "Fear",
+  "description": "Now the opponent fears you (you steal Power Up from them)",
+  "golden_description": "Bonus Heal",
+  "texture_index": 16,
+  "particle": "minecraft:soul",
+  "particle_count": 8,
+  "hit_type": "ranged",
+  "raycast_delay_tier": 1,
+  "range_tier": 8,
+  "damage_tier": 7,
+  "effects_on_opponent": [
+    {
+      "id": "power_down",
+      "params": [
+        0.48
+      ]
+    }
+  ],
+  "effects_on_self": [
+    {
+      "id": "power_up",
+      "params": [
+        0.6
+      ]
+    }
+  ],
+  "traits": [],
+  "golden_bonus": [
+    "self:heal:0.2"
+  ]
+}

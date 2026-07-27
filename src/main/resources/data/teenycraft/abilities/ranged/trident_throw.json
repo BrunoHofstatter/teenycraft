@@ -1,0 +1,19 @@
+{
+  "id": "trident_throw",
+  "name": "Trident Throw",
+  "description": "Throw a trident and deal damage, that simple",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 14,
+  "particle": "minecraft:splash",
+  "particle_count": 6,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 5,
+  "range_tier": 4,
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:bar_deplete:1.0"
+  ]
+}

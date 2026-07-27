@@ -1,0 +1,6 @@
+{
+  "parent": "teenycraft:item/ability_display/fist",
+  "textures": {
+    "layer0": "teenycraft:item/ability_amazonian_beatdown"
+  }
+}

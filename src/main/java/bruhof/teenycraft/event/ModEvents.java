@@ -4,6 +4,7 @@ import bruhof.teenycraft.TeenyCraft;
 import bruhof.teenycraft.capability.ITitanManager;
 import bruhof.teenycraft.capability.ITeenyCoins;
 import bruhof.teenycraft.capability.BattleState;
+import bruhof.teenycraft.capability.AccessoryMasteryProvider;
 import bruhof.teenycraft.capability.TeenyCoinsProvider;
 import bruhof.teenycraft.capability.TitanManagerProvider;
 import bruhof.teenycraft.capability.BattleStateProvider;
@@ -42,6 +43,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 
 import bruhof.teenycraft.command.CommandTeeny;
+import bruhof.teenycraft.accessory.AccessoryMasteryService;
 import net.minecraftforge.event.RegisterCommandsEvent;
 
 @Mod.EventBusSubscriber(modid = TeenyCraft.MOD_ID)
@@ -59,6 +61,9 @@ public class ModEvents {
             }
             if (!event.getObject().getCapability(TeenyCoinsProvider.TEENY_COINS).isPresent()) {
                 event.addCapability(new ResourceLocation(TeenyCraft.MOD_ID, "teeny_coins"), new TeenyCoinsProvider());
+            }
+            if (!event.getObject().getCapability(AccessoryMasteryProvider.ACCESSORY_MASTERY).isPresent()) {
+                event.addCapability(new ResourceLocation(TeenyCraft.MOD_ID, "accessory_mastery"), new AccessoryMasteryProvider());
             }
         }
         
@@ -87,6 +92,12 @@ public class ModEvents {
             });
         });
 
+        event.getOriginal().getCapability(AccessoryMasteryProvider.ACCESSORY_MASTERY).ifPresent(oldStore -> {
+            event.getEntity().getCapability(AccessoryMasteryProvider.ACCESSORY_MASTERY).ifPresent(newStore -> {
+                newStore.copyFrom(oldStore);
+            });
+        });
+
         if (event.isWasDeath()) {
             event.getOriginal().invalidateCaps();
         }
@@ -101,6 +112,7 @@ public class ModEvents {
                 ModMessages.sendToPlayer(new PacketSyncTitanData(nbt), player);
             });
             syncTeenyCoins(player);
+            AccessoryMasteryService.syncMastery(player);
         }
     }
 
@@ -119,6 +131,7 @@ public class ModEvents {
                 ModMessages.sendToPlayer(new PacketSyncTitanData(nbt), player);
             });
             syncTeenyCoins(player);
+            AccessoryMasteryService.syncMastery(player);
         }
     }
 
@@ -131,6 +144,7 @@ public class ModEvents {
                 ModMessages.sendToPlayer(new PacketSyncTitanData(nbt), player);
             });
             syncTeenyCoins(player);
+            AccessoryMasteryService.syncMastery(player);
         }
     }
 
@@ -239,6 +253,7 @@ public class ModEvents {
         public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
             event.register(ITitanManager.class);
             event.register(ITeenyCoins.class);
+            event.register(bruhof.teenycraft.capability.IAccessoryMastery.class);
             event.register(IBattleState.class);
         }
 

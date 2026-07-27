@@ -8,6 +8,7 @@ Document the implemented opponent decision-making model for Teeny battles, the l
 - `EntityTeenyDummy` now runs a first-pass battle AI goal during arena battles instead of acting as a pure idle target.
 - The v1 AI uses the shared battle runtime for movement, action execution, and swapping rather than a separate cheat system.
 - NPC team JSON can now optionally include an AI profile with direct timing, swap, and reasoning controls, with `difficulty` acting only as an optional preset source for omitted fields.
+- NPC teams can set optional `ai.enabled: false` to keep the opponent in the normal battle runtime while preventing battle AI movement, abilities, and swaps.
 - Arena pickups, wall tactics, and scripted encounter logic are not part of v1.
 
 ## Player-Facing Behavior
@@ -29,6 +30,7 @@ Document the implemented opponent decision-making model for Teeny battles, the l
 
 ## Implemented Behavior
 - `EntityTeenyDummy` now has a dedicated `BattleAiGoal` above its normal idle look goals.
+- `BattleAiGoal` only starts while the opponent is battling and its loaded AI profile is enabled. The field defaults to enabled when omitted, preserving existing team behavior.
 - The AI evaluates one short-lived intent at a time and then lets movement support that intent.
 - The AI now treats close-range contact and recent damage as generic pressure, which makes it reevaluate passive plans faster and prefer immediate combat actions more often.
 - Action choice is generic by ability family instead of hardcoded per ability:

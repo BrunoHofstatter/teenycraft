@@ -1,0 +1,24 @@
+﻿{
+    "id":  "jinx",
+    "name":  "Jinx",
+    "description":  "Bad-luck sorceress from H.I.V.E., with pink hair and hexing habits",
+    "class":  "Dark Arts",
+    "price":  1200,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1,
+                       "power_scale":  3,
+                       "dodge_scale":  0.5,
+                       "luck_scale":  2.5
+                   },
+    "abilities":  [
+                      "raspberry",
+                      "curse_jinx",
+                      "plasma_shot_jinx"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "d",
+                               "c"
+                           ]
+}

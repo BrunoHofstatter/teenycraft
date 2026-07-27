@@ -26,6 +26,8 @@ public class TitanManager implements ITitanManager {
     private static final String TAG_ACCESSORY_STORAGE = "AccessoryStorage";
     private static final String TAG_VANILLA_ITEMS = "VanillaItems";
     private static final String TAG_NEXT_FIGURE_SEQUENCE = "NextFigureSequence";
+    private static final String TAG_SELECTED_COMBO_GROUP = "SelectedComboGroup";
+    private static final String TAG_LEAD_TEAM_SLOT = "LeadTeamSlot";
     private static final String TAG_FAVORITE = "TitanFavorite";
     private static final String TAG_FIGURE_SEQUENCE = "TitanFigureSequence";
 
@@ -69,6 +71,8 @@ public class TitanManager implements ITitanManager {
 
     private ListTag vanillaItems = new ListTag();
     private long nextFigureSequence = 1L;
+    private String selectedComboGroupId = "";
+    private int leadTeamSlot = SLOT_TEAM_1;
 
     @Override
     public ItemStackHandler getTeamHandler() {
@@ -115,6 +119,26 @@ public class TitanManager implements ITitanManager {
     @Override
     public ItemStack getEquippedAccessory() {
         return equippedAccessoryHandler.getStackInSlot(0);
+    }
+
+    @Override
+    public String getSelectedComboGroupId() {
+        return selectedComboGroupId;
+    }
+
+    @Override
+    public void setSelectedComboGroupId(String groupId) {
+        selectedComboGroupId = groupId == null ? "" : groupId.trim();
+    }
+
+    @Override
+    public int getLeadTeamSlot() {
+        return leadTeamSlot;
+    }
+
+    @Override
+    public void setLeadTeamSlot(int slot) {
+        leadTeamSlot = Math.max(SLOT_TEAM_1, Math.min(SLOT_TEAM_3, slot));
     }
 
     @Override
@@ -224,6 +248,10 @@ public class TitanManager implements ITitanManager {
         tag.put(TAG_CHIP_STORAGE, chipStorage.serializeNBT());
         tag.put(TAG_ACCESSORY_STORAGE, accessoryStorage.serializeNBT());
         tag.putLong(TAG_NEXT_FIGURE_SEQUENCE, nextFigureSequence);
+        if (!selectedComboGroupId.isBlank()) {
+            tag.putString(TAG_SELECTED_COMBO_GROUP, selectedComboGroupId);
+        }
+        tag.putInt(TAG_LEAD_TEAM_SLOT, leadTeamSlot);
         if (this.vanillaItems != null && !this.vanillaItems.isEmpty()) {
             tag.put(TAG_VANILLA_ITEMS, this.vanillaItems);
         }
@@ -249,6 +277,9 @@ public class TitanManager implements ITitanManager {
         } else {
             this.vanillaItems = new ListTag();
         }
+
+        selectedComboGroupId = tag.getString(TAG_SELECTED_COMBO_GROUP);
+        setLeadTeamSlot(tag.contains(TAG_LEAD_TEAM_SLOT) ? tag.getInt(TAG_LEAD_TEAM_SLOT) : SLOT_TEAM_1);
 
         normalizeFigureSequence();
     }

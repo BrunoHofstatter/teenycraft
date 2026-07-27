@@ -1,0 +1,12 @@
+{
+  "id": "fam_first_red",
+  "name": "Fam First (Red)",
+  "priority": 1,
+  "figures": [
+    "raven",
+    "trigon"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

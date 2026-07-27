@@ -1,0 +1,13 @@
+{
+  "id": "bug_club",
+  "name": "Bug Club",
+  "priority": 1,
+  "figures": [
+    "blue_beetle",
+    "bumblebee",
+    "killer_moth"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

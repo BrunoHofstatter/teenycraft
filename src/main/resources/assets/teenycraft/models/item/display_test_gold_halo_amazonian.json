@@ -1,0 +1,6 @@
+{
+  "parent": "teenycraft:item/ability_display/fist",
+  "textures": {
+    "layer0": "teenycraft:item/display_test_gold_halo_amazonian"
+  }
+}

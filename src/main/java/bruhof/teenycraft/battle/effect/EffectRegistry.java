@@ -41,6 +41,7 @@ public class EffectRegistry {
         register(new CurseEffect());
         register(new GroupHealEffect());
         register(new WaffleEffect());
+        register(new WaffleEffect("waffle_secondary"));
         register(new HealEffect());
         register(new SelfShockEffect());
         register(new FreezeEffect());
@@ -53,6 +54,10 @@ public class EffectRegistry {
         register(new DefenseUpEffect());
         register(new DefenseDownEffect());
         register(new LuckUpEffect());
+        register(new SpeedUpEffect());
+        register(new SpeedDownEffect());
+        register(new RavensSlowEffect());
+        register(new KryptoniteMasteryEffect());
         register(new CutenessEffect());
         register(new ReflectEffect());
         register(new PetSlotEffect("pet_slot_1"));
@@ -138,7 +143,8 @@ public class EffectRegistry {
         protected void onPeriodicTick(IBattleState state, BattleFigure target, int remainingDuration, EffectInstance inst) {
             int finalTickMag = getSmartSplitValue(inst, remainingDuration);
             if (finalTickMag > 0) {
-                state.applyResolvedCombatFigureDelta(target, finalTickMag);
+                state.applyResolvedCombatFigureDelta(target, finalTickMag,
+                        state.resolveCombatMutationSource(inst.casterUUID, inst.casterFigureIndex));
             }
         }
     }
@@ -257,6 +263,74 @@ public class EffectRegistry {
         }
     }
 
+    public static class SpeedUpEffect extends BattleEffect {
+        public SpeedUpEffect() { super("speed_up", EffectType.DURATION, EffectCategory.BUFF); }
+        @Override
+        public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
+            if (state.hasEffect("kiss")) return false;
+            if (state instanceof BattleState bs) {
+                Player player = bs.getPlayer();
+                if (player != null) {
+                    bs.updatePlayerSpeed(player);
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public void onRemove(IBattleState state, BattleFigure target) {
+            if (state instanceof BattleState bs) {
+                Player player = bs.getPlayer();
+                if (player != null) {
+                    bs.updatePlayerSpeed(player);
+                }
+            }
+        }
+    }
+
+    public static class SpeedDownEffect extends BattleEffect {
+        public SpeedDownEffect() { super("speed_down", EffectType.DURATION, EffectCategory.DEBUFF); }
+        @Override
+        public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
+            if (state.hasEffect("cleanse_immunity")) return false;
+            if (state instanceof BattleState bs) {
+                Player player = bs.getPlayer();
+                if (player != null) {
+                    bs.updatePlayerSpeed(player);
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public void onRemove(IBattleState state, BattleFigure target) {
+            if (state instanceof BattleState bs) {
+                Player player = bs.getPlayer();
+                if (player != null) {
+                    bs.updatePlayerSpeed(player);
+                }
+            }
+        }
+    }
+
+    public static class RavensSlowEffect extends BattleEffect {
+        public RavensSlowEffect() { super("ravens_slow", EffectType.DURATION, EffectCategory.DEBUFF); }
+
+        @Override
+        public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
+            return !state.hasEffect("cleanse_immunity");
+        }
+    }
+
+    public static class KryptoniteMasteryEffect extends BattleEffect {
+        public KryptoniteMasteryEffect() { super("kryptonite_mastery", EffectType.DURATION, EffectCategory.DEBUFF); }
+
+        @Override
+        public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
+            return !state.hasEffect("cleanse_immunity");
+        }
+    }
+
     public static class CutenessEffect extends BattleEffect {
         public CutenessEffect() { super("cuteness", EffectType.DURATION, EffectCategory.BUFF); }
         @Override
@@ -363,7 +437,8 @@ public class EffectRegistry {
     }
 
     public static class WaffleEffect extends BattleEffect {
-        public WaffleEffect() { super("waffle", EffectType.DURATION, EffectCategory.DEBUFF); }
+        public WaffleEffect() { this("waffle"); }
+        public WaffleEffect(String id) { super(id, EffectType.DURATION, EffectCategory.DEBUFF); }
         @Override
         public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
             if (state.hasEffect("cleanse_immunity")) return false;

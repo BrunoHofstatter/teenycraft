@@ -1,0 +1,26 @@
+{
+  "id": "sonic_cannon",
+  "name": "Sonic Cannon",
+  "description": "Use your sonic cannon to apply Defense Down to the opponent (zero damage)",
+  "golden_description": "Stun",
+  "texture_index": 89,
+  "particle": "minecraft:sonic_boom",
+  "particle_count": 1,
+  "hit_type": "ranged",
+  "raycast_delay_tier": 2,
+  "range_tier": 8,
+  "damage_tier": 0,
+  "effects_on_opponent": [
+    {
+      "id": "defense_down",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:stun:0.5"
+  ]
+}

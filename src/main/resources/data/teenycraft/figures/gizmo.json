@@ -1,0 +1,24 @@
+﻿{
+    "id":  "gizmo",
+    "name":  "Gizmo",
+    "description":  "H.I.V.E. tech gremlin with gadgets, tantrums, and too much confidence",
+    "class":  "Tech",
+    "price":  225,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1,
+                       "power_scale":  3,
+                       "dodge_scale":  1.5,
+                       "luck_scale":  2.5
+                   },
+    "abilities":  [
+                      "robo_buddy",
+                      "raspberry",
+                      "missile_barrage"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "b",
+                               "d"
+                           ]
+}

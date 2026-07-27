@@ -1,5 +1,6 @@
 package bruhof.teenycraft.client;
 
+import bruhof.teenycraft.battle.presentation.BattleHudEffectSnapshot;
 import bruhof.teenycraft.battle.presentation.BattleHudParticipantSnapshot;
 import bruhof.teenycraft.battle.presentation.BattleHudSnapshot;
 
@@ -10,6 +11,9 @@ public class ClientBattleData {
 
     public static void set(BattleHudSnapshot battleSnapshot) {
         snapshot = battleSnapshot != null ? battleSnapshot : BattleHudSnapshot.off();
+        if (!snapshot.isBattling()) {
+            BattleUiFeedbackManager.clear();
+        }
     }
 
     public static BattleHudSnapshot getSnapshot() {
@@ -100,7 +104,7 @@ public class ClientBattleData {
         return snapshot.player().abilityGolden();
     }
 
-    public static List<String> getEffects() {
+    public static List<BattleHudEffectSnapshot> getEffects() {
         return snapshot.player().effects();
     }
 
@@ -192,7 +196,7 @@ public class ClientBattleData {
         return snapshot.enemy().abilityGolden();
     }
 
-    public static List<String> getEnemyEffects() {
+    public static List<BattleHudEffectSnapshot> getEnemyEffects() {
         return snapshot.enemy().effects();
     }
 

@@ -1,0 +1,46 @@
+{
+  "id": "teenycraft:1_robin_beast_manta",
+  "figures": [
+    {
+      "figure_id": "robin",
+      "level": 1,
+      "upgrades": "",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "beast_boy",
+      "level": 1,
+      "upgrades": "",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    },
+    {
+      "figure_id": "black_manta",
+      "level": 1,
+      "upgrades": "",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    }
+  ],
+  "ai": {
+    "difficulty": 1,
+    "aggression": 0.25,
+    "swap_bias": 0.15,
+    "risk_tolerance": 0.25,
+    "move_speed_mult": 0.85
+  }
+}
+

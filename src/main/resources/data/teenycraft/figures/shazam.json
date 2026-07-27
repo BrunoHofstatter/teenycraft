@@ -1,0 +1,24 @@
+{
+    "id":  "shazam",
+    "name":  "Shazam",
+    "description":  "Billy Batson, kid champion who becomes magic’s loudest adult hero",
+    "class":  "Super",
+    "price":  4000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2.5,
+                       "power_scale":  3,
+                       "dodge_scale":  2.5,
+                       "luck_scale":  0
+                   },
+    "abilities":  [
+                      "bulletproof",
+                      "super_sockem",
+                      "shazam"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "d",
+                               "e"
+                           ]
+}

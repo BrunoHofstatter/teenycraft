@@ -21,6 +21,9 @@ public class DamagePipeline {
         public int hitCount = 1;
         public boolean isGroupDamage = false;
         public boolean canCrit = false;
+        public float forcedCriticalMultiplier = 1.0f;
+        public float flatCritChanceBonus = 0.0f;
+        public java.util.Map<String, Integer> accessoryBonusDamage = new java.util.HashMap<>();
         public boolean classBonusEligible = false;
         public boolean undodgeable = false;
         public float knockback = 0.5f; // Default vanilla-ish knockback
@@ -185,15 +188,32 @@ public class DamagePipeline {
 
         // Add Flat Damage Modifications (Effects from State)
         rawDamage += attacker.getEffectiveStat(StatType.FLAT_DAMAGE, attackerState);
+        if (attackerState != null && attackerState.hasEffect("kryptonite_mastery")) {
+            rawDamage *= TeenyBalance.ACCESSORY_KRYPTONITE_TIER_5_PENALTY_MULT;
+        }
         
         // 3. Critical Hit Readiness
         // We no longer roll here to allow multi-hit independent rolls.
         DamageResult result = new DamageResult(Math.round(rawDamage));
+        if (attackerState != null) {
+            int redBonus = attackerState.getEffectAccessoryMagnitude("power_up", "red_lantern_battery");
+            int kryptoBonus = attackerState.getEffectAccessoryMagnitude("power_up", "krypto_the_superdog");
+            if (redBonus > 0) result.accessoryBonusDamage.put("red_lantern_battery", redBonus);
+            if (kryptoBonus > 0) result.accessoryBonusDamage.put("krypto_the_superdog", kryptoBonus);
+        }
         result.canCrit = true; // Most abilities can crit
         result.classBonusEligible = true;
 
         // 4. Trait Processing
         bruhof.teenycraft.battle.trait.TraitRegistry.triggerPipelineHooks(data.traits, result);
+        if (isGolden) {
+            AbilityLoader.GoldenBonusData luckier =
+                    data.findGoldenBonus(AbilityLoader.GoldenBonusScope.TRAIT, "luckier");
+            if (luckier != null) {
+                float scale = luckier.params().isEmpty() ? 1.0f : luckier.params().get(0);
+                result.flatCritChanceBonus = TeenyBalance.LUCKIER_FLAT_CRIT_CHANCE * scale;
+            }
+        }
         
         return result;
     }
@@ -205,7 +225,15 @@ public class DamagePipeline {
         boolean isCrit = false;
 
         // 1. Critical Hit Roll (Per Hit)
-        if (initialTotalDamage > 0 && incoming.canCrit && attacker != null && attacker.tryCrit(attackerState)) {
+        if (initialTotalDamage > 0 && incoming.forcedCriticalMultiplier > 1.0f) {
+            isCrit = true;
+            int critTotalDamage = Math.round(initialTotalDamage * incoming.forcedCriticalMultiplier);
+            int critBaseDamage = Math.round(initialBaseDamage * incoming.forcedCriticalMultiplier);
+            critBonus = critTotalDamage - initialTotalDamage;
+            initialTotalDamage = critTotalDamage;
+            initialBaseDamage = Math.min(critBaseDamage, initialTotalDamage);
+        } else if (initialTotalDamage > 0 && incoming.canCrit && attacker != null
+                && attacker.tryCrit(attackerState, incoming.flatCritChanceBonus)) {
             isCrit = true;
             float luckVal = attacker.getEffectiveStat(StatType.LUCK, attackerState);
             float critMult = (luckVal / 100.0f * TeenyBalance.LUCK_BALANCE_MULTIPLIER) + TeenyBalance.BASE_LUCK_MULTIPLIER;
@@ -227,7 +255,8 @@ public class DamagePipeline {
         );
         
         // 2. Flight Evasion Check
-        if (victimState != null && victimState.hasEffect("flight") && !incoming.isGroupDamage) {
+        if (victimState != null && victimState.hasEffect("flight") && !incoming.isGroupDamage
+                && !incoming.undodgeable) {
             res.isDodged = true;
             res.dodgeReduction = res.finalDamage;
             res.finalDamage = 0;
@@ -249,7 +278,10 @@ public class DamagePipeline {
     }
 
     public static MitigationResult calculatePoisonTick(IBattleState victimState, BattleFigure victim, BattleFigure attacker, IBattleState attackerState, float baseTickDamage) {
-        int initialDamage = Math.round(baseTickDamage);
+        float adjustedTickDamage = attackerState != null && attackerState.hasEffect("kryptonite_mastery")
+                ? baseTickDamage * TeenyBalance.ACCESSORY_KRYPTONITE_TIER_5_PENALTY_MULT
+                : baseTickDamage;
+        int initialDamage = Math.round(adjustedTickDamage);
         int critBonus = 0;
         boolean isCrit = false;
 
@@ -277,11 +309,21 @@ public class DamagePipeline {
             DamageResult split = new DamageResult(hitSplits[i], 1, result.isGroupDamage, result.canCrit);
             split.classBonusDamagePerHit = (i == hitSplits.length - 1) ? result.classBonusDamagePerHit : 0;
             split.classBonusEligible = result.classBonusEligible && i == hitSplits.length - 1;
+            split.flatCritChanceBonus = result.flatCritChanceBonus;
+            split.forcedCriticalMultiplier = result.forcedCriticalMultiplier;
             split.undodgeable = result.undodgeable;
             split.knockback = result.knockback;
             split.effects.addAll(result.effects);
             splitResults[i] = split;
         }
+        result.accessoryBonusDamage.forEach((accessoryId, amount) -> {
+            int[] bonusSplits = DistributionHelper.split(amount, splitResults.length);
+            for (int i = 0; i < splitResults.length; i++) {
+                if (bonusSplits[i] > 0) {
+                    splitResults[i].accessoryBonusDamage.put(accessoryId, bonusSplits[i]);
+                }
+            }
+        });
         return splitResults;
     }
 

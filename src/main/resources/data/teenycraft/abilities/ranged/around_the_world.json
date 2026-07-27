@@ -1,0 +1,20 @@
+{
+  "id": "around_the_world",
+  "name": "Around the World",
+  "description": "Multiple hits that are ranged and Group Damage against your opponent",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 1,
+  "particle": "minecraft:cloud",
+  "particle_count": 12,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 1,
+  "range_tier": 8,
+  "damage_tier": 6,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    { "id": "multi_hit", "params": [4.0] },
+    { "id": "group_damage", "params": [] }
+  ],
+  "golden_bonus": ["opponent:bar_deplete:1.0"]
+}

@@ -1,13 +1,17 @@
 {
   "id": "soul_punch",
   "name": "Soul Punch",
-  "texture_index": 14,
-  "particle": "minecraft:crit",
-  "particle_count": 5,
+  "description": "Use your dark magic to punch your opponent",
+  "golden_description": "Stun",
+  "texture_index": 90,
+  "particle": "minecraft:soul",
+  "particle_count": 7,
   "hit_type": "melee",
-  "damage_tier": 9,
+  "damage_tier": 11,
   "effects_on_opponent": [],
   "effects_on_self": [],
   "traits": [],
-  "golden_bonus": ["opponent:stun:0.6"]
+  "golden_bonus": [
+    "opponent:stun:0.5"
+  ]
 }

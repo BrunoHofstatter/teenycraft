@@ -1,0 +1,19 @@
+{
+  "id": "teleport_strike",
+  "name": "Teleport Strike",
+  "description": "Teleport right under the opponent and punch them under their chin (counts as ranged)",
+  "golden_description": "More Tofu chance (increases the natural chance of getting tofu)",
+  "texture_index": 79,
+  "particle": "minecraft:portal",
+  "particle_count": 10,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 2,
+  "range_tier": 3,
+  "damage_tier": 9,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "trait:tofu_chance:1.5,1.2"
+  ]
+}

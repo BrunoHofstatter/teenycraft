@@ -1,0 +1,12 @@
+{
+  "id": "wayne_manor",
+  "name": "Wayne Manor",
+  "priority": 1,
+  "figures": [
+    "alfred",
+    "batman"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

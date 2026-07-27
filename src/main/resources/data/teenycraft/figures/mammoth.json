@@ -1,0 +1,24 @@
+﻿{
+    "id":  "mammoth",
+    "name":  "Mammoth",
+    "description":  "H.I.V.E. bruiser, enormous teen villain, and professional wall breaker",
+    "class":  "Beast",
+    "price":  350,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  3,
+                       "power_scale":  3,
+                       "dodge_scale":  0.5,
+                       "luck_scale":  1.5
+                   },
+    "abilities":  [
+                      "shockwave_stomp",
+                      "mighty_punch",
+                      "boulder_toss"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "c",
+                               "b"
+                           ]
+}

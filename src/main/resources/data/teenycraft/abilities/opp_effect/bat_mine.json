@@ -1,7 +1,9 @@
 {
   "id": "bat_mine",
   "name": "Bat-Mine",
-  "texture_index": 100,
+  "description": "Throw a remote mine that increases damage over time. When ready, blow it up!",
+  "golden_description": "More damage",
+  "texture_index": 41,
   "particle": "minecraft:smoke",
   "particle_count": 8,
   "hit_type": "ranged",
@@ -9,10 +11,7 @@
   "range_tier": 8,
   "damage_tier": 8,
   "effects_on_opponent": [
-    {
-      "id": "remote_mine",
-      "params": [1.0]
-    }
+    { "id": "remote_mine", "params": [1.0] }
   ],
   "effects_on_self": [],
   "traits": [],

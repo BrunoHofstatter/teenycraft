@@ -1,0 +1,25 @@
+{
+  "id": "counterattack",
+  "name": "Counterattack",
+  "description": "Reflect damage if attacked but you become much slower (doesn't last long, so time it correctly)",
+  "golden_description": "More duration",
+  "texture_index": 46,
+  "particle": "minecraft:sweep_attack",
+  "particle_count": 5,
+  "hit_type": "none",
+  "damage_tier": 0,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    {
+      "id": "reflect",
+      "params": [
+        0.7,
+        1.3
+      ]
+    }
+  ],
+  "traits": [],
+  "golden_bonus": [
+    "self:reflect:1.0,1.3"
+  ]
+}

@@ -1,17 +1,26 @@
 {
   "id": "laser_eyes",
   "name": "Laser Eyes",
-  "texture_index": 10,
-  "particle": "minecraft:witch",
-  "particle_count": 5,
+  "description": "Charge Up your eyes and shoot a laser at the opponent",
+  "golden_description": "Instant Cast Chance (chance of no Charge Up time)",
+  "texture_index": 30,
+  "particle": "minecraft:flame",
+  "particle_count": 8,
   "hit_type": "raycasting",
   "raycast_delay_tier": 0,
-  "range_tier": 4,
-  "damage_tier": 9,
+  "range_tier": 6,
+  "damage_tier": 6,
   "effects_on_opponent": [],
   "effects_on_self": [],
   "traits": [
-    { "id": "charge_up", "params": [1.2] }
+    {
+      "id": "charge_up",
+      "params": [
+        1.2
+      ]
+    }
   ],
-  "golden_bonus": ["trait:instant_cast_chance"]
+  "golden_bonus": [
+    "trait:instant_cast_chance"
+  ]
 }

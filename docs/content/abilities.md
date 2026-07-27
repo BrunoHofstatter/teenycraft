@@ -20,6 +20,8 @@ Phase 7 now parses `golden_bonus` entries into structured loader records on relo
 - [`src/main/resources/data/teenycraft/abilities`](../../src/main/resources/data/teenycraft/abilities)
 - [`src/main/java/bruhof/teenycraft/TeenyBalance.java`](../../src/main/java/bruhof/teenycraft/TeenyBalance.java)
 - [`abilities-json-reference.md`](abilities-json-reference.md)
+- [`ability-icon-workflow.md`](ability-icon-workflow.md)
+- [`ability-item-displays.md`](ability-item-displays.md)
 
 ## Reload Validation
 Battle content reload now validates:
@@ -51,22 +53,39 @@ When a figure needs a new ability id, update these together:
 
 - Add the ability JSON under [`src/main/resources/data/teenycraft/abilities`](../../src/main/resources/data/teenycraft/abilities) with a unique `id` and a unique `texture_index`.
 - Reference that ability id from the figure JSON `abilities` list.
-- If you want a custom icon, add `assets/teenycraft/models/item/ability_<id>.json` and usually `assets/teenycraft/models/item/ability_<id>_golden.json`.
-- Add the matching icon textures under `assets/teenycraft/textures/item/`, typically `ability_<id>.png` and `ability_<id>_golden.png`.
-- Add override entries for that `texture_index` to all three wrapper models:
-  - `assets/teenycraft/models/item/ability_1.json`
-  - `assets/teenycraft/models/item/ability_2.json`
-  - `assets/teenycraft/models/item/ability_3.json`
+- For a custom icon, add `assets/teenycraft/textures/item/ability_<id>.png` and assign the ability to exactly one category in `assets/teenycraft/ability_display_categories.json`. The Gradle `generateAbilityIconModels` task generates the categorized individual item model and all three slot-wrapper overrides from the current `texture_index`.
+- For a special visual state, add the state texture and extend the generator and item property contract. Bat Mine currently uses `ability_bat_mine_button.png` with `teenycraft:is_button`.
 - If the JSON introduces a brand-new effect id or trait id, implement and register it in the runtime registries before reload validation will accept the content.
 
 Important current icon behavior:
 
-- [`src/main/java/bruhof/teenycraft/client/AbilityIconManager.java`](../../src/main/java/bruhof/teenycraft/client/AbilityIconManager.java) is not only a missing-texture fallback. If an ability id is present in `FALLBACKS`, 
-`AbilityModelWrapper` will render that vanilla item model instead of your custom ability model.
-- So use `FALLBACKS` only when you intentionally want the vanilla-item icon, not in addition to a custom icon pipeline.
+- During model baking, `AbilityIconManager` discovers the available `ability_<id>.png` textures from the active resources. [`src/main/java/bruhof/teenycraft/client/model/AbilityModelWrapper.java`](../../src/main/java/bruhof/teenycraft/client/model/AbilityModelWrapper.java) permits only those exact ids to enter the generated predicate table before consulting `AbilityIconManager.FALLBACKS`. This prevents placeholder abilities from inheriting a nearby custom texture through Minecraft's numeric predicate thresholds while still allowing a fallback entry to remain as a safety net.
+- Golden abilities reuse the normal icon. [`ItemAbility.isFoil`](../../src/main/java/bruhof/teenycraft/item/custom/battle/ItemAbility.java) supplies the enchantment glint; there are no separate golden icon models or textures.
+- The generator validates that figure-equipped abilities exist and have unique `texture_index` values. Internal effect/support definitions are not treated as renderable ability slots.
+
+Current integrated custom icons:
+
+- `amazonian_beatdown`
+- `around_the_world`
+- `arrow_storm`
+- `axe_to_grind`
+- `bang`
+- `bat_mine`, including its active button state
+- `batarang_storm`
+- `battery_drain`
+- `birdarang`
+- `black_hole`
+- `dance`
+- `fear`
+- `harleys_mallet`
+- `hooded_barrage`
+- `hooded_void`
+- `mind_control`
 
 ## Technical Reference
 - For the field-by-field JSON contract, live effect and trait ids, parameter usage, and golden bonus merge rules, use [abilities-json-reference.md](abilities-json-reference.md).
+- For the collaborative icon design, generation, review, and file-output process, use [ability-icon-workflow.md](ability-icon-workflow.md).
+- For held-item model categories, shared transforms, validation, special states, and planned aimed arm poses, use [ability-item-displays.md](ability-item-displays.md).
 
 ## Open Questions
 - how much of golden ability behavior should stay data-driven versus code-driven

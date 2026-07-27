@@ -1,0 +1,24 @@
+{
+  "id": "venom",
+  "name": "Venom",
+  "description": "Use drugs and get Power Up (yes kids drugs give you power) (its a joke, drug are bad, don't do drugs, DON'T)",
+  "golden_description": "More Power Up (more drugs)",
+  "texture_index": 60,
+  "particle": "minecraft:angry_villager",
+  "particle_count": 5,
+  "hit_type": "none",
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    {
+      "id": "power_up",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "traits": [],
+  "golden_bonus": [
+    "self:power_up:0.3"
+  ]
+}

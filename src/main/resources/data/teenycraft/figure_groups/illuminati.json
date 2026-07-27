@@ -1,0 +1,13 @@
+{
+  "id": "illuminati",
+  "name": "Illuminati",
+  "priority": 1,
+  "figures": [
+    "george_washington",
+    "santa_clause",
+    "sticky_joe"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

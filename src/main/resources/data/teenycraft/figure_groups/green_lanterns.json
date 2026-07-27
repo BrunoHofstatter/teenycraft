@@ -1,0 +1,12 @@
+{
+  "id": "green_lanterns",
+  "name": "Green Lanterns",
+  "priority": 1,
+  "figures": [
+    "jessica_cruz",
+    "john_stewart"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

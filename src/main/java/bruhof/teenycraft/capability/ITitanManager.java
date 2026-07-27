@@ -24,6 +24,14 @@ public interface ITitanManager {
 
     ItemStack getEquippedAccessory();
 
+    String getSelectedComboGroupId();
+
+    void setSelectedComboGroupId(String groupId);
+
+    int getLeadTeamSlot();
+
+    void setLeadTeamSlot(int slot);
+
     boolean isFavorite(ItemStack stack);
 
     void setFavorite(ItemStack stack, boolean favorite);

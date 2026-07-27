@@ -1,0 +1,26 @@
+{
+  "id": "root",
+  "name": "Root",
+  "description": "Use the power of nature Root the opponent (cannot swap figures)",
+  "golden_description": "More Root duration",
+  "texture_index": 64,
+  "particle": "minecraft:spore_blossom_air",
+  "particle_count": 6,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 3,
+  "range_tier": 2,
+  "damage_tier": 5,
+  "effects_on_opponent": [
+    {
+      "id": "root",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:root:1.3"
+  ]
+}

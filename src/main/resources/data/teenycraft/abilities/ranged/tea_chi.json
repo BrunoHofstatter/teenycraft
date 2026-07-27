@@ -1,0 +1,26 @@
+{
+  "id": "tea_chi",
+  "name": "Tea Chi",
+  "description": "Activate this ability, then shoot a massive beam at the opponent (alfred has superpowers now)",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 13,
+  "particle": "minecraft:enchant",
+  "particle_count": 8,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 1,
+  "range_tier": 7,
+  "damage_tier": 6,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "activate",
+      "params": [
+        2
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "opponent:bar_deplete:1.0"
+  ]
+}

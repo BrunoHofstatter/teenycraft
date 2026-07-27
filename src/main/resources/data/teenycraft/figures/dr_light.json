@@ -1,0 +1,24 @@
+{
+    "id":  "dr_light",
+    "name":  "Dr. Light",
+    "description":  "Teen Titans villain with light powers and a very inflated ego",
+    "class":  "Tech",
+    "price":  300,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2,
+                       "power_scale":  3.5,
+                       "dodge_scale":  1.5,
+                       "luck_scale":  0.5
+                   },
+    "abilities":  [
+                      "light_shield",
+                      "laser_eyes_drlight",
+                      "evil_laugh"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "b",
+                               "d"
+                           ]
+}

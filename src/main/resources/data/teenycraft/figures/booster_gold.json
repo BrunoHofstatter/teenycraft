@@ -1,0 +1,24 @@
+{
+    "id":  "booster_gold",
+    "name":  "Booster Gold",
+    "description":  "Time-traveling showoff hero chasing fame almost as much as justice",
+    "class":  "Tech",
+    "price":  2500,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2.5,
+                       "power_scale":  2,
+                       "dodge_scale":  0.5,
+                       "luck_scale":  3
+                   },
+    "abilities":  [
+                      "skeets",
+                      "macho_smooch",
+                      "booster_beatdown"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "c",
+                               "a"
+                           ]
+}

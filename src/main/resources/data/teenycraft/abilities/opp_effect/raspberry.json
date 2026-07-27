@@ -1,24 +1,32 @@
 {
   "id": "raspberry",
   "name": "Raspberry",
-  "texture_index": 150,
+  "description": "Use the power of the sourness of raspberry, Stun the opponent and apply Power Down (no damage)",
+  "golden_description": "Waffle Chance (blocks a random ability)",
+  "texture_index": 124,
   "particle": "minecraft:spit",
   "particle_count": 10,
-  "hit_type": "raycasting",
-  "raycast_delay_tier": 0,
+  "hit_type": "ranged",
+  "raycast_delay_tier": 1,
   "range_tier": 8,
   "damage_tier": 0,
   "effects_on_opponent": [
     {
       "id": "stun",
-      "params": [2.0]
+      "params": [
+        2
+      ]
     },
     {
       "id": "power_down",
-      "params": [2.0]
+      "params": [
+        3
+      ]
     }
   ],
   "effects_on_self": [],
   "traits": [],
-  "golden_bonus": ["self:waffle_chance:0.5"]
+  "golden_bonus": [
+    "opponent:waffle_chance:0.5,1.0"
+  ]
 }

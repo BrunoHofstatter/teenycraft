@@ -1,5 +1,6 @@
 package bruhof.teenycraft.networking;
 
+import bruhof.teenycraft.battle.presentation.BattleHudEffectSnapshot;
 import bruhof.teenycraft.battle.presentation.BattleHudParticipantSnapshot;
 import bruhof.teenycraft.battle.presentation.BattleHudSnapshot;
 import bruhof.teenycraft.client.ClientBattleData;
@@ -38,6 +39,7 @@ public class PacketSyncBattleData {
     }
 
     private static void writeParticipant(FriendlyByteBuf buf, BattleHudParticipantSnapshot participant) {
+        buf.writeInt(participant.entityId());
         buf.writeUtf(participant.name());
         buf.writeUtf(participant.activeFigureId());
         buf.writeUtf(participant.activeFigureModelType());
@@ -45,8 +47,13 @@ public class PacketSyncBattleData {
         buf.writeInt(participant.currentHp());
         buf.writeInt(participant.maxHp());
         buf.writeFloat(participant.currentMana());
+        buf.writeFloat(participant.currentTofuMana());
+        buf.writeUtf(participant.tofuPreviewEffectId());
+        buf.writeBoolean(participant.tofuPreviewSelfTarget());
         buf.writeFloat(participant.batteryCharge());
         buf.writeFloat(participant.batterySpawnPct());
+        buf.writeBoolean(participant.accessoryActive());
+        buf.writeUtf(participant.equippedAccessoryId());
         buf.writeInt(participant.basePower());
         buf.writeInt(participant.powerUp());
         buf.writeInt(participant.powerDown());
@@ -55,10 +62,18 @@ public class PacketSyncBattleData {
         for (boolean hasMine : participant.hasActiveMine()) {
             buf.writeBoolean(hasMine);
         }
+        buf.writeInt(participant.waffleBlockedSlot());
+        buf.writeInt(participant.waffleTicksRemaining());
+        buf.writeInt(participant.chargeSlot());
+        buf.writeInt(participant.chargeTicksRemaining());
+        buf.writeInt(participant.chargeTotalTicks());
+        buf.writeInt(participant.blueChannelSlot());
+        buf.writeInt(participant.blueChannelTicksRemaining());
+        buf.writeInt(participant.blueChannelTotalTicks());
         buf.writeCollection(participant.abilityIds(), FriendlyByteBuf::writeUtf);
         buf.writeCollection(participant.abilityTiers(), FriendlyByteBuf::writeUtf);
         buf.writeCollection(participant.abilityGolden(), FriendlyByteBuf::writeBoolean);
-        buf.writeCollection(participant.effects(), FriendlyByteBuf::writeUtf);
+        buf.writeCollection(participant.effects(), PacketSyncBattleData::writeEffect);
         buf.writeCollection(participant.benchInfo(), FriendlyByteBuf::writeUtf);
         buf.writeCollection(participant.benchIndices(), FriendlyByteBuf::writeInt);
         buf.writeCollection(participant.benchFigureIds(), FriendlyByteBuf::writeUtf);
@@ -66,6 +81,7 @@ public class PacketSyncBattleData {
 
     private static BattleHudParticipantSnapshot readParticipant(FriendlyByteBuf buf) {
         boolean[] hasActiveMine = new boolean[3];
+        int entityId = buf.readInt();
         String name = buf.readUtf();
         String activeFigureId = buf.readUtf();
         String activeFigureModelType = buf.readUtf();
@@ -73,8 +89,13 @@ public class PacketSyncBattleData {
         int currentHp = buf.readInt();
         int maxHp = buf.readInt();
         float currentMana = buf.readFloat();
+        float currentTofuMana = buf.readFloat();
+        String tofuPreviewEffectId = buf.readUtf();
+        boolean tofuPreviewSelfTarget = buf.readBoolean();
         float batteryCharge = buf.readFloat();
         float batterySpawnPct = buf.readFloat();
+        boolean accessoryActive = buf.readBoolean();
+        String equippedAccessoryId = buf.readUtf();
         int basePower = buf.readInt();
         int powerUp = buf.readInt();
         int powerDown = buf.readInt();
@@ -83,16 +104,25 @@ public class PacketSyncBattleData {
         for (int i = 0; i < hasActiveMine.length; i++) {
             hasActiveMine[i] = buf.readBoolean();
         }
+        int waffleBlockedSlot = buf.readInt();
+        int waffleTicksRemaining = buf.readInt();
+        int chargeSlot = buf.readInt();
+        int chargeTicksRemaining = buf.readInt();
+        int chargeTotalTicks = buf.readInt();
+        int blueChannelSlot = buf.readInt();
+        int blueChannelTicksRemaining = buf.readInt();
+        int blueChannelTotalTicks = buf.readInt();
 
         List<String> abilityIds = buf.readList(FriendlyByteBuf::readUtf);
         List<String> abilityTiers = buf.readList(FriendlyByteBuf::readUtf);
         List<Boolean> abilityGolden = buf.readList(FriendlyByteBuf::readBoolean);
-        List<String> effects = buf.readList(FriendlyByteBuf::readUtf);
+        List<BattleHudEffectSnapshot> effects = buf.readList(PacketSyncBattleData::readEffect);
         List<String> benchInfo = buf.readList(FriendlyByteBuf::readUtf);
         List<Integer> benchIndices = buf.readList(FriendlyByteBuf::readInt);
         List<String> benchFigureIds = buf.readList(FriendlyByteBuf::readUtf);
 
         return new BattleHudParticipantSnapshot(
+                entityId,
                 name,
                 activeFigureId,
                 activeFigureModelType,
@@ -100,14 +130,27 @@ public class PacketSyncBattleData {
                 currentHp,
                 maxHp,
                 currentMana,
+                currentTofuMana,
+                tofuPreviewEffectId,
+                tofuPreviewSelfTarget,
                 batteryCharge,
                 batterySpawnPct,
+                accessoryActive,
+                equippedAccessoryId,
                 basePower,
                 powerUp,
                 powerDown,
                 cooldowns,
                 slotProgress,
                 hasActiveMine,
+                waffleBlockedSlot,
+                waffleTicksRemaining,
+                chargeSlot,
+                chargeTicksRemaining,
+                chargeTotalTicks,
+                blueChannelSlot,
+                blueChannelTicksRemaining,
+                blueChannelTotalTicks,
                 abilityIds,
                 abilityTiers,
                 abilityGolden,
@@ -115,6 +158,22 @@ public class PacketSyncBattleData {
                 benchInfo,
                 benchIndices,
                 benchFigureIds
+        );
+    }
+
+    private static void writeEffect(FriendlyByteBuf buf, BattleHudEffectSnapshot effect) {
+        buf.writeUtf(effect.id());
+        buf.writeInt(effect.durationTicks());
+        buf.writeInt(effect.magnitude());
+        buf.writeBoolean(effect.infinite());
+    }
+
+    private static BattleHudEffectSnapshot readEffect(FriendlyByteBuf buf) {
+        return new BattleHudEffectSnapshot(
+                buf.readUtf(),
+                buf.readInt(),
+                buf.readInt(),
+                buf.readBoolean()
         );
     }
 }

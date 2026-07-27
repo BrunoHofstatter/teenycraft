@@ -1,0 +1,15 @@
+{
+  "id": "super_hero_girls",
+  "name": "Super Hero Girls",
+  "priority": 1,
+  "figures": [
+    "batgirl",
+    "bumblebee",
+    "jessica_cruz",
+    "supergirl",
+    "wonder_woman"
+  ],
+  "combo_effects": [
+    "none"
+  ]
+}

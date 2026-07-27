@@ -1,12 +1,13 @@
 {
   "id": "bang",
   "name": "Bang!",
-  "texture_index": 132,
+  "description": "Explode your opponent (massive damage), but you also get hit by the explosion a little",
+  "golden_description": "Bonus Power Up",
+  "texture_index": 21,
   "particle": "minecraft:explosion",
-  "particle_count": 3,
+  "particle_count": 6,
   "hit_type": "melee",
-  "raycast_delay_tier": 0,
-  "damage_tier": 10,
+  "damage_tier": 17,
   "effects_on_opponent": [],
   "effects_on_self": [
     { "id": "self_damage", "params": [0.5] }

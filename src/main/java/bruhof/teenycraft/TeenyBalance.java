@@ -15,7 +15,7 @@ public class TeenyBalance {
 
     private static final float[] DAMAGE_MULTIPLIERS_BY_TIER = {
             0.0f, 0.82f, 0.85f, 0.88f, 0.91f, 0.94f, 0.97f,
-            1.00f, 1.03f, 1.06f, 1.09f, 1.12f, 1.15f, 1.18f
+            1.00f, 1.03f, 1.06f, 1.09f, 1.12f, 1.15f, 1.18f, 1.21f, 1.24f, 1.27f, 1.3f, 1.33f, 1.36f
     };
 
     private static final float[] RAYCAST_DELAYS_BY_TIER = {
@@ -51,6 +51,49 @@ public class TeenyBalance {
     public static final int UPGRADE_GAIN_LUCK = 8;
     public static final int FIGURE_REORDER_MIN_LEVEL = 7;
     public static final int FIGURE_REORDER_COST = 250;
+
+    // Golden ability acquisition
+    private static final int[] GOLDEN_REQUIRED_POINTS_BY_AUTHORED_SLOT = {20, 24, 28};
+    private static final int[] GOLDEN_EXACT_COMBO_BONUS_BY_COUNT = {0, 0, 2, 5, 7, 10};
+    private static final int[] GOLDEN_CLASS_COMBO_BONUS_BY_COUNT = {0, 0, 0, 1, 2, 3};
+    private static final int[] GOLDEN_GROUP_COMBO_BONUS_BY_DISTINCT_COUNT = {0, 0, 0, 3, 3, 5};
+    public static final int GOLDEN_MAX_SACRIFICES = 5;
+    public static final int GOLDEN_BASE_EXACT_POINTS = 5;
+    public static final int GOLDEN_BASE_GROUP_POINTS = 3;
+    public static final int GOLDEN_BASE_CLASS_POINTS = 2;
+    public static final int GOLDEN_BASE_UNRELATED_POINTS = 1;
+    public static final int GOLDEN_CLASS_COMBO_MAX_COPIES_PER_FIGURE_ID = 2;
+    public static final int GOLDEN_MIN_COMPLETE_GROUP_SIZE = 2;
+    public static final int GOLDEN_COMPLETE_GROUP_BONUS_PER_MEMBER = 1;
+
+    public static int getGoldenRequiredPoints(int authoredAbilityIndex) {
+        if (authoredAbilityIndex < 0 || authoredAbilityIndex >= GOLDEN_REQUIRED_POINTS_BY_AUTHORED_SLOT.length) {
+            return 0;
+        }
+        return GOLDEN_REQUIRED_POINTS_BY_AUTHORED_SLOT[authoredAbilityIndex];
+    }
+
+    public static int getGoldenExactComboBonus(int exactCount) {
+        int index = Math.max(0, Math.min(exactCount, GOLDEN_EXACT_COMBO_BONUS_BY_COUNT.length - 1));
+        return GOLDEN_EXACT_COMBO_BONUS_BY_COUNT[index];
+    }
+
+    public static int getGoldenClassComboBonus(int qualifyingCount) {
+        int index = Math.max(0, Math.min(qualifyingCount, GOLDEN_CLASS_COMBO_BONUS_BY_COUNT.length - 1));
+        return GOLDEN_CLASS_COMBO_BONUS_BY_COUNT[index];
+    }
+
+    public static int getGoldenGroupComboBonus(int distinctCount) {
+        int index = Math.max(0, Math.min(distinctCount, GOLDEN_GROUP_COMBO_BONUS_BY_DISTINCT_COUNT.length - 1));
+        return GOLDEN_GROUP_COMBO_BONUS_BY_DISTINCT_COUNT[index];
+    }
+
+    // Figure group combos use their own balance hooks even when the initial
+    // values intentionally match one normal figure upgrade step.
+    public static final int GROUP_COMBO_HEALTH_BONUS = UPGRADE_GAIN_HP;
+    public static final int GROUP_COMBO_POWER_BONUS = UPGRADE_GAIN_POWER;
+    public static final int GROUP_COMBO_DODGE_BONUS = UPGRADE_GAIN_DODGE;
+    public static final int GROUP_COMBO_LUCK_BONUS = UPGRADE_GAIN_LUCK;
 
     // ==========================================
     // SECTION 2: BATTLE CORE
@@ -88,7 +131,7 @@ public class TeenyBalance {
             0.60d, 0.70d, 0.80d, 0.90d, 1.00d
     };
 
-    public static final float RANGED_START_WIDTH = 1.0f;
+    public static final float RANGED_START_WIDTH = 1.5f;
     public static final float RANGED_CONE_ANGLE = 15.0f;
 
     // Battery
@@ -104,14 +147,77 @@ public class TeenyBalance {
     // Accessories
     public static final float ACCESSORY_ACTIVATION_MIN_CHARGE = 50.0f;
     public static final float ACCESSORY_DRAIN_PER_TICK = 0.2f;
+    public static final int[] ACCESSORY_TIER_UPGRADE_COSTS = {250, 500, 1000, 2000};
+    public static final int ACCESSORY_TIER_2_ACTIVATIONS_REQUIRED = 3;
+    public static final int ACCESSORY_TIER_4_QUALIFYING_BATTLES_REQUIRED = 50;
+    public static final int ACCESSORY_TIER_5_QUALIFYING_RUNS_REQUIRED = 5;
+    public static final int ACCESSORY_TITANS_COIN_TIER_3_HP_GRANTED = 200;
+    public static final int ACCESSORY_TITANS_COIN_TIER_4_HP_PER_BATTLE = 100;
+    public static final int ACCESSORY_TITANS_COIN_TIER_5_FIGURES_AT_ONE_HP = 3;
+    public static final int ACCESSORY_MOTHER_BOX_TIER_3_DAMAGE_HITS = 50;
+    public static final int ACCESSORY_MOTHER_BOX_TIER_4_HITS_PER_BATTLE = 20;
+    public static final int ACCESSORY_BAT_SIGNAL_TIER_3_FIGURE_HITS = 15;
+    public static final int ACCESSORY_BAT_SIGNAL_TIER_5_DEFEATS_PER_ACTIVATION = 3;
+    public static final int ACCESSORY_RED_LANTERN_TIER_3_POWER_UPS = 50;
+    public static final int ACCESSORY_RED_LANTERN_TIER_4_BONUS_DAMAGE_PER_BATTLE = 50;
+    public static final int ACCESSORY_RED_LANTERN_TIER_5_FULL_FIGURE_DAMAGE = 130;
+    public static final int ACCESSORY_RED_LANTERN_TIER_5_FIGURES_PER_BATTLE = 2;
+    public static final int ACCESSORY_GREEN_LANTERN_TIER_3_MANA_GRANTS = 50;
+    public static final int ACCESSORY_GREEN_LANTERN_TIER_4_START_MANA_MAX = 5;
+    public static final int ACCESSORY_VIOLET_LANTERN_TIER_3_HEALS = 30;
+    public static final int ACCESSORY_VIOLET_LANTERN_TIER_4_HEAL_PER_FIGURE = 40;
+    public static final int ACCESSORY_VIOLET_LANTERN_TIER_5_START_HP_MAX = 5;
+    public static final int ACCESSORY_VIOLET_LANTERN_TIER_5_TARGET_HP = 130;
+    public static final int ACCESSORY_RAVENS_SPELLBOOK_TIER_3_CURSES = 10;
+    public static final int ACCESSORY_RAVENS_SPELLBOOK_TIER_4_TARGETS_PER_BATTLE = 2;
+    public static final int ACCESSORY_WAFFLE_SHOOTER_TIER_3_WAFFLES = 50;
+    public static final int ACCESSORY_WAFFLE_SHOOTER_ABILITY_SLOTS = 3;
+    public static final int ACCESSORY_WAFFLE_SHOOTER_TIER_5_FIGURES_PER_BATTLE = 3;
+    public static final int ACCESSORY_LIL_PENGUIN_TIER_3_FREEZES = 30;
+    public static final int ACCESSORY_LIL_PENGUIN_TIER_4_MANA_PER_BATTLE = 200;
+    public static final int ACCESSORY_KRYPTONITE_TIER_3_APPLICATIONS = 10;
+    public static final int ACCESSORY_KRYPTONITE_TIER_4_BONUS_DAMAGE_PER_BATTLE = 50;
+    public static final int ACCESSORY_BIRDARANG_TIER_3_HITS = 20;
+    public static final int ACCESSORY_BIRDARANG_TIER_4_HITS_ON_ONE_FIGURE = 5;
+    public static final int ACCESSORY_BIRDARANG_TIER_5_DEFEATS_PER_BATTLE = 3;
+    public static final int ACCESSORY_UNDERPANTS_TIER_3_BLOCK_EVENTS = 10;
+    public static final int ACCESSORY_UNDERPANTS_TIER_4_BLOCKED_DAMAGE_PER_BATTLE = 50;
+    public static final int ACCESSORY_UNDERPANTS_TIER_5_FATAL_BLOCKS_PER_ACTIVATION = 2;
+    public static final int ACCESSORY_KRYPTO_TIER_3_BUFFS = 50;
+    public static final int ACCESSORY_KRYPTO_TIER_4_HEAL_PER_BATTLE = 20;
+    public static final int ACCESSORY_KRYPTO_TIER_4_BONUS_DAMAGE_PER_BATTLE = 20;
+    public static final float ACCESSORY_TIER_2_STANDARD_STRENGTH_MULT = 1.5f;
+    public static final float ACCESSORY_TIER_4_STANDARD_STRENGTH_MULT = 2.5f;
+    public static final float ACCESSORY_TIER_3_BATTERY_DRAIN_MULT = 0.7f;
+    public static final float ACCESSORY_TIER_4_INTERVAL_MULT = 0.75f;
+    public static final float ACCESSORY_RAVENS_SPELLBOOK_TIER_2_STRENGTH_MULT = 1.3f;
+    public static final float ACCESSORY_RAVENS_SPELLBOOK_TIER_4_STRENGTH_MULT = 1.8f;
+    public static final float ACCESSORY_WAFFLE_SHOOTER_TIER_2_DURATION_MULT = 1.5f;
+    public static final float ACCESSORY_WAFFLE_SHOOTER_TIER_4_DURATION_MULT = 3.0f;
+    public static final float ACCESSORY_LIL_PENGUIN_TIER_2_FREEZE_MULT = 1.25f;
+    public static final float ACCESSORY_KRYPTONITE_TIER_2_STRENGTH_MULT = 1.25f;
+    public static final float ACCESSORY_KRYPTONITE_TIER_4_STRENGTH_MULT = 1.5f;
+    public static final float ACCESSORY_TITANS_COIN_TIER_5_HEAL_PCT = 0.30f;
+    public static final int ACCESSORY_MOTHER_BOX_TIER_5_CRITICAL_HIT_INTERVAL = 5;
+    public static final float ACCESSORY_MOTHER_BOX_TIER_5_CRITICAL_DAMAGE_MULT = 4.0f;
+    public static final float ACCESSORY_BAT_SIGNAL_TIER_5_DAMAGE_MULT = 1.30f;
+    public static final int ACCESSORY_GREEN_LANTERN_TIER_5_ACTIVATION_MANA = 100;
+    public static final float ACCESSORY_RAVENS_SPELLBOOK_TIER_5_SPEED_MULT = 0.80f;
+    public static final int ACCESSORY_KRYPTO_TIER_5_EFFECT_COUNT = 2;
+    public static final float ACCESSORY_RED_LANTERN_TIER_5_POWER_UP_RETENTION = 0.50f;
+    public static final float ACCESSORY_VIOLET_LANTERN_TIER_5_OVERHEAL_PCT = 0.30f;
+    public static final int ACCESSORY_WAFFLE_SHOOTER_TIER_5_SECONDARY_INTERVAL = 5;
+    public static final float ACCESSORY_WAFFLE_SHOOTER_TIER_5_SECONDARY_DURATION_MULT = 0.50f;
+    public static final float ACCESSORY_KRYPTONITE_TIER_5_PENALTY_MULT = 0.90f;
+    public static final int ACCESSORY_BIRDARANG_TIER_5_PASSIVE_DAMAGE = 2;
 
     public static final float ACCESSORY_TITANS_COIN_MAX_HP_BONUS_PCT = 0.25f;
 
     public static final int ACCESSORY_MOTHER_BOX_INTERVAL_TICKS = 40;
     public static final int ACCESSORY_MOTHER_BOX_DAMAGE = 8;
 
-    public static final int ACCESSORY_BAT_SIGNAL_WAKE_DELAY_TICKS = 60;
-    public static final int ACCESSORY_BAT_SIGNAL_DAMAGE = 100;
+    public static final int ACCESSORY_BAT_SIGNAL_WAKE_DELAY_TICKS = 120;
+    public static final int ACCESSORY_BAT_SIGNAL_DAMAGE = 60;
     public static final int ACCESSORY_BAT_SIGNAL_HIT_COUNT = 5;
 
     public static final int ACCESSORY_RED_LANTERN_INTERVAL_TICKS = 40;
@@ -154,38 +260,125 @@ public class TeenyBalance {
     // Chips
 
     public static final int[] CHIP_ONE_MAGNITUDE_BY_RANK = {1, 1, 1};
+    public static final int[] CHIP_INFINITE_DURATION_BY_RANK = {-1, -1, -1};
 
     public static final int[] CHIP_TOUGH_GUY_POWER_BY_RANK = {5, 10, 15};
     public static final int[] CHIP_TOUGH_GUY_HP_BY_RANK = {-20, -35, -50};
     public static final int[] CHIP_TOUGH_GUY_FUSION_COST_BY_RANK = {100, 300};
     public static final int[] CHIP_SMOKESCREEN_DODGE_BY_RANK = {8, 16, 24};
     public static final int[] CHIP_SMOKESCREEN_FUSION_COST_BY_RANK = {100, 300};
+    public static final int[] CHIP_POWER_POWER_BY_RANK = {5, 10, 15};
+    public static final int[] CHIP_POWER_FUSION_COST_BY_RANK = {100, 300};
+    public static final int[] CHIP_HEALTH_HP_BY_RANK = {20, 35, 50};
+    public static final int[] CHIP_HEALTH_FUSION_COST_BY_RANK = {100, 300};
+    public static final int[] CHIP_LUCK_LUCK_BY_RANK = {8, 16, 24};
+    public static final int[] CHIP_LUCK_FUSION_COST_BY_RANK = {100, 300};
+    public static final int[] CHIP_NINJA_SKILLS_DODGE_BY_RANK = {8, 16, 24};
+    public static final int[] CHIP_NINJA_SKILLS_HP_BY_RANK = {-20, -35, -50};
+    public static final int[] CHIP_NINJA_SKILLS_FUSION_COST_BY_RANK = {100, 300};
+    public static final int[] CHIP_LOADED_DICE_LUCK_BY_RANK = {8, 16, 24};
+    public static final int[] CHIP_LOADED_DICE_POWER_BY_RANK = {-4, -8, -12};
+    public static final int[] CHIP_LOADED_DICE_FUSION_COST_BY_RANK = {100, 300};
+    public static final int[] CHIP_TOUGH_STUFF_HP_BY_RANK = {20, 35, 50};
+    public static final int[] CHIP_TOUGH_STUFF_DODGE_BY_RANK = {0, 0, 0};
+    public static final int[] CHIP_TOUGH_STUFF_FUSION_COST_BY_RANK = {100, 300};
+    public static final float CHIP_STANDARD_HYBRID_PRIMARY_SCALE = 0.6f;
+    public static final float CHIP_STANDARD_HYBRID_SECONDARY_SCALE = 0.6f;
+    public static final int[] CHIP_STANDARD_HYBRID_FUSION_COST_BY_RANK = {100, 300};
+    public static final int[] CHIP_STANDARD_HYBRID_SPECIAL_COST_BY_RANK = {50, 100, 300};
 
     public static final float CHIP_SPECIAL_TOUGH_SMOKESCREEN_TOUGH_GUY_SCALE = 0.6f;
     public static final float CHIP_SPECIAL_TOUGH_SMOKESCREEN_SMOKESCREEN_SCALE = 0.6f;
     public static final int[] CHIP_TOUGH_SMOKESCREEN_FUSION_COST_BY_RANK = {100, 300};
     public static final int[] CHIP_SPECIAL_TOUGH_SMOKESCREEN_COST_BY_RANK = {50, 100, 300};
+    public static final float CHIP_SPECIAL_LUCKY_HEALTHY_DUCK_LUCK_SCALE = 0.6f;
+    public static final float CHIP_SPECIAL_LUCKY_HEALTHY_DUCK_HEALTHY_DUCK_SCALE = 0.6f;
+    public static final int[] CHIP_LUCKY_HEALTHY_DUCK_FUSION_COST_BY_RANK = {100, 300};
+    public static final int[] CHIP_SPECIAL_LUCKY_HEALTHY_DUCK_COST_BY_RANK = {50, 100, 300};
+    public static final float CHIP_SPECIAL_POWERED_BEASTLY_ENTRY_POWER_SCALE = 0.6f;
+    public static final float CHIP_SPECIAL_POWERED_BEASTLY_ENTRY_BEASTLY_ENTRY_SCALE = 0.6f;
+    public static final int[] CHIP_POWERED_BEASTLY_ENTRY_FUSION_COST_BY_RANK = {100, 300};
+    public static final int[] CHIP_SPECIAL_POWERED_BEASTLY_ENTRY_COST_BY_RANK = {50, 100, 300};
 
     public static final float[] CHIP_LUCKY_HEARTS_HEAL_PCT_BY_RANK = {0.06f, 0.09f, 0.12f};
     public static final int[] CHIP_LUCKY_HEARTS_FUSION_COST_BY_RANK = {200, 400};
     public static final float[] CHIP_INSTA_CAST_CHANCE_BY_RANK = {0.12f, 0.18f, 0.24f};
     public static final int[] CHIP_INSTA_CAST_CHANCE_FUSION_COST_BY_RANK = {300, 600};
+    public static final int[] CHIP_CLEAN_ENTRY_DURATION_BY_RANK = {60, 90, 120};
+    public static final int[] CHIP_CLEAN_ENTRY_FUSION_COST_BY_RANK = {300, 600};
+    public static final int[] CHIP_BEASTLY_ENTRY_POWER_UP_BY_RANK = {5, 8, 12};
+    public static final int[] CHIP_BEASTLY_ENTRY_FUSION_COST_BY_RANK = {300, 600};
+    public static final int[] CHIP_CURSE_ENTRY_DURATION_BY_RANK = {80, 110, 140};
+    public static final int[] CHIP_CURSE_ENTRY_FUSION_COST_BY_RANK = {300, 600};
 
     public static final int[] CHIP_DANCE_DURATION_BY_RANK = {100, 130, 160};
     public static final int[] CHIP_DANCE_ENTRY_FUSION_COST_BY_RANK = {300, 600};
     public static final int[] CHIP_MANA_BOOST_MANA_BY_RANK = {30, 40, 50};
     public static final int[] CHIP_MANA_BOOST_FUSION_COST_BY_RANK = {400, 800};
+    public static final int[] CHIP_MOMENTUM_MANA_BY_RANK = {20, 30, 40};
+    public static final int[] CHIP_MOMENTUM_FUSION_COST_BY_RANK = {400, 800};
+    public static final int[] CHIP_VICTORY_DANCE_DURATION_BY_RANK = {100, 130, 160};
+    public static final int[] CHIP_VICTORY_DANCE_FUSION_COST_BY_RANK = {400, 800};
+    public static final int[] CHIP_MANA_STEAL_DUCK_MANA_BY_RANK = {8, 12, 16};
+    public static final int[] CHIP_MANA_STEAL_DUCK_FUSION_COST_BY_RANK = {400, 800};
 
     public static final int[] CHIP_DEATH_ENERGY_BATTERY_BY_RANK = {30, 50, 70};
     public static final int[] CHIP_DEATH_ENERGY_FUSION_COST_BY_RANK = {1000, 2000};
     public static final int[] CHIP_SELF_EXPLOSION_DAMAGE_BY_RANK = {20, 30, 40};
     public static final int[] CHIP_SELF_EXPLOSION_FUSION_COST_BY_RANK = {2000, 4000};
+    public static final int[] CHIP_HEALTHY_DODGE_HEAL_BY_RANK = {6, 9, 12};
+    public static final int[] CHIP_HEALTHY_DODGE_FUSION_COST_BY_RANK = {300, 600};
+    public static final int[] CHIP_SECOND_CHANCE_SURVIVE_HP_BY_RANK = {1, 1, 1};
+    public static final int[] CHIP_SECOND_CHANCE_DEBUFF_DURATION_BY_RANK = {60, 80, 100};
+    public static final int[] CHIP_SECOND_CHANCE_SLOW_MAGNITUDE_BY_RANK = {15, 25, 35};
+    public static final int[] CHIP_SECOND_CHANCE_FUSION_COST_BY_RANK = {700, 1100};
+    public static final int[] CHIP_HEALTHY_SECOND_CHANCE_SURVIVE_HP_BY_RANK = {8, 14, 20};
+    public static final int[] CHIP_HEALTHY_SECOND_CHANCE_DEBUFF_DURATION_BY_RANK = {80, 100, 120};
+    public static final int[] CHIP_HEALTHY_SECOND_CHANCE_SLOW_MAGNITUDE_BY_RANK = {25, 35, 45};
+    public static final int[] CHIP_HEALTHY_SECOND_CHANCE_FUSION_COST_BY_RANK = {900, 1400};
+    public static final int[] CHIP_SPECIAL_HEALTHY_SECOND_CHANCE_COST_BY_RANK = {800, 1200, 1700};
+    public static final int[] CHIP_SPEEDY_DODGE_DURATION_BY_RANK = {40, 60, 80};
+    public static final int[] CHIP_SPEEDY_DODGE_SPEED_PCT_BY_RANK = {20, 30, 40};
+    public static final int[] CHIP_SPEEDY_DODGE_FUSION_COST_BY_RANK = {300, 600};
+    public static final float[] CHIP_FAST_CAST_SPEED_BONUS_BY_RANK = {0.25f, 0.50f, 0.75f};
+    public static final int[] CHIP_FAST_CAST_FUSION_COST_BY_RANK = {500, 900};
+    public static final float[] CHIP_FAST_DRAW_SPEED_BONUS_BY_RANK = {0.25f, 0.50f, 0.75f};
+    public static final int[] CHIP_FAST_DRAW_FUSION_COST_BY_RANK = {500, 900};
+    public static final float[] CHIP_ENERGETIC_BATTERY_PASSIVE_CHARGE_BONUS_BY_RANK = {1.0f, 1.50f, 2.00f};
+    public static final int[] CHIP_ENERGETIC_BATTERY_FUSION_COST_BY_RANK = {600, 1000};
+    public static final int[] CHIP_LAST_LAUGH_FUSION_COST_BY_RANK = {900, 1500};
+    public static final int[] CHIP_LAST_LAUGH_CURSE_DURATION_BY_RANK = {80, 110, 140};
+    public static final int[] CHIP_LAST_LAUGH_SHOCK_DURATION_BY_RANK = {80, 100, 120};
+    public static final int[] CHIP_LAST_LAUGH_SHOCK_INTERVAL_BY_RANK = {20, 20, 20};
+    public static final float[] CHIP_LAST_LAUGH_SHOCK_POWER_BY_RANK = {20.0f, 30.0f, 40.0f};
+    public static final int[] CHIP_LAST_LAUGH_POISON_DURATION_BY_RANK = {80, 100, 120};
+    public static final int[] CHIP_LAST_LAUGH_POISON_INTERVAL_BY_RANK = {20, 20, 20};
+    public static final float[] CHIP_LAST_LAUGH_POISON_POWER_BY_RANK = {4.0f, 6.0f, 8.0f};
+    public static final int[] CHIP_LAST_LAUGH_FREEZE_DURATION_BY_RANK = {40, 60, 80};
+    public static final int[] CHIP_LAST_LAUGH_FREEZE_BURN_PCT_BY_RANK = {20, 30, 40};
+    public static final int[] CHIP_LAST_LAUGH_WAFFLE_DURATION_BY_RANK = {60, 80, 100};
 
     public static final int[] CHIP_NECROMANCER_DURATION_BY_RANK = {120, 160, 200};
     public static final int[] CHIP_NECROMANCER_DAMAGE_BY_RANK = {5, 7, 9};
     public static final int[] CHIP_NECROMANCER_FUSION_COST_BY_RANK = {800, 1600};
     public static final float[] CHIP_VAMPIRE_HEAL_PCT_BY_RANK = {0.20f, 0.30f, 0.40f};
     public static final int[] CHIP_VAMPIRE_FUSION_COST_BY_RANK = {1500, 3000};
+    public static final int[] CHIP_REGENERATIVE_CUTENESS_INTERVAL_BY_RANK = {40, 30, 20};
+    public static final int[] CHIP_REGENERATIVE_CUTENESS_HEAL_BY_RANK = {3, 5, 7};
+    public static final int[] CHIP_REGENERATIVE_CUTENESS_FUSION_COST_BY_RANK = {500, 900};
+    public static final float[] CHIP_TOFU_LOVER_TOFU_CHANCE_BONUS_BY_RANK = {0.20f, 0.35f, 0.50f};
+    public static final int[] CHIP_TOFU_LOVER_FUSION_COST_BY_RANK = {400, 700};
+    public static final float[] CHIP_HELLO_NURSE_HEAL_BONUS_BY_RANK = {0.20f, 0.35f, 0.50f};
+    public static final int[] CHIP_HELLO_NURSE_FUSION_COST_BY_RANK = {500, 900};
+    public static final float[] CHIP_TEAM_MEDIC_BENCH_HEAL_PCT_BY_RANK = {0.25f, 0.35f, 0.45f};
+    public static final int[] CHIP_TEAM_MEDIC_FUSION_COST_BY_RANK = {700, 1100};
+    public static final int[] CHIP_POINTY_DAMAGE_BY_RANK = {6, 9, 12};
+    public static final int[] CHIP_POINTY_FUSION_COST_BY_RANK = {500, 900};
+    public static final float[] CHIP_STUN_RESISTER_DURATION_REDUCTION_BY_RANK = {0.25f, 0.40f, 0.55f};
+    public static final int[] CHIP_STUN_RESISTER_FUSION_COST_BY_RANK = {400, 700};
+    public static final float[] CHIP_FINISHER_HP_THRESHOLD_BY_RANK = {0.35f, 0.45f, 0.55f};
+    public static final float[] CHIP_FINISHER_DAMAGE_BONUS_BY_RANK = {0.20f, 0.30f, 0.40f};
+    public static final int[] CHIP_FINISHER_FUSION_COST_BY_RANK = {700, 1200};
 
     // ==========================================
     // SECTION 3: DAMAGE AND CORE COMBAT RULES
@@ -196,6 +389,7 @@ public class TeenyBalance {
     public static final float SURPRISE_DAMAGE_VARIANCE = 0.1f;
     public static final float LUCK_BALANCE_MULTIPLIER = 1.0f;
     public static final float BASE_LUCK_MULTIPLIER = 1.1f;
+    public static final float LUCKIER_FLAT_CRIT_CHANCE = 0.30f;
     public static final float CLASS_ADVANTAGE_BONUS_MULT = 0.20f;
 
     // ==========================================
@@ -328,8 +522,8 @@ public class TeenyBalance {
     public static final float CUTENESS_PERCENT_PERMANA = 2.0f;
     public static final float CUTENESS_PERCENT_PERLUCK = 0.005f;
 
-    public static final float REFLECT_DURATION_PERMANA = 0.05f;
-    public static final float REFLECT_DURATION_PERLUCK = 0.0005f;
+    public static final float REFLECT_DURATION_PERMANA = 0.1f;
+    public static final float REFLECT_DURATION_PERLUCK = 0.005f;
     public static final float REFLECT_DEFENSE_PERMANA = 0.1f;
     public static final float REFLECT_DAMAGE_PERMANA = 0.05f;
 
@@ -430,6 +624,14 @@ public class TeenyBalance {
         }
 
         return FIGURE_XP_REQUIRED_BY_LEVEL[index];
+    }
+
+    public static int getAccessoryTierUpgradeCost(int targetTier) {
+        int index = targetTier - 2;
+        if (index < 0 || index >= ACCESSORY_TIER_UPGRADE_COSTS.length) {
+            return 0;
+        }
+        return ACCESSORY_TIER_UPGRADE_COSTS[index];
     }
 
     public static double getArenaSpeedMultiplier(int level) {

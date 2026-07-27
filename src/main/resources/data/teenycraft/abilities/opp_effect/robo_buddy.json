@@ -1,0 +1,26 @@
+{
+  "id": "robo_buddy",
+  "name": "Robo Buddy",
+  "description": "Press a button and summon a little buddy that deals damage over time to the opponent (can stack)",
+  "golden_description": "More robo duration",
+  "texture_index": 62,
+  "particle": "minecraft:smoke",
+  "particle_count": 5,
+  "hit_type": "ranged",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 8,
+  "effects_on_opponent": [
+    {
+      "id": "poison",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:poison:1.3"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "hive",
+  "name": "H.I.V.E",
+  "priority": 1,
+  "figures": [
+    "billy_numerous",
+    "gizmo",
+    "jinx",
+    "mammoth",
+    "see_more"
+  ],
+  "combo_effects": [
+    "stat_power"
+  ]
+}

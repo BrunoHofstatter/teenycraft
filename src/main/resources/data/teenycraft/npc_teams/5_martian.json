@@ -1,0 +1,29 @@
+{
+  "id": "teenycraft:5_martian",
+  "figures": [
+    {
+      "figure_id": "martian_manhunter",
+      "level": 20,
+      "upgrades": "HHHHHHHHPPPPPPPDDLL",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": [
+        "telekinesis",
+        "teleport_strike",
+        "mind_control"
+      ]
+    }
+  ],
+  "ai": {
+    "difficulty": 5,
+    "consider_swap": false,
+    "aggression": 0.45,
+    "preferred_range": "far",
+    "mana_discipline": 0.8,
+    "risk_tolerance": 0.25
+  }
+}
+

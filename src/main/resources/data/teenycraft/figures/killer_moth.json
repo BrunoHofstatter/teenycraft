@@ -1,0 +1,24 @@
+﻿{
+    "id":  "killer_moth",
+    "name":  "Killer Moth",
+    "description":  "Moth-themed villain chasing glory with more wings than dignity",
+    "class":  "Beast",
+    "price":  450,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2.5,
+                       "power_scale":  2.5,
+                       "dodge_scale":  1.5,
+                       "luck_scale":  1.5
+                   },
+    "abilities":  [
+                      "shockwave_stomp",
+                      "plasma_shot",
+                      "cat_scratch"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "c",
+                               "d"
+                           ]
+}

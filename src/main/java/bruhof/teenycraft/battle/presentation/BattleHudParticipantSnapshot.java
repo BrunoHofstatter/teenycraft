@@ -3,6 +3,7 @@ package bruhof.teenycraft.battle.presentation;
 import java.util.List;
 
 public record BattleHudParticipantSnapshot(
+        int entityId,
         String name,
         String activeFigureId,
         String activeFigureModelType,
@@ -10,18 +11,31 @@ public record BattleHudParticipantSnapshot(
         int currentHp,
         int maxHp,
         float currentMana,
+        float currentTofuMana,
+        String tofuPreviewEffectId,
+        boolean tofuPreviewSelfTarget,
         float batteryCharge,
         float batterySpawnPct,
+        boolean accessoryActive,
+        String equippedAccessoryId,
         int basePower,
         int powerUp,
         int powerDown,
         int[] cooldowns,
         int[] slotProgress,
         boolean[] hasActiveMine,
+        int waffleBlockedSlot,
+        int waffleTicksRemaining,
+        int chargeSlot,
+        int chargeTicksRemaining,
+        int chargeTotalTicks,
+        int blueChannelSlot,
+        int blueChannelTicksRemaining,
+        int blueChannelTotalTicks,
         List<String> abilityIds,
         List<String> abilityTiers,
         List<Boolean> abilityGolden,
-        List<String> effects,
+        List<BattleHudEffectSnapshot> effects,
         List<String> benchInfo,
         List<Integer> benchIndices,
         List<String> benchFigureIds
@@ -32,6 +46,8 @@ public record BattleHudParticipantSnapshot(
         name = name != null ? name : "";
         activeFigureId = activeFigureId != null ? activeFigureId : "none";
         activeFigureModelType = activeFigureModelType != null ? activeFigureModelType : "default";
+        tofuPreviewEffectId = tofuPreviewEffectId != null ? tofuPreviewEffectId : "";
+        equippedAccessoryId = equippedAccessoryId != null ? equippedAccessoryId : "";
         cooldowns = copyIntArray(cooldowns);
         slotProgress = copyIntArray(slotProgress);
         hasActiveMine = copyBooleanArray(hasActiveMine);
@@ -46,6 +62,7 @@ public record BattleHudParticipantSnapshot(
 
     public static BattleHudParticipantSnapshot empty() {
         return new BattleHudParticipantSnapshot(
+                0,
                 "",
                 "none",
                 "default",
@@ -54,13 +71,26 @@ public record BattleHudParticipantSnapshot(
                 0,
                 0.0f,
                 0.0f,
+                "",
+                true,
+                0.0f,
                 -1.0f,
+                false,
+                "",
                 0,
                 0,
                 0,
                 new int[ABILITY_SLOT_COUNT],
                 new int[ABILITY_SLOT_COUNT],
                 new boolean[ABILITY_SLOT_COUNT],
+                -1,
+                0,
+                -1,
+                0,
+                0,
+                -1,
+                0,
+                0,
                 List.of(),
                 List.of(),
                 List.of(),
@@ -76,8 +106,8 @@ public record BattleHudParticipantSnapshot(
     }
 
     public boolean hasEffect(String effectPrefix) {
-        for (String effect : effects) {
-            if (effect.toLowerCase().startsWith(effectPrefix.toLowerCase())) {
+        for (BattleHudEffectSnapshot effect : effects) {
+            if (effect.id().toLowerCase().startsWith(effectPrefix.toLowerCase())) {
                 return true;
             }
         }
@@ -86,6 +116,10 @@ public record BattleHudParticipantSnapshot(
 
     public boolean isVisibleOpponent() {
         return !name.isEmpty() && !"None".equals(name);
+    }
+
+    public boolean hasAccessory() {
+        return !equippedAccessoryId.isEmpty();
     }
 
     private static int[] copyIntArray(int[] values) {

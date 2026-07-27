@@ -1,18 +1,24 @@
-{
-  "id": "cyborg",
-  "name": "Cyborg",
-  "description": "One of the classic titans, the cyber robot.",
-  "class": "Tech",
-  "groups": [ "Cyborg", "Robot", "Titans"],
-  "price": 150,
-  "model_type": "default",
-  "attributes": {
-    "hp_scale": 3.0,
-    "power_scale": 2.5,
-    "dodge_scale": 1.0,
-    "luck_scale": 1.5
-  },
-    "abilities": ["battery_drain", "plasma_shot", "missile_barrage"],
-    "ability_cost_tiers": ["c", "e", "e"]
-  }
-  
+﻿{
+    "id":  "cyborg",
+    "name":  "Cyborg",
+    "description":  "Half human, half machine Titan with a giant heart and bigger cannon",
+    "class":  "Tech",
+    "price":  150,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  3,
+                       "power_scale":  3,
+                       "dodge_scale":  1,
+                       "luck_scale":  1
+                   },
+    "abilities":  [
+                      "battery_drain",
+                      "plasma_shot",
+                      "missile_barrage"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "c",
+                               "d"
+                           ]
+}

@@ -4,6 +4,7 @@ import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.battle.effect.EffectInstance;
 import bruhof.teenycraft.chip.ChipExecutor;
 import bruhof.teenycraft.item.custom.ItemFigure;
+import bruhof.teenycraft.group.GroupComboStatBonus;
 import bruhof.teenycraft.util.AbilityLoader;
 import net.minecraft.world.item.ItemStack;
 
@@ -23,6 +24,7 @@ public class BattleFigure {
     private final String figureId;
     private final String nickname;
     private final FigureClassType figureClass;
+    private final int teamSlotIndex;
 
     // Stats (snapshot from the source item)
     private final int maxHp;
@@ -42,8 +44,10 @@ public class BattleFigure {
     private final int[] slotProgress = new int[3];
     private boolean removingEffect = false;
     private int lockedSlot = -1;
+    private boolean secondChanceUsed = false;
 
     private int chargeTicks = 0;
+    private int chargeTotalTicks = 0;
     private AbilityLoader.AbilityData pendingAbility = null;
     private int pendingSlot = -1;
     private boolean pendingIsGolden = false;
@@ -62,15 +66,21 @@ public class BattleFigure {
     // Shuffle bags
     private final bruhof.teenycraft.util.ShuffleBag dodgeBag;
     private final bruhof.teenycraft.util.ShuffleBag luckBag;
+    private final Map<Integer, bruhof.teenycraft.util.ShuffleBag> bonusCritBags = new HashMap<>();
 
     public BattleFigure(ItemStack stack) {
+        this(stack, GroupComboStatBonus.NONE, -1);
+    }
+
+    public BattleFigure(ItemStack stack, GroupComboStatBonus comboBonus, int teamSlotIndex) {
         this.originalStack = stack;
         this.equippedChip = ItemFigure.getEquippedChip(stack).copy();
         this.figureId = ItemFigure.getFigureID(stack);
         this.nickname = ItemFigure.getFigureName(stack);
         this.figureClass = FigureClassType.fromSerialized(ItemFigure.getFigureClass(stack));
+        this.teamSlotIndex = teamSlotIndex;
 
-        ChipExecutor.ResolvedBattleStats resolvedStats = ChipExecutor.resolveBattleStats(stack);
+        ChipExecutor.ResolvedBattleStats resolvedStats = ChipExecutor.resolveBattleStats(stack, comboBonus);
         this.maxHp = resolvedStats.maxHp;
         this.power = resolvedStats.power;
         this.dodge = resolvedStats.dodge;
@@ -104,6 +114,7 @@ public class BattleFigure {
     public String getFigureId() { return figureId; }
     public String getNickname() { return nickname; }
     public FigureClassType getFigureClass() { return figureClass; }
+    public int getTeamSlotIndex() { return teamSlotIndex; }
 
     public int getCurrentHp() { return currentHp; }
     public int getMaxHp() { return maxHp + accessoryMaxHpBonus; }
@@ -157,13 +168,25 @@ public class BattleFigure {
     }
 
     public void modifyHp(int amount) {
-        currentHp += amount;
-        if (currentHp > getMaxHp()) {
-            currentHp = getMaxHp();
+        if (amount > 0) {
+            if (currentHp < getMaxHp()) {
+                currentHp = Math.min(getMaxHp(), currentHp + amount);
+            }
+        } else {
+            currentHp += amount;
         }
         if (currentHp < 0) {
             currentHp = 0;
         }
+    }
+
+    public void applyOverheal(int amount, float overhealPct) {
+        if (amount <= 0) {
+            modifyHp(amount);
+            return;
+        }
+        int overhealCap = Math.round(getMaxHp() * (1.0f + Math.max(0.0f, overhealPct)));
+        currentHp = Math.min(overhealCap, currentHp + amount);
     }
 
     public void setAccessoryMaxHpBonus(int bonus) {
@@ -175,12 +198,16 @@ public class BattleFigure {
         int oldMaxHp = getMaxHp();
         accessoryMaxHpBonus = sanitizedBonus;
         int newMaxHp = getMaxHp();
+        boolean wasAlive = currentHp > 0;
         currentHp += (newMaxHp - oldMaxHp);
         if (currentHp > newMaxHp) {
             currentHp = newMaxHp;
         }
         if (currentHp < 0) {
             currentHp = 0;
+        }
+        if (wasAlive && sanitizedBonus == 0 && currentHp == 0) {
+            currentHp = 1;
         }
     }
 
@@ -237,6 +264,18 @@ public class BattleFigure {
         this.lockedSlot = lockedSlot;
     }
 
+    public boolean hasUsedSecondChance() {
+        return secondChanceUsed;
+    }
+
+    public boolean consumeSecondChance() {
+        if (secondChanceUsed) {
+            return false;
+        }
+        secondChanceUsed = true;
+        return true;
+    }
+
     public boolean isCharging() {
         return chargeTicks > 0;
     }
@@ -245,8 +284,13 @@ public class BattleFigure {
         return chargeTicks;
     }
 
+    public int getChargeTotalTicks() {
+        return chargeTotalTicks;
+    }
+
     public void startCharge(int ticks, AbilityLoader.AbilityData data, int slot, boolean isGolden, UUID targetUUID) {
         chargeTicks = ticks;
+        chargeTotalTicks = ticks;
         pendingAbility = data;
         pendingSlot = slot;
         lockedSlot = slot;
@@ -262,6 +306,7 @@ public class BattleFigure {
 
     public void cancelCharge() {
         chargeTicks = 0;
+        chargeTotalTicks = 0;
         pendingAbility = null;
         pendingSlot = -1;
         if (blueChannelTicks <= 0) {
@@ -417,5 +462,35 @@ public class BattleFigure {
         }
 
         return luckBag.next();
+    }
+
+    public boolean tryCrit(bruhof.teenycraft.capability.IBattleState state, float flatBonusChance) {
+        if (tryCrit(state)) {
+            return true;
+        }
+
+        float bonus = Math.max(0.0f, flatBonusChance);
+        if (bonus <= 0.0f) {
+            return false;
+        }
+
+        int baseLuck = getLuckStat();
+        int effectiveLuck = state == null ? baseLuck : getEffectiveStat(StatType.LUCK, state);
+        int baseBagSize = TeenyBalance.getBagSize(baseLuck);
+        int effectiveBagSize = TeenyBalance.getBagSize(effectiveLuck);
+
+        // The bonus bag is rolled only after a normal failure, so calibrate its
+        // conditional chance to produce a true flat increase overall.
+        double baseCritChance = 1.0 / effectiveBagSize;
+        if (effectiveBagSize < baseBagSize) {
+            baseCritChance += (1.0 - baseCritChance) / baseBagSize;
+        }
+
+        double conditionalBonusChance = Math.min(1.0, bonus / Math.max(0.0001, 1.0 - baseCritChance));
+        int bonusCards = Math.max(1, (int) Math.round(conditionalBonusChance * 1000.0));
+        return bonusCritBags.computeIfAbsent(
+                bonusCards,
+                cards -> new bruhof.teenycraft.util.ShuffleBag(1000, cards)
+        ).next();
     }
 }

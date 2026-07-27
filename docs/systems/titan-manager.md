@@ -4,7 +4,7 @@
 Describe the player-owned figure storage, active team rules, and the menu/search/sort behavior.
 
 ## Current Status
-The Titan Manager is an implemented player capability with separate figure, chip, and accessory storage pools, a wide tabbed menu UI, server-driven search/sort/filter state, favorites support, and active team slot logic.
+The Titan Manager is an implemented player capability with separate figure, chip, and accessory storage pools, a wide tabbed menu UI, server-driven search/sort/filter state, favorites support, active team slot logic, and saved group-combo and opening-figure choices.
 
 ## Player-Facing Behavior
 - The Titan Manager is separate from the vanilla inventory.
@@ -15,6 +15,9 @@ The Titan Manager is an implemented player capability with separate figure, chip
 - The storage grid is still virtualized, so the menu can expose a large vault without rendering every backing slot at once.
 - Search, tab, sort, favorites-only, class filter, and page state are server-authoritative.
 - Middle-clicking a visible storage item toggles its favorite state in the current temporary UI.
+- The first two team slots are visibly bracketed as the group-combo pair. The `?` control explains the active bonus and opens the server-backed combo selector.
+- Combo selection can stay automatic or be explicitly set to any group shared by the first two figures.
+- The small `1` marker is independent of combo membership and cycles the figure that appears first in battle.
 
 ## Source Of Truth
 - [`src/main/java/bruhof/teenycraft/capability/ITitanManager.java`](../../src/main/java/bruhof/teenycraft/capability/ITitanManager.java)
@@ -26,6 +29,7 @@ The Titan Manager is an implemented player capability with separate figure, chip
 - [`src/main/java/bruhof/teenycraft/networking/PacketTitanManagerAction.java`](../../src/main/java/bruhof/teenycraft/networking/PacketTitanManagerAction.java)
 - [`src/main/java/bruhof/teenycraft/networking/PacketSyncTitanManagerView.java`](../../src/main/java/bruhof/teenycraft/networking/PacketSyncTitanManagerView.java)
 - [`src/main/java/bruhof/teenycraft/networking/PacketSyncTitanData.java`](../../src/main/java/bruhof/teenycraft/networking/PacketSyncTitanData.java)
+- [`../content/figure-groups.md`](../content/figure-groups.md)
 
 ## Design Notes
 - Team slot rules are gameplay-critical and should not drift from battle assumptions.
@@ -40,6 +44,7 @@ The Titan Manager is an implemented player capability with separate figure, chip
 - Chip storage slots
 - Accessory storage slots
 - Virtualized visible-page projection over the active storage tab
+- Saved selected combo group id and saved opening team-slot index
 
 ## Open Questions
 - Whether the final art/layout should keep the current temporary control density or move some controls into icon-only buttons once a texture exists

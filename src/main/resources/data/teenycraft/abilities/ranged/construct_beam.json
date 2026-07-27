@@ -1,0 +1,26 @@
+{
+  "id": "construct_beam",
+  "name": "Construct Beam",
+  "description": "Channel a beam at your opponent (consumes mana and deals damage over time)",
+  "golden_description": "More Tofu chance (increases the natural chance of getting tofu)",
+  "texture_index": 75,
+  "particle": "minecraft:end_rod",
+  "particle_count": 8,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "blue",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "trait:tofu_chance:1.5,1.2"
+  ]
+}

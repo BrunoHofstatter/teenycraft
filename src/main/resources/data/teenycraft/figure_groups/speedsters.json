@@ -1,0 +1,13 @@
+{
+  "id": "speedsters",
+  "name": "Speedsters",
+  "priority": 1,
+  "figures": [
+    "kid_flash",
+    "mas_y_menos",
+    "the_flash"
+  ],
+  "combo_effects": [
+    "stat_dodge"
+  ]
+}

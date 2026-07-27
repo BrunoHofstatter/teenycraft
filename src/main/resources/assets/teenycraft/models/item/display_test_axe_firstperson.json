@@ -1,0 +1,6 @@
+{
+  "parent": "teenycraft:item/ability_display/tool",
+  "textures": {
+    "layer0": "teenycraft:item/ability_axe_to_grind"
+  }
+}

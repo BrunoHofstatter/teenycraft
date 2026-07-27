@@ -1,0 +1,20 @@
+{
+  "id": "booster_beatdown",
+  "name": "Booster Beatdown",
+  "description": "Charge Up and use an energy pulse that deals Group Damage",
+  "golden_description": "Instant Cast Chance (chance of no Charge Up time)",
+  "texture_index": 28,
+  "particle": "minecraft:end_rod",
+  "particle_count": 9,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 0,
+  "range_tier": 8,
+  "damage_tier": 5,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    { "id": "charge_up", "params": [2.0] },
+    { "id": "group_damage", "params": [] }
+  ],
+  "golden_bonus": ["trait:instant_cast_chance"]
+}

@@ -1,17 +1,24 @@
-{
-  "id": "beast_boy",
-  "name": "Beast Boy",
-  "description": "One of the classic titans, he can transform into any animal",
-  "class": "Beast",
-  "groups": [ "LoveBBRae", "Young Justice", "Beast Boy", "Titans"],
-  "price": 150,
-  "model_type": "slim",
-  "attributes": {
-    "hp_scale": 2.5,
-    "power_scale": 2.5,
-    "dodge_scale": 1.5,
-    "luck_scale": 1.5
-  },
-  "abilities": ["mighty_punch", "whale_drop", "tofu"],
-  "ability_cost_tiers": ["b", "c", "a"]
+﻿{
+    "id":  "beast_boy",
+    "name":  "Beast Boy",
+    "description":  "Green Titan shapeshifter, tofu fan, and he loves Raven (or Terra?)",
+    "class":  "Beast",
+    "price":  150,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1.5,
+                       "power_scale":  2.5,
+                       "dodge_scale":  1,
+                       "luck_scale":  3
+                   },
+    "abilities":  [
+                      "mighty_punch",
+                      "tofu",
+                      "whale_drop"
+                  ],
+    "ability_cost_tiers":  [
+                               "a",
+                               "c",
+                               "b"
+                           ]
 }

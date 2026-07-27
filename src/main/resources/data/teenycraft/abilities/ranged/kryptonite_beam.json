@@ -1,0 +1,26 @@
+{
+  "id": "kryptonite_beam",
+  "name": "Kryptonite Beam",
+  "description": "Shoot a beam at the opponent and apply Defense Down (pretend they are all from Krypton I guess)",
+  "golden_description": "More Defense Down duration",
+  "texture_index": 44,
+  "particle": "minecraft:glow",
+  "particle_count": 8,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 1,
+  "range_tier": 7,
+  "damage_tier": 4,
+  "effects_on_opponent": [
+    {
+      "id": "defense_down",
+      "params": [
+        0.5
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:defense_down:0.65"
+  ]
+}

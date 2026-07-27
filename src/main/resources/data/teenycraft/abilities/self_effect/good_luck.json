@@ -1,0 +1,25 @@
+{
+  "id": "good_luck",
+  "name": "Good Luck",
+  "description": "Apply Luck Up to yourself (your luck increases)",
+  "golden_description": "More Luck Up duration",
+  "texture_index": 54,
+  "particle": "minecraft:happy_villager",
+  "particle_count": 7,
+  "hit_type": "none",
+  "damage_tier": 0,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    {
+      "id": "luck_up",
+      "params": [
+        1,
+        1
+      ]
+    }
+  ],
+  "traits": [],
+  "golden_bonus": [
+    "self:luck_up:1.0,1.3"
+  ]
+}

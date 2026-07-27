@@ -1,0 +1,24 @@
+{
+    "id":  "the_hooded_hood",
+    "name":  "The Hooded Hood",
+    "description":  "Ancient cosmic villain with a hood, a grudge, and way too much power",
+    "class":  "Dark Arts",
+    "price":  20000,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  2.5,
+                       "power_scale":  3.5,
+                       "dodge_scale":  1.5,
+                       "luck_scale":  1.5
+                   },
+    "abilities":  [
+                      "hooded_void",
+                      "mind_control",
+                      "hooded_barrage"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "b",
+                               "c"
+                           ]
+}

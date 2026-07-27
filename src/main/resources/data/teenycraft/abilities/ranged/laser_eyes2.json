@@ -5,7 +5,7 @@
   "particle": "minecraft:glow",
   "particle_count": 10,
   "hit_type": "raycasting",
-  "raycast_delay_tier": 1,
+  "raycast_delay_tier": 0,
   "range_tier": 6,
   "damage_tier": 9,
   "effects_on_opponent": [],

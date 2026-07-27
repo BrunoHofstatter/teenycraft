@@ -1,0 +1,26 @@
+{
+  "id": "curse_jinx",
+  "name": "Curse",
+  "description": "Apply Curse to the opponent (gains mana slower) (no Charge Up here)",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 3,
+  "particle": "minecraft:dragon_breath",
+  "particle_count": 8,
+  "hit_type": "ranged",
+  "raycast_delay_tier": 1,
+  "range_tier": 8,
+  "damage_tier": 0,
+  "effects_on_opponent": [
+    {
+      "id": "curse",
+      "params": [
+        0.7
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:bar_deplete:1.0"
+  ]
+}

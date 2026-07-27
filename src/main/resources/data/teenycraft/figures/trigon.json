@@ -1,0 +1,24 @@
+﻿{
+    "id":  "trigon",
+    "name":  "Trigon",
+    "description":  "Demonic conqueror, Raven’s father, and nightmare with too many eyes",
+    "class":  "Dark Arts",
+    "price":  1500,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  3,
+                       "power_scale":  3,
+                       "dodge_scale":  0,
+                       "luck_scale":  1.5
+                   },
+    "abilities":  [
+                      "soul_punch",
+                      "evil_laugh",
+                      "black_hole"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "b",
+                               "b"
+                           ]
+}

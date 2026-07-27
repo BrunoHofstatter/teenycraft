@@ -1,0 +1,19 @@
+{
+  "id": "umbrella_shot",
+  "name": "Umbrella Shot",
+  "description": "Shoot your opponent with your amazing umbrella and deal massive damage (damage is normal actually)",
+  "golden_description": "Bar Depleter (removes mana from the opponent)",
+  "texture_index": 15,
+  "particle": "minecraft:crit",
+  "particle_count": 5,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 2,
+  "range_tier": 5,
+  "damage_tier": 7,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:bar_deplete:1.0"
+  ]
+}

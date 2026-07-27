@@ -1,0 +1,17 @@
+{
+  "id": "amazonian_beatdown",
+  "name": "Amazonian Beatdown",
+  "description": "Multiple melee hits againts your opponent",
+  "golden_description": "Undodgeable & Shield Piercing",
+  "texture_index": 95,
+  "particle": "minecraft:sweep_attack",
+  "particle_count": 10,
+  "hit_type": "melee",
+  "damage_tier": 11,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    { "id": "multi_hit", "params": [3.0] }
+  ],
+  "golden_bonus": ["trait:undodgeable"]
+}

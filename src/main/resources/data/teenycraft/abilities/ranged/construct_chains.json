@@ -1,0 +1,26 @@
+{
+  "id": "construct_chains",
+  "name": "Construct Chains",
+  "description": "Chain you oppontent, deal damage and Root them (cannot swap figure)",
+  "golden_description": "More Root duration",
+  "texture_index": 63,
+  "particle": "minecraft:end_rod",
+  "particle_count": 6,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 3,
+  "range_tier": 2,
+  "damage_tier": 5,
+  "effects_on_opponent": [
+    {
+      "id": "root",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "effects_on_self": [],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:root:1.3"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+    "id":  "kid_flash",
+    "name":  "Kid Flash",
+    "description":  "Young speedster hero with big energy and very little patience",
+    "class":  "Super",
+    "price":  450,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1.5,
+                       "power_scale":  2.5,
+                       "dodge_scale":  3.5,
+                       "luck_scale":  0.5
+                   },
+    "abilities":  [
+                      "nuh_uh",
+                      "dance",
+                      "super_dash"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "b",
+                               "a"
+                           ]
+}

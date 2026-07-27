@@ -1,0 +1,24 @@
+{
+    "id":  "cat_beast_boy",
+    "name":  "Cat Beast Boy",
+    "description":  "Beast Boy as a cat, because sometimes the green guy picks comfort",
+    "class":  "Cute",
+    "price":  450,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1,
+                       "power_scale":  1.5,
+                       "dodge_scale":  3,
+                       "luck_scale":  3
+                   },
+    "abilities":  [
+                      "waffles",
+                      "tofu",
+                      "cat_scratch"
+                  ],
+    "ability_cost_tiers":  [
+                               "c",
+                               "b",
+                               "b"
+                           ]
+}

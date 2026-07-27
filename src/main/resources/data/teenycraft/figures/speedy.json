@@ -1,0 +1,24 @@
+{
+    "id":  "speedy",
+    "name":  "Speedy",
+    "description":  "Roy Harper’s younger archer identity, quick with arrows and attitude",
+    "class":  "Martial Arts",
+    "price":  400,
+    "model_type":  "default",
+    "attributes":  {
+                       "hp_scale":  1.5,
+                       "power_scale":  3,
+                       "dodge_scale":  2.5,
+                       "luck_scale":  1
+                   },
+    "abilities":  [
+                      "quick_shot",
+                      "raspberry",
+                      "arrow_storm"
+                  ],
+    "ability_cost_tiers":  [
+                               "d",
+                               "c",
+                               "b"
+                           ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "teenycraft:test_dummy",
+  "figures": [
+    {
+      "figure_id": "killer_croc",
+      "level": 8,
+      "upgrades": "HHHHHHH",
+      "ability_order": [
+        0,
+        1,
+        2
+      ],
+      "golden_abilities": []
+    }
+  ],
+  "ai": {
+    "enabled": false
+  }
+}

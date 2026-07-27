@@ -1,0 +1,26 @@
+{
+  "id": "mind_control",
+  "name": "Mind Control",
+  "description": "Hypnotize your opponent, dealing damage and healing yourself",
+  "golden_description": "More Heal",
+  "texture_index": 49,
+  "particle": "minecraft:enchant",
+  "particle_count": 8,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 1,
+  "range_tier": 3,
+  "damage_tier": 3,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    {
+      "id": "heal",
+      "params": [
+        0.8
+      ]
+    }
+  ],
+  "traits": [],
+  "golden_bonus": [
+    "self:heal:0.2"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "brother_shake",
+  "name": "Brother Shake",
+  "description": "Shake your brother and you get healed for some reason",
+  "golden_description": "Waffle Chance (blocks a random ability)",
+  "texture_index": 118,
+  "particle": "minecraft:heart",
+  "particle_count": 4,
+  "hit_type": "none",
+  "damage_tier": 0,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    {
+      "id": "heal",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "traits": [],
+  "golden_bonus": [
+    "opponent:waffle_chance:0.5,1.0"
+  ]
+}

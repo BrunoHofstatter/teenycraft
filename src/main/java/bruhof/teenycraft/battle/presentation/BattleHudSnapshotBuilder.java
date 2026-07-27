@@ -42,30 +42,7 @@ public final class BattleHudSnapshotBuilder {
     private static BattleHudParticipantSnapshot buildOpponentParticipant(@Nullable IBattleState state, boolean[] hasActiveMine) {
         BattleFigure activeFigure = state != null ? state.getActiveFigure() : null;
         if (state == null || activeFigure == null) {
-            return new BattleHudParticipantSnapshot(
-                    "None",
-                    "none",
-                    "default",
-                    0,
-                    0,
-                    100,
-                    0.0f,
-                    0.0f,
-                    -1.0f,
-                    0,
-                    0,
-                    0,
-                    new int[3],
-                    new int[3],
-                    hasActiveMine,
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    List.of()
-            );
+            return BattleHudParticipantSnapshot.empty();
         }
 
         return buildParticipant(state, activeFigure, hasActiveMine, activeFigure.getNickname());
@@ -74,6 +51,7 @@ public final class BattleHudSnapshotBuilder {
     private static BattleHudParticipantSnapshot buildParticipant(IBattleState state, BattleFigure activeFigure, boolean[] hasActiveMine, String name) {
         String activeFigureId = state.getActiveFigureId();
         return new BattleHudParticipantSnapshot(
+                state.getBattleEntity() != null ? state.getBattleEntity().getId() : 0,
                 name,
                 activeFigureId,
                 FigureLoader.getModelType(activeFigureId),
@@ -81,22 +59,40 @@ public final class BattleHudSnapshotBuilder {
                 activeFigure.getCurrentHp(),
                 activeFigure.getMaxHp(),
                 state.getCurrentMana(),
+                state.getCurrentTofuMana(),
+                state.getCurrentTofuPreviewEffectId(),
+                state.isCurrentTofuPreviewSelfTarget(),
                 state.getBatteryCharge(),
                 state.getBatterySpawnPct(),
+                state.isAccessoryActive(),
+                state.getEquippedAccessoryId(),
                 state.getBasePower(),
                 state.getEffectMagnitude("power_up"),
                 state.getEffectMagnitude("power_down"),
                 state.getCooldowns(),
                 new int[]{state.getSlotProgress(0), state.getSlotProgress(1), state.getSlotProgress(2)},
                 hasActiveMine,
+                state.hasEffect("waffle") ? state.getEffectMagnitude("waffle") : -1,
+                effectDuration(state, "waffle"),
+                state.isCharging() ? state.getPendingSlot() : -1,
+                state.getChargeTicks(),
+                state.getChargeTotalTicks(),
+                state.isBlueChanneling() ? state.getBlueChannelSlot() : -1,
+                state.getBlueChannelTicks(),
+                state.getBlueChannelTotalTicks(),
                 state.getAbilityIds(),
                 state.getAbilityTiers(),
                 state.getAbilityGoldenStatus(),
-                state.getEffectList(),
+                state.getEffectSnapshots(),
                 state.getBenchInfoList(),
                 state.getBenchIndicesList(),
                 state.getBenchFigureIds()
         );
+    }
+
+    private static int effectDuration(IBattleState state, String effectId) {
+        var instance = state.getEffectInstance(effectId);
+        return instance != null ? instance.duration : 0;
     }
 
     private static boolean[] buildMineFlags(@Nullable IBattleState state, @Nullable UUID targetUuid) {

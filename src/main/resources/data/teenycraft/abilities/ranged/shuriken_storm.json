@@ -1,0 +1,26 @@
+{
+  "id": "shuriken_storm",
+  "name": "Shuriken Storm",
+  "description": "Throw multiple shurikens at your opponent",
+  "golden_description": "Undodgeable & Shield Piercing",
+  "texture_index": 114,
+  "particle": "minecraft:crit",
+  "particle_count": 8,
+  "hit_type": "raycasting",
+  "raycast_delay_tier": 3,
+  "range_tier": 5,
+  "damage_tier": 8,
+  "effects_on_opponent": [],
+  "effects_on_self": [],
+  "traits": [
+    {
+      "id": "multi_hit",
+      "params": [
+        3
+      ]
+    }
+  ],
+  "golden_bonus": [
+    "trait:undodgeable"
+  ]
+}

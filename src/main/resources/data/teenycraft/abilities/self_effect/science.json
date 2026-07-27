@@ -1,0 +1,24 @@
+{
+  "id": "science",
+  "name": "Science!",
+  "description": "You like science, you throw a potion (potion??) at yourself (your dodge chance increases for the next attacks received)",
+  "golden_description": "More potion duration",
+  "texture_index": 58,
+  "particle": "minecraft:effect",
+  "particle_count": 8,
+  "hit_type": "none",
+  "damage_tier": 0,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    {
+      "id": "dodge_smoke",
+      "params": [
+        1
+      ]
+    }
+  ],
+  "traits": [],
+  "golden_bonus": [
+    "self:dodge_smoke:1.3"
+  ]
+}

@@ -16,6 +16,7 @@ Example shape:
 
 ```json
 "ai": {
+  "enabled": true,
   "difficulty": 3,
   "aggression": 0.6,
   "swap_bias": 0.4,
@@ -36,11 +37,23 @@ Example shape:
 ```
 
 Important current rule:
+- `enabled` is optional and defaults to `true`.
 - `difficulty` is optional.
 - If `difficulty` is present, it only provides preset defaults.
 - Any explicit field in the same `ai` block overrides the preset value.
 
 ## Field Guide
+### `enabled`
+- Type: boolean
+- Default: `true`
+- Meaning: hard on/off switch for the opponent battle AI
+
+Behavior:
+- `true`: normal movement, ability selection, and swapping
+- `false`: the opponent remains a normal battle participant but does not run `BattleAiGoal`, so it does not move, attack, use abilities, or swap
+
+Use `false` for passive training targets. It does not need to be added to existing team JSON files.
+
 ### `difficulty`
 - Type: integer
 - Allowed values: `1` to `5`
@@ -286,6 +299,16 @@ If you use only `difficulty`, these are the current default values that get fill
 - `swap_reconsideration_ticks: 18`
 
 ## Authoring Patterns
+### Passive Training Dummy
+
+```json
+"ai": {
+  "enabled": false
+}
+```
+
+The figure still takes damage, receives effects, faints, and participates in normal victory handling.
+
 ### Simple Weak Opponent
 
 ```json
