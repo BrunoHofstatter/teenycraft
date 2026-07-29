@@ -47,6 +47,7 @@ The player-facing loop is:
   - [systems/battle-engine.md](systems/battle-engine.md)
   - [systems/battle-ai.md](systems/battle-ai.md)
   - [systems/titan-manager.md](systems/titan-manager.md)
+  - [systems/tournaments.md](systems/tournaments.md)
   - [systems/player-vault.md](systems/player-vault.md)
 - Content:
   - [content/figures.md](content/figures.md)
