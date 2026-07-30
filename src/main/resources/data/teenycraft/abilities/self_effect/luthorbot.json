@@ -1,0 +1,25 @@
+{
+  "id": "luthorbot",
+  "name": "Luthorbot",
+  "description": "Summon a luthorbot that deals damage when you attack the enemy (max 2 bots at once)",
+  "golden_description": "More damage",
+  "texture_index": 38,
+  "particle": "minecraft:smoke",
+  "particle_count": 5,
+  "hit_type": "none",
+  "damage_tier": 0,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    {
+      "id": "pets",
+      "params": [
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "traits": [],
+  "golden_bonus": [
+    "self:pets:1.0,1.3"
+  ]
+}

@@ -178,7 +178,7 @@ Common current composite patterns:
 - `dodge_smoke`: duration-based dodge support with limited charges.
 - `health_radio`: periodic healing over time.
 - `power_radio`: periodic power-up generation over time.
-- `pet_slot_1` and `pet_slot_2`: internal buff slots for summoned pet attacks.
+- `pet_slot_1` and `pet_slot_2`: internal buff slots for summoned pet attacks. Each active pet fires follow-up damage when its owning figure lands a damaging attack, subject to the shared pet-fire cooldown.
 - `flight`: duration-based evasion state with vertical launch, drag, apex handling, and gravity restoration on removal.
 
 ### Debuff And Control Effects

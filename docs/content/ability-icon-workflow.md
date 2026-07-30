@@ -96,10 +96,13 @@ Prompts should state:
 - strong silhouette and deliberate square pixel clusters;
 - precise subject count and composition;
 - limited palette and hard edges;
-- intended final reduction to a 64x64 Minecraft texture;
-- a deliberately chunky, limited-detail treatment that remains readable at 32x32;
+- a moderately detailed 96x96 pixel-art design intended for clean nearest-neighbor reduction to a final 64x64 Minecraft texture;
 - transparent final intent;
 - no text, watermark, frame, scene, blur, antialiasing, smooth vector curves, or soft glow haze.
+
+Do not ask the image generator to optimize for 32x32 readability. That is a
+local QA requirement after generation and reduction, not part of the
+generation prompt.
 
 Use words such as `exactly one`, `exactly two`, or `exactly three` when object count matters.
 
@@ -121,9 +124,14 @@ Generated art often looks good while enlarged but fails after reduction. The 64x
 
 ### Generated source resolution versus production resolution
 
-The image generator does not create a literal 64x64 pixel grid. It currently returns large raster sources, commonly 1254x1254, and interprets pixel-art and target-size instructions only approximately. These sources can contain substantially more visual information than either a 32x32 or 64x64 final texture. Their large dimensions are not merely a nearest-neighbor enlargement of a finished low-resolution sprite.
+The image generator does not create a literal 96x96 pixel grid. It currently returns large raster sources, commonly 1254x1254, and interprets pixel-art and target-size instructions only approximately. These sources can contain substantially more visual information than the final 64x64 texture. Their large dimensions are not merely a nearest-neighbor enlargement of a finished low-resolution sprite.
 
-Changing the prompt target from 32x32 to 64x64 may encourage somewhat finer detail, but the effect is not reliable or necessarily large. Composition, silhouette, palette limits, cluster size, and explicit restrictions against micro-detail influence the result more strongly than the nominal target resolution. Prompts should therefore describe the asset as intended for final reduction to 64x64 while still requiring chunky clusters, a limited palette, and recognition at 32x32. Do not request extra complexity merely because the production canvas is larger.
+Prompting for a moderately detailed 96x96 pixel-art design is an intentional,
+simple nudge toward finer effective detail than asking directly for a chunky
+64x64 icon. Prompts should say that the 96x96-style design is intended for
+clean nearest-neighbor reduction to the final 64x64 texture. Do not mention
+32x32 readability in the generation prompt; inspect that size locally during
+QA instead.
 
 The saved large source is the reusable art master for processing purposes, not a production texture. Keep the unmodified generated source and the background-removed transparent source so later exports can be produced without recreating the inspiration, composition, or prompt. If the production resolution changes or a cleaner reduction becomes useful, process these saved sources first and regenerate only the icons whose sources do not reduce cleanly.
 
@@ -265,4 +273,4 @@ Before reporting a batch complete, verify:
 
 Use this message to start or re-establish the workflow in another chat:
 
-> We are creating 64x64 transparent pixel-art ability icons for Teeny Craft, a Minecraft Forge mod inspired by Teeny Titans Go Figure. Read `docs/content/ability-icon-workflow.md` and the JSON files for the abilities I name. Icons should show the ability happening, not necessarily a literal held weapon, but physical attacks should still be composed so they look good in a Minecraft hand. The original game's icon concept is useful inspiration, but do not copy its exact artwork. I will give rough ideas for about three abilities. First, polish my ideas and propose a concrete composition, palette, motion treatment, and simplifications for each. Wait for my review. After I approve, generate one large source image per required texture, remove the chroma background, reduce it to a clean 64x64 RGBA PNG with nearest-neighbor sampling, inspect it at 64x64 and in a reduced 32x32 QA view, and place it in `src/main/resources/assets/teenycraft/textures/item/`. Treat the large generated source as a reusable processing master: it contains more information than the final texture and should be retained rather than recreated if another export is needed. Prompts should target final reduction to 64x64 but still demand chunky clusters, a limited palette, no unnecessary micro-detail, and readability at 32x32. Save sources, enlarged checkerboard previews, QA views, and final prompts under `output/imagegen/ability_icons_roundN/`. Do not change models, fallback mappings, or ability logic unless I explicitly ask.
+> We are creating 64x64 transparent pixel-art ability icons for Teeny Craft, a Minecraft Forge mod inspired by Teeny Titans Go Figure. Read `docs/content/ability-icon-workflow.md` and the JSON files for the abilities I name. Icons should show the ability happening, not necessarily a literal held weapon, but physical attacks should still be composed so they look good in a Minecraft hand. The original game's icon concept is useful inspiration, but do not copy its exact artwork. I will give rough ideas for about three abilities. First, polish my ideas and propose a concrete composition, palette, motion treatment, and simplifications for each. Wait for my review. After I approve, generate one large source image per required texture, remove the chroma background, reduce it to a clean 64x64 RGBA PNG with nearest-neighbor sampling, inspect it at 64x64 and in a reduced 32x32 QA view, and place it in `src/main/resources/assets/teenycraft/textures/item/`. Treat the large generated source as a reusable processing master: it contains more information than the final texture and should be retained rather than recreated if another export is needed. Generation prompts should request a moderately detailed 96x96 pixel-art design intended for clean nearest-neighbor reduction to the final 64x64 texture. Do not mention 32x32 readability in generation prompts; check it only during local QA. Save sources, enlarged checkerboard previews, QA views, and final prompts under `output/imagegen/ability_icons_roundN/`. Do not change models, fallback mappings, or ability logic unless I explicitly ask.

@@ -96,11 +96,11 @@ Profile: `teenycraft:item/ability_display/aimed`.
 
 | Category | Ability ids |
 | --- | --- |
-| `tool` | `axe_to_grind`, `harleys_mallet`, `scarab_swords`, `staff_slam` |
-| `action` | `around_the_world`, `arrow_storm`, `bang`, `batarang_storm`, `battery_drain`, `black_hole`, `break_the_bat`, `break_you`, `burp_shield`, `counterattack`, `curse`, `dance`, `deadly_kiss`, `evil_laugh`, `freeze_breath`, `hooded_void`, `heroic_pose`, `jiu_jitsu`, `laser_eyes_manta`, `laser_sneeze`, `light_shield`, `lightning_bubble`, `macho_smooch`, `mind_control`, `puddin_pucker`, `tea_chi`, `tea_time`, `venom`, `waffles`, `whale_drop`, `raspberry`, `science` |
+| `tool` | `axe_to_grind`, `harleys_mallet`, `presidential_slam`, `scarab_swords`, `staff_slam` |
+| `action` | `around_the_world`, `arrow_storm`, `bang`, `batarang_storm`, `battery_drain`, `black_hole`, `break_the_bat`, `break_you`, `burp_shield`, `counterattack`, `curse`, `dance`, `deadly_kiss`, `evil_laugh`, `freeze_breath`, `good_luck`, `hooded_void`, `heroic_pose`, `jiu_jitsu`, `laser_eyes_manta`, `laser_sneeze`, `light_shield`, `lightning_bubble`, `luthorbot`, `macho_smooch`, `mind_control`, `natures_wrath`, `nuh_uh`, `puddin_pucker`, `root`, `shockwave_stomp`, `tea_chi`, `tea_time`, `venom`, `waffles`, `whale_drop`, `raspberry`, `science` |
 | `fist` | `amazonian_beatdown`, `butterfly`, `cat_scratch`, `fear`, `lightning_fists`, `soul_punch`, `punchies`, `quick_punch_stun` |
-| `throwable` | `bat_mine`, `birdarang`, `hooded_barrage`, `journalism`, `starfish_chuck`, `tea_toss`, `ultimate_batarang` |
-| `aimed` | `camera_flash`, `construct_beam`, `energy_cannon`, `grappling_hook`, `lightning_shot`, `missile_barrage`, `plasma_shot`, `sonic_cannon`, `trident_throw` |
+| `throwable` | `bat_mine`, `birdarang`, `darwin`, `hooded_barrage`, `journalism`, `poison_pellet`, `shuriken`, `starfish_chuck`, `stinky_fish`, `tea_toss`, `trash_can_toss`, `ultimate_batarang` |
+| `aimed` | `camera_flash`, `cash_blaster`, `construct_beam`, `energy_cannon`, `grappling_hook`, `kryptonite_beam`, `lightning_shot`, `missile_barrage`, `plasma_shot`, `plasma_shot_jinx`, `sonic_cannon`, `trident_throw` |
 
 ## Generation Flow
 
