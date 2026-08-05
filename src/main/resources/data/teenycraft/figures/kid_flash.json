@@ -16,6 +16,9 @@
                       "dance",
                       "super_dash"
                   ],
+    "ability_icon_variants":  {
+                                  "super_dash":  "red"
+                              },
     "ability_cost_tiers":  [
                                "d",
                                "b",

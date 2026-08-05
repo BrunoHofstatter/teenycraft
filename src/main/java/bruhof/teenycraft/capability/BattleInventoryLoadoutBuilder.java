@@ -58,7 +58,8 @@ final class BattleInventoryLoadoutBuilder {
             ItemStack stack = new ItemStack(ABILITY_ITEMS[i]);
             int damage = ItemFigure.calculateAbilityDamage(figureStack, i);
             boolean golden = ItemFigure.isAbilityGolden(figureStack, abilityId);
-            bruhof.teenycraft.item.custom.battle.ItemAbility.initializeAbility(stack, abilityId, data.name, damage, golden);
+            String iconVariant = bruhof.teenycraft.util.FigureLoader.getAbilityIconVariant(figureStack, abilityId);
+            bruhof.teenycraft.item.custom.battle.ItemAbility.initializeAbility(stack, abilityId, data.name, damage, golden, iconVariant);
             player.getInventory().setItem(i, stack);
         }
     }

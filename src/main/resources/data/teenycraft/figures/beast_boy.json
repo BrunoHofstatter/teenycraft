@@ -16,6 +16,9 @@
                       "tofu",
                       "whale_drop"
                   ],
+    "ability_icon_variants":  {
+                                   "whale_drop":  "green"
+                               },
     "ability_cost_tiers":  [
                                "a",
                                "c",

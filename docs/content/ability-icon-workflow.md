@@ -144,13 +144,30 @@ The production textures belong in:
 Use these names:
 
 - normal icon: `ability_<ability_id>.png`
+- figure-selected color variant: `ability_<ability_id>__variant_<variant>.png`
 - extra state: `ability_<ability_id>_<state>.png`
 
-Example: `ability_bat_mine_button.png`.
+Examples: `ability_whale_drop__variant_green.png` and `ability_bat_mine_button.png`.
+
+Color variant ids use lowercase snake case and describe the visual treatment, such as `green`, `red`, or `yellow`. The normal `ability_<ability_id>.png` remains the default and requires no figure assignment. To select an alternate texture, add the optional figure JSON map:
+
+```json
+"ability_icon_variants": {
+  "whale_drop": "green"
+}
+```
+
+That is the complete authoring contract for an ability whose base custom icon is already integrated: add the correctly named variant PNG and assign it from each figure that uses it. Do not create another ability JSON, `texture_index`, display-category entry, or model JSON. The generated variant inherits the base ability's display category automatically.
+
+Current assignments are:
+
+- Beast Boy: green `whale_drop`; Aquaman uses the default blue icon.
+- Trigon and Argyle Trigon: red `soul_punch`; Raven uses the default black icon.
+- Jessica Cruz and John Stewart: green `construct_beam`; Sinestro uses the default yellow icon.
 
 Golden abilities reuse the normal texture and receive Minecraft's enchantment glint at runtime. Do not generate a separate golden texture.
 
-Unless the user asks for integration, create only the textures. Do not modify item models, wrapper overrides, fallback mappings, predicates, or state-switching logic.
+After generation and QA, place the textures in the assets folder and complete required category and figure-variant assignments without waiting for another approval; do not modify item models, wrapper overrides, fallback mappings, predicates, or state-switching logic unless explicitly requested.
 
 ### 8. User reviews the generated batch
 
@@ -213,6 +230,7 @@ The 64x64 choice is an art-quality decision, not a performance requirement. A 64
 - Treat each state as its own texture with a related palette and visual identity.
 - The active-state icon should prioritize instant recognition over decorative detail.
 - Example: the Bat Mine throwable is a thin black bat-shaped mine with a red light, while its activation state is a large simple red button.
+- Bat Mine is the only current multi-state ability. Its button path is separate from color variants, and Bat Mine does not need variant-plus-state support.
 
 ## Character And Color Identity
 
@@ -236,11 +254,13 @@ For an existing figure ability, integration therefore requires only:
 2. Add the ability id to exactly one display category in `assets/teenycraft/ability_display_categories.json`.
 3. Run a normal Gradle build or launch task. Resource processing runs `generateAbilityIconModels` automatically.
 
+For a color variant of an already integrated icon, use the `ability_<id>__variant_<variant>.png` filename and add `"<ability_id>": "<variant>"` under the relevant figure's optional `ability_icon_variants` object. The generator validates both sides and creates the inherited model and wrapper predicates.
+
 Do not edit `AbilityIconManager.FALLBACKS`, create a model JSON, or edit the three slot wrappers manually. Model baking discovers the exact texture id from the active resources and allows only discovered ids into the generated custom-model table, so the custom texture automatically takes precedence without leaking into placeholder abilities.
 
 Generated custom models take priority over `AbilityIconManager.FALLBACKS`. The fallback entry may remain in place and will be used if the custom model is unavailable. Abilities without approved custom textures continue to use their vanilla placeholders, with `ability_default` as the final fallback.
 
-Multi-state abilities still require an explicit item property and generator entry. Bat Mine is the current example: `ability_bat_mine_button.png` is selected by `teenycraft:is_button` while a mine is active. Special states inherit the base ability display category unless `state_overrides` selects another supported category.
+The unique Bat Mine state still uses its explicit item property and generator entry: `ability_bat_mine_button.png` is selected by `teenycraft:is_button` while a mine is active. Special states inherit the base ability display category unless `state_overrides` selects another supported category. This state path is not part of the color-variant contract.
 
 Golden abilities always use the normal icon model plus the runtime enchantment glint. The icon pipeline does not use `_golden.png`, `_golden.json`, or an `is_golden` model predicate.
 

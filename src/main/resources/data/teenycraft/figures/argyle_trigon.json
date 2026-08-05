@@ -16,6 +16,9 @@
                       "soul_punch",
                       "tofu"
                   ],
+    "ability_icon_variants":  {
+                                   "soul_punch":  "red"
+                               },
     "ability_cost_tiers":  [
                                "d",
                                "c",

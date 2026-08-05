@@ -180,7 +180,7 @@ public class BattleOverlay implements IGuiOverlay {
             return;
         }
 
-        ItemStack abilityStack = createTempAbilityStack(abilityData.id, slotIndex, isGolden);
+        ItemStack abilityStack = createTempAbilityStack(side.activeFigureId(), abilityData.id, slotIndex, isGolden);
         if (!abilityStack.isEmpty()) {
             guiGraphics.pose().pushPose();
             guiGraphics.pose().translate(iconX - (8 * scale), iconY, 200);
@@ -364,7 +364,7 @@ public class BattleOverlay implements IGuiOverlay {
                 case DAMAGE, DAMAGE_GHOST, HEAL -> renderFloatingValue(guiGraphics, mc.font, rail, payload, stackIndex, driftY, popScale, alpha);
                 case CRIT, CLASS_BONUS -> renderFloatingTag(guiGraphics, mc.font, rail, payload, stackIndex, driftY, alpha);
                 case MANA, BATTERY -> renderResourceDelta(guiGraphics, mc.font, rail, payload, stackIndex, driftY, alpha);
-                case ABILITY, TOFU_GAINED, TOFU_RESULT, PICKUP -> renderIconPopup(guiGraphics, mc, rail, payload, stackIndex, driftY, popScale);
+                case ABILITY, TOFU_GAINED, TOFU_RESULT, PICKUP -> renderIconPopup(guiGraphics, mc, rail, side, payload, stackIndex, driftY, popScale);
             }
         }
     }
@@ -409,9 +409,9 @@ public class BattleOverlay implements IGuiOverlay {
         drawCenteredScaledText(guiGraphics, font, text, anchorX, anchorY, 0.9f, color, true);
     }
 
-    private void renderIconPopup(GuiGraphics guiGraphics, Minecraft mc, RailLayout rail, BattleUiEventPayload payload, int stackIndex, int driftY, float scale) {
+    private void renderIconPopup(GuiGraphics guiGraphics, Minecraft mc, RailLayout rail, BattleHudParticipantSnapshot side, BattleUiEventPayload payload, int stackIndex, int driftY, float scale) {
         ItemStack iconStack = switch (payload.type()) {
-            case ABILITY -> createTempAbilityStack(payload.value(), 0, payload.flag());
+            case ABILITY -> createTempAbilityStack(side.activeFigureId(), payload.value(), 0, payload.flag());
             case TOFU_GAINED -> new ItemStack(ModItems.TOFU.get());
             case TOFU_RESULT -> resolveEffectIcon(payload.value());
             case PICKUP -> resolvePickupIcon(payload.value());
@@ -676,7 +676,7 @@ public class BattleOverlay implements IGuiOverlay {
         return stack;
     }
 
-    private ItemStack createTempAbilityStack(String abilityId, int slot, boolean isGolden) {
+    private ItemStack createTempAbilityStack(String figureId, String abilityId, int slot, boolean isGolden) {
         if (abilityId == null || abilityId.equals("none")) {
             return ItemStack.EMPTY;
         }
@@ -686,6 +686,10 @@ public class BattleOverlay implements IGuiOverlay {
         var tag = stack.getOrCreateTag();
         tag.putString(ItemAbility.TAG_ID, abilityId);
         tag.putBoolean(ItemAbility.TAG_GOLDEN, isGolden);
+        String iconVariant = FigureLoader.getAbilityIconVariant(figureId, abilityId);
+        if (!iconVariant.isBlank()) {
+            tag.putString(ItemAbility.TAG_ICON_VARIANT, iconVariant);
+        }
         return stack;
     }
 

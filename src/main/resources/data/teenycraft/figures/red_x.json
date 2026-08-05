@@ -16,6 +16,9 @@
                       "shuriken",
                       "staff_slam"
                   ],
+    "ability_icon_variants":  {
+                                  "shuriken":  "red"
+                              },
     "ability_cost_tiers":  [
                                "a",
                                "a",

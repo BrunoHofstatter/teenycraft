@@ -3,6 +3,7 @@ package bruhof.teenycraft.item.custom;
 import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.capability.BattleStateProvider;
 import bruhof.teenycraft.chip.ChipRegistry;
+import bruhof.teenycraft.screen.FigureItemLocation;
 import bruhof.teenycraft.screen.FigureScreenMenu;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -13,7 +14,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -117,19 +117,10 @@ public class ItemFigure extends Item {
         }
 
         if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
-            int boundSlot = hand == InteractionHand.MAIN_HAND ? player.getInventory().selected : -1;
-
-            NetworkHooks.openScreen(serverPlayer,
-                    new net.minecraft.world.SimpleMenuProvider(
-                            (containerId, inventory, menuPlayer) -> new FigureScreenMenu(containerId, inventory, hand, boundSlot),
-                            Component.translatable("container.teenycraft.figure_screen")
-                    ),
-                    buffer -> {
-                        buffer.writeEnum(hand);
-                        buffer.writeInt(boundSlot);
-                    });
-
-            
+            FigureItemLocation location = hand == InteractionHand.OFF_HAND
+                    ? FigureItemLocation.offHand()
+                    : FigureItemLocation.playerInventory(player.getInventory().selected);
+            FigureScreenMenu.open(serverPlayer, location, null);
             return InteractionResultHolder.sidedSuccess(figureStack, level.isClientSide());
         }
 

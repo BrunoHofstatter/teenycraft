@@ -81,6 +81,8 @@ Important current behavior:
 - The default nickname is written, but runtime battle code still reads the base figure name rather than a separate editable nickname field.
 - `resetToFactory` rebuilds the figure from the JSON default for that figure id.
 - Right-clicking a held figure outside battle now opens the dedicated figure screen.
+- Right-clicking a figure in any Titan Manager team, storage, or player-inventory slot opens the same figure screen without first moving the item. Figures opened this way retain a stable reference to their real backing slot.
+- The figure screen shows a `Back` button when entered through the Titan Manager and restores the manager's previous collection view.
 - The figure screen exposes stat inspection, pending level-up choices, chip installation, and ability reorder.
 - The figure screen now shows class beside the figure name and uses hover tooltips for longer ability descriptions.
 - Installing a new chip from the figure screen destroys the previously installed chip.
@@ -113,6 +115,16 @@ Current rules:
 - The figure screen only allows reorder once the figure reaches level `7`.
 - Reorder is charged as a single `250` Teeny Coin confirmation, not per slot swap.
 - The figure screen shows ability icons in the reorder list and keeps longer move descriptions in hover tooltips instead of inline row text.
+
+Figure JSON may optionally select color variants for equipped ability icons:
+
+```json
+"ability_icon_variants": {
+  "construct_beam": "green"
+}
+```
+
+The keys must be ability ids in that figure's `abilities` list. Values are lowercase variant ids matching `ability_<ability_id>__variant_<variant>.png`. An omitted entry uses the normal `ability_<ability_id>.png`. This is presentation metadata only: it does not create a new gameplay ability, change golden progress, or add another `texture_index`. Runtime resolves the mapping from the figure id and copies the selected variant onto temporary ability items used in battle and UI previews.
 
 ## Golden Ability State
 Golden is currently tracked per ability, not as a whole-figure rarity flag.

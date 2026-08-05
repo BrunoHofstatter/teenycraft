@@ -15,6 +15,11 @@ The Titan Manager is an implemented player capability with separate figure, chip
 - The storage grid is still virtualized, so the menu can expose a large vault without rendering every backing slot at once.
 - Search, tab, sort, favorites-only, class filter, and page state are server-authoritative.
 - Middle-clicking a visible storage item toggles its favorite state in the current temporary UI.
+- Right-clicking a figure in the active team, visible figure storage, or player inventory opens that exact figure's detail screen. Right-clicking an accessory continues to open its progression screen.
+- Detail screens opened from the Titan Manager provide a `Back` button that restores the previous tab, sort, search, favorites filter, class filter, and page.
+- Shift-clicking an active figure stores it directly. Shift-clicking a stored figure fills the first valid active team slot, then falls back to player inventory when no team slot accepts it.
+- Shift-clicking a player-inventory figure fills the first valid active team slot, then falls back to figure storage. The same smart equip-first behavior applies to accessories.
+- A held figure, chip, or accessory can be deposited by left-clicking anywhere in the storage grid. Deposit uses the correct full backing storage rather than replacing an occupied item on the visible page.
 - The first two team slots are visibly bracketed as the group-combo pair. The `?` control explains the active bonus and opens the server-backed combo selector.
 - Combo selection can stay automatic or be explicitly set to any group shared by the first two figures.
 - The small `1` marker is independent of combo membership and cycles the figure that appears first in battle.
@@ -26,6 +31,8 @@ The Titan Manager is an implemented player capability with separate figure, chip
 - [`src/main/java/bruhof/teenycraft/screen/TitanManagerMenu.java`](../../src/main/java/bruhof/teenycraft/screen/TitanManagerMenu.java)
 - [`src/main/java/bruhof/teenycraft/screen/TitanManagerScreen.java`](../../src/main/java/bruhof/teenycraft/screen/TitanManagerScreen.java)
 - [`src/main/java/bruhof/teenycraft/screen/TitanManagerViewState.java`](../../src/main/java/bruhof/teenycraft/screen/TitanManagerViewState.java)
+- [`src/main/java/bruhof/teenycraft/screen/TitanManagerReturnState.java`](../../src/main/java/bruhof/teenycraft/screen/TitanManagerReturnState.java)
+- [`src/main/java/bruhof/teenycraft/screen/FigureItemLocation.java`](../../src/main/java/bruhof/teenycraft/screen/FigureItemLocation.java)
 - [`src/main/java/bruhof/teenycraft/networking/PacketTitanManagerAction.java`](../../src/main/java/bruhof/teenycraft/networking/PacketTitanManagerAction.java)
 - [`src/main/java/bruhof/teenycraft/networking/PacketSyncTitanManagerView.java`](../../src/main/java/bruhof/teenycraft/networking/PacketSyncTitanManagerView.java)
 - [`src/main/java/bruhof/teenycraft/networking/PacketSyncTitanData.java`](../../src/main/java/bruhof/teenycraft/networking/PacketSyncTitanData.java)

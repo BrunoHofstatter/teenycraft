@@ -69,6 +69,25 @@ public class FigureLoader extends SimplePreparableReloadListener<Map<String, Jso
         return MODEL_CACHE.getOrDefault(id, "default");
     }
 
+    public static String getAbilityIconVariant(String figureId, String abilityId) {
+        JsonObject figure = CACHE.get(figureId);
+        if (figure == null || abilityId == null || !figure.has("ability_icon_variants")
+                || !figure.get("ability_icon_variants").isJsonObject()) {
+            return "";
+        }
+
+        JsonObject variants = figure.getAsJsonObject("ability_icon_variants");
+        if (!variants.has(abilityId) || !variants.get(abilityId).isJsonPrimitive()
+                || !variants.get(abilityId).getAsJsonPrimitive().isString()) {
+            return "";
+        }
+        return variants.get(abilityId).getAsString();
+    }
+
+    public static String getAbilityIconVariant(ItemStack figureStack, String abilityId) {
+        return getAbilityIconVariant(ItemFigure.getFigureID(figureStack), abilityId);
+    }
+
     public static ItemStack getFigureStack(String id) {
         if (!CACHE.containsKey(id)) return ItemStack.EMPTY;
         

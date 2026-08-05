@@ -24,15 +24,15 @@ public class TeenyBalance {
     };
 
     private static final int[] RANGE_VALUES_BY_TIER = {
-            0, 5, 7, 9, 11, 13, 15, 17, 19
+            0, 11, 13, 15, 17, 19, 21, 23, 26
     };
 
     private static final int[] SHUFFLE_BAG_CHECKPOINTS = {
-            0, 20, 35, 55, 80
+            0, 5, 13, 25, 40, 60, 80
     };
 
     private static final int[] SHUFFLE_BAG_SIZES = {
-            10, 9, 8, 7, 6
+            10, 9, 8, 7, 6, 5, 4
     };
 
     // ==========================================
@@ -102,10 +102,10 @@ public class TeenyBalance {
     public static final int BATTLE_MANA_REGEN_PER_SEC = 5;
     public static final int SWAP_COOLDOWN = 5;
     public static final double ARENA_PICKUP_COLLECTION_RADIUS = 1.0d;
-    public static final double AI_DUMMY_BASE_MOVE_SPEED = 0.20d;
-    public static final double AI_APPROACH_MOVE_SPEED = 1.5d;
-    public static final double AI_RANGE_APPROACH_MOVE_SPEED = 1.30d;
-    public static final double AI_RETREAT_MOVE_SPEED = 1.65d;
+    public static final double AI_DUMMY_BASE_MOVE_SPEED = 0.15d;
+    public static final double AI_APPROACH_MOVE_SPEED = 1.2d;
+    public static final double AI_RANGE_APPROACH_MOVE_SPEED = 1.0d;
+    public static final double AI_RETREAT_MOVE_SPEED = 1.25d;
     public static final double AI_REPEAT_SLOT_SOFT_PENALTY = 1.35d;
     public static final int AI_MAX_SAME_SLOT_STREAK = 3;
     public static final float AI_NEAR_READY_MELEE_MANA_PCT = 0.85f;
@@ -385,7 +385,7 @@ public class TeenyBalance {
     // ==========================================
     public static final float BASE_DAMAGE_PERMANA = 0.015f;
     public static final float MELEE_ATTACK_SPEEED = -2.0F;
-    public static final float SPEED_PER_DODGE = 0.005f;
+    public static final float SPEED_PER_DODGE = 0.007f;
     public static final float SURPRISE_DAMAGE_VARIANCE = 0.1f;
     public static final float LUCK_BALANCE_MULTIPLIER = 1.0f;
     public static final float BASE_LUCK_MULTIPLIER = 1.1f;
@@ -419,9 +419,9 @@ public class TeenyBalance {
     public static final float DISABLE_DURATION_PERLUCK = 0.005f;
 
     // Damage-over-time / periodic effects
-    public static final float SHOCK_BASE_AMOUNT = 2.0f;
-    public static final float SHOCK_AMOUNT_PERMANA = 0.15f;
-    public static final float SHOCK_BASE_INTERVAL = 60.0f;
+    public static final float SHOCK_BASE_AMOUNT = 1.5f;
+    public static final float SHOCK_AMOUNT_PERMANA = 0.13f;
+    public static final float SHOCK_BASE_INTERVAL = 100.0f;
     public static final float SHOCK_INTERVAL_PERMANA = 200.0f;
     public static final float SHOCK_INTERVAL_PERLUCK = 0.005f;
     public static final float SHOCK_DURATION_PERMANA = 0.4f;
@@ -452,11 +452,11 @@ public class TeenyBalance {
     public static final boolean CHARGE_LOCK_TARGET_ON_START = false;
 
     // Resource / defensive utility
-    public static final float BAR_DEPLETE_PERMANA = 0.25f;
+    public static final float BAR_DEPLETE_PERMANA = 0.18f;
     public static final float BAR_DEPLETE_PERLUCK = 0.005f;
 
-    public static final float DODGE_SMOKE_DURATION_PERMANA = 0.4f;
-    public static final float DODGE_SMOKE_DURATION_PERLUCK = 0.005f;
+    public static final float DODGE_SMOKE_DURATION_PERMANA = 1.3f;
+    public static final float DODGE_SMOKE_DURATION_PERLUCK = 0.008f;
     public static final float DODGE_SMOKE_BAGSIZE_PERMANA = 0.05f;
     public static final float DODGE_SMOKE_MULT_PERMANA = 0.01f;
     public static final int DODGE_SMOKE_USES = 5;
@@ -465,8 +465,8 @@ public class TeenyBalance {
     public static final float SHIELD_DURATION_PERLUCK = 0.004f;
 
     // Status effect durations
-    public static final float STUN_DURATION_PERMANA = 0.05f;
-    public static final float STUN_DURATION_PERLUCK = 0.003f;
+    public static final float STUN_DURATION_PERMANA = 0.04f;
+    public static final float STUN_DURATION_PERLUCK = 0.002f;
 
     public static final float DANCE_DURATION_PERMANA = 0.3f;
     public static final float DANCE_DURATION_PERLUCK = 0.005f;
@@ -535,14 +535,14 @@ public class TeenyBalance {
 
     public static final float REMOTE_MINE_START_PCT = 0.3f;
     public static final int REMOTE_MINE_STAGES = 10;
-    public static final int REMOTE_MINE_STAGE_INTERVAL = 60;
+    public static final int REMOTE_MINE_STAGE_INTERVAL = 30;
     public static final float REMOTE_MINE_DAMAGE_MULT = 2.5f;
 
     // ==========================================
     // SECTION 5: TRAITS AND BATTLE SPECIALS
     // ==========================================
     public static final float ACTIVATE_DAMAGE_MULT = 1.1f;
-    public static final float CHARGE_UP_MULT_PER_SEC = 1.5f;
+    public static final float CHARGE_UP_MULT_PER_SEC = 1.3f;
     public static final int DEATH_SWAP_RESET_TICKS = 60;
 
     // ==========================================
@@ -553,7 +553,7 @@ public class TeenyBalance {
     public static final int BOSS_ROBIN_BASE_DODGE = 10;
     public static final int BOSS_ROBIN_BASE_LUCK = 10;
     public static final int BOSS_ROBIN_LEVEL = 10;
-    public static final String BOSS_ROBIN_UPGRADES = "HHHHHHHHH";
+    public static final String BOSS_ROBIN_UPGRADES = "HHHHHHHHHDDDDDDDDDDDDDDDDDDHHHHHHHHHHHDDDDDDDDDDHHHHHHHHDDDDDHHHHHHHHHDDDDDD";
 
     // ==========================================
     // SECTION 7: HELPERS

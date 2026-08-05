@@ -20,7 +20,8 @@ public class PacketTitanManagerAction {
         TOGGLE_FAVORITE,
         SET_COMBO_GROUP,
         SET_COMBO_AUTO,
-        CYCLE_LEAD_SLOT
+        CYCLE_LEAD_SLOT,
+        DEPOSIT_CARRIED
     }
 
     private final int containerId;
@@ -75,6 +76,10 @@ public class PacketTitanManagerAction {
         return new PacketTitanManagerAction(containerId, ActionType.CYCLE_LEAD_SLOT, 0, "");
     }
 
+    public static PacketTitanManagerAction depositCarried(int containerId) {
+        return new PacketTitanManagerAction(containerId, ActionType.DEPOSIT_CARRIED, 0, "");
+    }
+
     public PacketTitanManagerAction(FriendlyByteBuf buf) {
         this.containerId = buf.readVarInt();
         this.actionType = buf.readEnum(ActionType.class);
@@ -116,6 +121,7 @@ public class PacketTitanManagerAction {
                 case SET_COMBO_GROUP -> menu.setComboGroup(stringValue);
                 case SET_COMBO_AUTO -> menu.setComboGroup("");
                 case CYCLE_LEAD_SLOT -> menu.cycleLeadTeamSlot();
+                case DEPOSIT_CARRIED -> menu.depositCarriedStack();
             }
             menu.broadcastChanges();
         });

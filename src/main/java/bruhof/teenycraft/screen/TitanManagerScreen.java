@@ -3,6 +3,8 @@ package bruhof.teenycraft.screen;
 import bruhof.teenycraft.TeenyCraft;
 import bruhof.teenycraft.capability.TeenyCoinsProvider;
 import bruhof.teenycraft.item.custom.ItemAccessory;
+import bruhof.teenycraft.item.custom.ItemChip;
+import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.capability.TitanManagerStorageSlot;
 import bruhof.teenycraft.networking.ModMessages;
 import bruhof.teenycraft.networking.PacketTitanManagerAction;
@@ -42,6 +44,10 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
     private static final int ACCESSORY_SLOT_INDEX = 3;
     private static final int STORAGE_SLOT_START = 4;
     private static final int STORAGE_SLOT_END = 58;
+    private static final int STORAGE_GRID_X = 34;
+    private static final int STORAGE_GRID_Y = 61;
+    private static final int STORAGE_GRID_WIDTH = 9 * 18;
+    private static final int STORAGE_GRID_HEIGHT = 6 * 18;
 
     private EditBox searchBox;
     private final List<Button> tabButtons = new ArrayList<>();
@@ -283,6 +289,14 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
             return handleComboOverlayClick(mouseX, mouseY, button);
         }
 
+        ItemStack carried = menu.getCarried();
+        if (button == 0 && isStorable(carried)
+                && isWithin(mouseX, mouseY, leftPos + STORAGE_GRID_X, topPos + STORAGE_GRID_Y,
+                STORAGE_GRID_WIDTH, STORAGE_GRID_HEIGHT)) {
+            ModMessages.sendToServer(PacketTitanManagerAction.depositCarried(menu.containerId));
+            return true;
+        }
+
         if (button == 0 && isWithin(mouseX, mouseY, leftPos + COMBO_HELP_X, topPos + COMBO_HELP_Y,
                 COMBO_HELP_SIZE, COMBO_HELP_SIZE)) {
             comboOverlayOpen = true;
@@ -295,11 +309,13 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
             ModMessages.sendToServer(PacketTitanManagerAction.cycleLeadSlot(menu.containerId));
             return true;
         }
-        if (button == 1 && hoveredSlot != null && hoveredSlot.getItem().getItem() instanceof ItemAccessory) {
+        if (button == 1 && hoveredSlot != null
+                && (hoveredSlot.getItem().getItem() instanceof ItemFigure
+                || hoveredSlot.getItem().getItem() instanceof ItemAccessory)) {
             int slotListIndex = menu.slots.indexOf(hoveredSlot);
             if (slotListIndex >= 0 && minecraft != null && minecraft.gameMode != null) {
                 minecraft.gameMode.handleInventoryButtonClick(menu.containerId,
-                        TitanManagerMenu.BUTTON_OPEN_ACCESSORY_BASE + slotListIndex);
+                        TitanManagerMenu.BUTTON_OPEN_DETAILS_BASE + slotListIndex);
                 return true;
             }
         }
@@ -493,6 +509,12 @@ public class TitanManagerScreen extends AbstractContainerScreen<TitanManagerMenu
 
     private static boolean isWithin(double mouseX, double mouseY, int x, int y, int width, int height) {
         return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+    }
+
+    private static boolean isStorable(ItemStack stack) {
+        return !stack.isEmpty() && (stack.getItem() instanceof ItemFigure
+                || stack.getItem() instanceof ItemChip
+                || stack.getItem() instanceof ItemAccessory);
     }
 
     private void renderFavoriteMarkers(GuiGraphics guiGraphics) {

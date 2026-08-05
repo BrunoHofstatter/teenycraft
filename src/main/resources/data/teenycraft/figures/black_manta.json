@@ -16,6 +16,9 @@
                       "battery_drain",
                       "trident_throw"
                   ],
+    "ability_icon_variants":  {
+                                   "battery_drain":  "eel"
+                               },
     "ability_cost_tiers":  [
                                "d",
                                "d",

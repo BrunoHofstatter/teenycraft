@@ -3,6 +3,7 @@
     "axe_to_grind",
     "double_slam",
     "harleys_mallet",
+    "katana_slam",
     "lightning_mace",
     "presidential_slam",
     "scarab_swords",
@@ -15,9 +16,11 @@
     "batarang_storm",
     "battery_drain",
     "black_hole",
+    "booster_beatdown",
     "break_the_bat",
     "break_you",
     "burp_shield",
+    "burp_surprise",
     "counterattack",
     "curse",
     "cuteness",
@@ -45,11 +48,13 @@
     "waffles",
     "whale_drop",
     "raspberry",
+    "robo_buddy",
     "science",
     "natures_wrath",
     "root",
     "shockwave_stomp",
     "smoke_bomb",
+    "super_dash",
     "the_heal"
   ],
   "fist": [
@@ -58,6 +63,7 @@
     "cat_scratch",
     "fear",
     "lightning_fists",
+    "mighty_punch",
     "soul_punch",
     "punchies",
     "quick_punch_stun"
@@ -74,7 +80,8 @@
     "stinky_fish",
     "tea_toss",
     "trash_can_toss",
-    "ultimate_batarang"
+    "ultimate_batarang",
+    "wing_ding"
   ],
   "aimed": [
     "camera_flash",
@@ -87,6 +94,7 @@
     "missile_barrage",
     "plasma_shot",
     "plasma_shot_jinx",
+    "skeets",
     "sonic_cannon",
     "trident_throw"
   ],

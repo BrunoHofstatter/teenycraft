@@ -18,6 +18,8 @@ Each category owns a shared Minecraft item-model parent under `assets/teenycraft
 
 The display system currently changes baked item-model transforms only. It does not apply custom player arm poses.
 
+Figure-selected color variants are also active. Generated variants inherit the base ability's display category and are selected from temporary ability-item metadata populated from figure JSON.
+
 ## Source Of Truth
 
 - Category assignments: [`src/main/resources/assets/teenycraft/ability_display_categories.json`](../../src/main/resources/assets/teenycraft/ability_display_categories.json)
@@ -96,11 +98,11 @@ Profile: `teenycraft:item/ability_display/aimed`.
 
 | Category | Ability ids |
 | --- | --- |
-| `tool` | `axe_to_grind`, `harleys_mallet`, `presidential_slam`, `scarab_swords`, `staff_slam` |
-| `action` | `around_the_world`, `arrow_storm`, `bang`, `batarang_storm`, `battery_drain`, `black_hole`, `break_the_bat`, `break_you`, `burp_shield`, `counterattack`, `curse`, `dance`, `deadly_kiss`, `evil_laugh`, `freeze_breath`, `good_luck`, `hooded_void`, `heroic_pose`, `jiu_jitsu`, `laser_eyes_manta`, `laser_sneeze`, `light_shield`, `lightning_bubble`, `luthorbot`, `macho_smooch`, `mind_control`, `natures_wrath`, `nuh_uh`, `puddin_pucker`, `root`, `shockwave_stomp`, `tea_chi`, `tea_time`, `venom`, `waffles`, `whale_drop`, `raspberry`, `science` |
-| `fist` | `amazonian_beatdown`, `butterfly`, `cat_scratch`, `fear`, `lightning_fists`, `soul_punch`, `punchies`, `quick_punch_stun` |
-| `throwable` | `bat_mine`, `birdarang`, `darwin`, `hooded_barrage`, `journalism`, `poison_pellet`, `shuriken`, `starfish_chuck`, `stinky_fish`, `tea_toss`, `trash_can_toss`, `ultimate_batarang` |
-| `aimed` | `camera_flash`, `cash_blaster`, `construct_beam`, `energy_cannon`, `grappling_hook`, `kryptonite_beam`, `lightning_shot`, `missile_barrage`, `plasma_shot`, `plasma_shot_jinx`, `sonic_cannon`, `trident_throw` |
+| `tool` | `axe_to_grind`, `harleys_mallet`, `katana_slam`, `presidential_slam`, `scarab_swords`, `staff_slam` |
+| `action` | `around_the_world`, `arrow_storm`, `bang`, `batarang_storm`, `battery_drain`, `black_hole`, `booster_beatdown`, `break_the_bat`, `break_you`, `burp_shield`, `counterattack`, `curse`, `dance`, `deadly_kiss`, `evil_laugh`, `freeze_breath`, `good_luck`, `hooded_void`, `heroic_pose`, `jiu_jitsu`, `laser_eyes_manta`, `laser_sneeze`, `light_shield`, `lightning_bubble`, `luthorbot`, `macho_smooch`, `mind_control`, `natures_wrath`, `nuh_uh`, `puddin_pucker`, `root`, `shockwave_stomp`, `tea_chi`, `tea_time`, `venom`, `waffles`, `whale_drop`, `raspberry`, `science` |
+| `fist` | `amazonian_beatdown`, `butterfly`, `cat_scratch`, `fear`, `lightning_fists`, `mighty_punch`, `soul_punch`, `punchies`, `quick_punch_stun` |
+| `throwable` | `bat_mine`, `birdarang`, `darwin`, `hooded_barrage`, `journalism`, `poison_pellet`, `shuriken`, `starfish_chuck`, `stinky_fish`, `tea_toss`, `trash_can_toss`, `ultimate_batarang`, `wing_ding` |
+| `aimed` | `camera_flash`, `cash_blaster`, `construct_beam`, `energy_cannon`, `grappling_hook`, `kryptonite_beam`, `lightning_shot`, `missile_barrage`, `plasma_shot`, `plasma_shot_jinx`, `skeets`, `sonic_cannon`, `trident_throw` |
 
 ## Generation Flow
 
@@ -110,6 +112,8 @@ Profile: `teenycraft:item/ability_display/aimed`.
 4. The task generates `ability_<id>.json` with the selected shared display parent and the ability texture as `layer0`.
 5. The task regenerates the model overrides for `ability_1`, `ability_2`, and `ability_3`.
 6. At runtime, the held stack's `AbilityID` selects the generated child model; that model inherits its first-person and third-person transforms from the category profile.
+
+Color variants use `ability_<id>__variant_<variant>.png` plus the optional figure JSON `ability_icon_variants` mapping. The generator creates a variant child model with the same display parent as the base ability. Runtime copies the selected lowercase variant id to `AbilityIconVariant` on the temporary ability item, and the `teenycraft:icon_variant` predicate selects the generated model. No additional display-category entry or ability texture index is authored.
 
 Example generated child model:
 
@@ -137,6 +141,11 @@ Do not edit files under `build/generated/ability-icon-resources`; they are delet
 - a category references a missing ability
 - a category references an internal/non-figure-equipped ability
 - a finished custom icon has no category assignment
+- a color-variant filename is malformed
+- a color variant has no categorized base custom icon
+- a color-variant texture is not assigned by any figure
+- a figure assigns a variant for an ability it does not equip
+- a figure's variant assignment has no matching texture
 - a state override uses an unknown category or unsupported generated state
 
 This validation applies to custom icon textures. Abilities that still use `AbilityIconManager.FALLBACKS` retain the selected vanilla item's own model transforms until a custom texture is added.
@@ -154,6 +163,8 @@ Bat Mine is the current example. The throwable mine uses the `throwable` categor
   }
 }
 ```
+
+Bat Mine is the only current state-switched ability and has no color variants. The state generator remains intentionally independent from the figure-selected color-variant flow.
 
 The generator accepts overrides only for states it knows how to generate. Golden abilities are not separate states here; they reuse the normal model and add the runtime enchantment glint.
 

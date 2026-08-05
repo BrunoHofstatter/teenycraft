@@ -9,13 +9,14 @@ import bruhof.teenycraft.networking.PacketSyncTeenyCoins;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.network.NetworkHooks;
 
 public class FigureScreenMenu extends AbstractContainerMenu {
     public static final int SLOT_PREVIEW_CHIP = 0;
@@ -27,11 +28,13 @@ public class FigureScreenMenu extends AbstractContainerMenu {
     public static final int BUTTON_UPGRADE_DODGE = 2;
     public static final int BUTTON_UPGRADE_LUCK = 3;
     public static final int BUTTON_INSTALL_CHIP = 4;
+    public static final int BUTTON_BACK_TO_MANAGER = 5;
     public static final int BUTTON_APPLY_ORDER_BASE = 1000;
 
     private final Player player;
-    private final InteractionHand boundHand;
-    private final int boundMainHandSlot;
+    private final FigureItemLocation figureLocation;
+    private final TitanManagerReturnState returnState;
+    private final SimpleContainer figureSnapshotContainer = new SimpleContainer(1);
     private final SimpleContainer chipPreviewContainer = new SimpleContainer(1) {
         @Override
         public void setChanged() {
@@ -41,14 +44,30 @@ public class FigureScreenMenu extends AbstractContainerMenu {
     };
 
     public FigureScreenMenu(int containerId, Inventory inventory, FriendlyByteBuf extraData) {
-        this(containerId, inventory, extraData.readEnum(InteractionHand.class), extraData.readInt());
+        this(containerId,
+                inventory,
+                FigureItemLocation.read(extraData),
+                TitanManagerReturnState.readOptional(extraData),
+                extraData.readItem());
     }
 
-    public FigureScreenMenu(int containerId, Inventory inventory, InteractionHand boundHand, int boundMainHandSlot) {
+    public FigureScreenMenu(int containerId,
+                            Inventory inventory,
+                            FigureItemLocation figureLocation,
+                            TitanManagerReturnState returnState) {
+        this(containerId, inventory, figureLocation, returnState, figureLocation.resolve(inventory.player));
+    }
+
+    private FigureScreenMenu(int containerId,
+                             Inventory inventory,
+                             FigureItemLocation figureLocation,
+                             TitanManagerReturnState returnState,
+                             ItemStack initialFigureSnapshot) {
         super(ModMenuTypes.FIGURE_SCREEN_MENU.get(), containerId);
         this.player = inventory.player;
-        this.boundHand = boundHand;
-        this.boundMainHandSlot = boundMainHandSlot;
+        this.figureLocation = figureLocation;
+        this.returnState = returnState;
+        this.figureSnapshotContainer.setItem(0, initialFigureSnapshot.copy());
 
         this.addSlot(new Slot(this.chipPreviewContainer, SLOT_PREVIEW_CHIP, 18, 93) {
             @Override
@@ -63,16 +82,27 @@ public class FigureScreenMenu extends AbstractContainerMenu {
         });
 
         layoutPlayerInventorySlots(inventory, 44, 186);
+        this.addSlot(new Slot(this.figureSnapshotContainer, 0, -1000, -1000) {
+            @Override
+            public boolean mayPickup(Player player) {
+                return false;
+            }
+
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return false;
+            }
+        });
     }
 
     public ItemStack getFigureStack() {
-        if (boundHand == InteractionHand.OFF_HAND) {
-            return player.getOffhandItem();
-        }
-        if (boundMainHandSlot < 0 || boundMainHandSlot >= 9) {
-            return ItemStack.EMPTY;
-        }
-        return player.getInventory().getItem(boundMainHandSlot);
+        return player.level().isClientSide()
+                ? figureSnapshotContainer.getItem(0)
+                : figureLocation.resolve(player);
+    }
+
+    public boolean canReturnToTitanManager() {
+        return returnState != null;
     }
 
     public String getCurrentOrderCode() {
@@ -94,6 +124,11 @@ public class FigureScreenMenu extends AbstractContainerMenu {
 
     @Override
     public boolean clickMenuButton(Player player, int id) {
+        if (id == BUTTON_BACK_TO_MANAGER && returnState != null && player instanceof ServerPlayer serverPlayer) {
+            TitanManagerMenu.open(serverPlayer, returnState);
+            return true;
+        }
+
         ItemStack figureStack = getFigureStack();
         if (!(figureStack.getItem() instanceof ItemFigure)) {
             return false;
@@ -194,8 +229,16 @@ public class FigureScreenMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        ItemStack figureStack = getFigureStack();
+        ItemStack figureStack = figureLocation.resolve(player);
         return player.isAlive() && figureStack.getItem() instanceof ItemFigure;
+    }
+
+    @Override
+    public void broadcastChanges() {
+        if (!player.level().isClientSide()) {
+            figureSnapshotContainer.setItem(0, figureLocation.resolve(player).copy());
+        }
+        super.broadcastChanges();
     }
 
     @Override
@@ -236,7 +279,8 @@ public class FigureScreenMenu extends AbstractContainerMenu {
 
         private FigureInventorySlot(Inventory inventory, int slotIndex, int x, int y) {
             super(inventory, slotIndex, x, y);
-            this.boundSlot = boundHand == InteractionHand.MAIN_HAND && slotIndex == boundMainHandSlot;
+            this.boundSlot = figureLocation.source() == FigureItemLocation.Source.PLAYER_INVENTORY
+                    && slotIndex == figureLocation.slot();
         }
 
         @Override
@@ -248,5 +292,25 @@ public class FigureScreenMenu extends AbstractContainerMenu {
         public boolean mayPlace(ItemStack stack) {
             return !boundSlot && super.mayPlace(stack);
         }
+    }
+
+    public static void open(ServerPlayer player,
+                            FigureItemLocation location,
+                            TitanManagerReturnState returnState) {
+        ItemStack figureStack = location.resolve(player);
+        if (!(figureStack.getItem() instanceof ItemFigure)) {
+            return;
+        }
+
+        NetworkHooks.openScreen(player,
+                new SimpleMenuProvider(
+                        (containerId, inventory, menuPlayer) ->
+                                new FigureScreenMenu(containerId, inventory, location, returnState),
+                        Component.translatable("container.teenycraft.figure_screen")),
+                buffer -> {
+                    location.write(buffer);
+                    TitanManagerReturnState.writeOptional(buffer, returnState);
+                    buffer.writeItem(figureStack);
+                });
     }
 }

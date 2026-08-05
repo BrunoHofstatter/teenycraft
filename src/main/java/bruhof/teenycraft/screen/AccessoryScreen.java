@@ -34,6 +34,7 @@ public class AccessoryScreen extends AbstractContainerScreen<AccessoryScreenMenu
     private static final int CURRENT_ROW_HEIGHT = 41;
 
     private Button purchaseButton;
+    private Button backButton;
 
     public AccessoryScreen(AccessoryScreenMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -50,6 +51,10 @@ public class AccessoryScreen extends AbstractContainerScreen<AccessoryScreenMenu
         this.purchaseButton = addRenderableWidget(Button.builder(Component.empty(), button -> purchaseNextTier())
                 .bounds(this.leftPos + 166, this.topPos + 224, 154, 20)
                 .build());
+        this.backButton = addRenderableWidget(Button.builder(Component.literal("BACK"), button -> backToTitanManager())
+                .bounds(this.leftPos + 86, this.topPos + 224, 72, 20)
+                .build());
+        this.backButton.visible = this.menu.canReturnToTitanManager();
         updateButtonState();
     }
 
@@ -165,6 +170,13 @@ public class AccessoryScreen extends AbstractContainerScreen<AccessoryScreenMenu
         if (minecraft != null && minecraft.gameMode != null) {
             minecraft.gameMode.handleInventoryButtonClick(menu.containerId,
                     AccessoryScreenMenu.BUTTON_PURCHASE_NEXT_TIER);
+        }
+    }
+
+    private void backToTitanManager() {
+        if (minecraft != null && minecraft.gameMode != null) {
+            minecraft.gameMode.handleInventoryButtonClick(menu.containerId,
+                    AccessoryScreenMenu.BUTTON_BACK_TO_MANAGER);
         }
     }
 

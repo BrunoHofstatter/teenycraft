@@ -16,6 +16,9 @@
                       "construct_chains",
                       "construct_blaster"
                   ],
+    "ability_icon_variants":  {
+                                   "construct_beam":  "green"
+                               },
     "ability_cost_tiers":  [
                                "c",
                                "b",

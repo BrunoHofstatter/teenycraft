@@ -6,6 +6,7 @@ import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.item.custom.battle.ItemAbility;
 import bruhof.teenycraft.networking.ModMessages;
 import bruhof.teenycraft.networking.PacketSilkieStationAction;
+import bruhof.teenycraft.util.FigureLoader;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -466,7 +467,8 @@ public class SilkieStationScreen extends AbstractContainerScreen<SilkieStationMe
             case 2 -> ModItems.ABILITY_3.get();
             default -> ModItems.ABILITY_1.get();
         });
-        ItemAbility.initializeAbility(stack, ability.abilityId(), ability.name(), 0, false);
+        String iconVariant = FigureLoader.getAbilityIconVariant(snapshot.targetStack(), ability.abilityId());
+        ItemAbility.initializeAbility(stack, ability.abilityId(), ability.name(), 0, false, iconVariant);
         return stack;
     }
 

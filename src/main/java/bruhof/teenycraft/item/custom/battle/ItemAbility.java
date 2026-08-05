@@ -23,6 +23,7 @@ public class ItemAbility extends Item {
     public static final String TAG_NAME = "AbilityName";
     public static final String TAG_DAMAGE = "Damage";
     public static final String TAG_GOLDEN = "IsGolden";
+    public static final String TAG_ICON_VARIANT = "AbilityIconVariant";
 
     public ItemAbility(Properties pProperties, int slotIndex) {
         super(pProperties.stacksTo(1));
@@ -30,11 +31,20 @@ public class ItemAbility extends Item {
     }
 
     public static void initializeAbility(ItemStack stack, String id, String name, int damage, boolean golden) {
+        initializeAbility(stack, id, name, damage, golden, "");
+    }
+
+    public static void initializeAbility(ItemStack stack, String id, String name, int damage, boolean golden, String iconVariant) {
         var tag = stack.getOrCreateTag();
         tag.putString(TAG_ID, id);
         tag.putString(TAG_NAME, name);
         tag.putInt(TAG_DAMAGE, damage);
         tag.putBoolean(TAG_GOLDEN, golden);
+        if (iconVariant == null || iconVariant.isBlank()) {
+            tag.remove(TAG_ICON_VARIANT);
+        } else {
+            tag.putString(TAG_ICON_VARIANT, iconVariant);
+        }
     }
 
     @Override

@@ -15,7 +15,9 @@ import bruhof.teenycraft.util.FigureGroupLoader;
 import bruhof.teenycraft.networking.ModMessages;
 import bruhof.teenycraft.networking.PacketSyncTitanManagerView;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -24,14 +26,20 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.SlotItemHandler;
+import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class TitanManagerMenu extends AbstractContainerMenu {
-    public static final int BUTTON_OPEN_ACCESSORY_BASE = 2000;
+    public static final int BUTTON_OPEN_DETAILS_BASE = 2000;
     private static final int STORAGE_VIEW_SLOTS = TitanManagerViewState.PAGE_SIZE;
+    private static final int TEAM_SLOT_START = 0;
+    private static final int TEAM_SLOT_END = ITitanManager.TEAM_SIZE;
+    private static final int EQUIPPED_ACCESSORY_SLOT = 3;
+    private static final int STORAGE_SLOT_START = 4;
+    private static final int STORAGE_SLOT_END = STORAGE_SLOT_START + STORAGE_VIEW_SLOTS;
     private static final int PLAYER_INVENTORY_START = 58;
     private static final int PLAYER_INVENTORY_END = 94;
 
@@ -46,10 +54,17 @@ public class TitanManagerMenu extends AbstractContainerMenu {
 
     public TitanManagerMenu(int containerId, Inventory inventory, FriendlyByteBuf extraData) {
         this(containerId, inventory, inventory.player.getCapability(TitanManagerProvider.TITAN_MANAGER)
-                .orElseThrow(IllegalStateException::new));
+                .orElseThrow(IllegalStateException::new), TitanManagerReturnState.read(extraData));
     }
 
     public TitanManagerMenu(int containerId, Inventory inventory, ITitanManager titanManager) {
+        this(containerId, inventory, titanManager, TitanManagerReturnState.defaults());
+    }
+
+    private TitanManagerMenu(int containerId,
+                             Inventory inventory,
+                             ITitanManager titanManager,
+                             TitanManagerReturnState initialState) {
         super(ModMenuTypes.TITAN_MANAGER_MENU.get(), containerId);
         this.titanManager = titanManager;
         this.player = inventory.player;
@@ -67,8 +82,26 @@ public class TitanManagerMenu extends AbstractContainerMenu {
         }
 
         layoutPlayerInventorySlots(inventory, 39, 183);
+        initialState.applyTo(viewState);
         viewState.rebuild(titanManager);
         rebuildComboState();
+    }
+
+    public static void open(ServerPlayer player) {
+        open(player, TitanManagerReturnState.defaults());
+    }
+
+    public static void open(ServerPlayer player, TitanManagerReturnState initialState) {
+        TitanManagerReturnState safeState = initialState == null
+                ? TitanManagerReturnState.defaults()
+                : initialState;
+        player.getCapability(TitanManagerProvider.TITAN_MANAGER).ifPresent(manager ->
+                NetworkHooks.openScreen(player,
+                        new SimpleMenuProvider(
+                                (containerId, inventory, menuPlayer) ->
+                                        new TitanManagerMenu(containerId, inventory, manager, safeState),
+                                Component.translatable("container.teenycraft.titan_manager")),
+                        safeState::write));
     }
 
     public ITitanManager getTitanManager() {
@@ -190,11 +223,22 @@ public class TitanManagerMenu extends AbstractContainerMenu {
 
     @Override
     public boolean clickMenuButton(Player player, int id) {
-        int slotIndex = id - BUTTON_OPEN_ACCESSORY_BASE;
+        int slotIndex = id - BUTTON_OPEN_DETAILS_BASE;
         if (slotIndex >= 0 && slotIndex < slots.size()) {
             ItemStack stack = slots.get(slotIndex).getItem();
-            if (stack.getItem() instanceof ItemAccessory accessory && player instanceof ServerPlayer serverPlayer) {
-                AccessoryScreenMenu.open(serverPlayer, accessory.getAccessoryId());
+            if (!(player instanceof ServerPlayer serverPlayer)) {
+                return false;
+            }
+
+            TitanManagerReturnState returnState = TitanManagerReturnState.capture(viewState);
+            if (stack.getItem() instanceof ItemFigure) {
+                FigureItemLocation location = getFigureLocation(slotIndex);
+                if (location != null) {
+                    FigureScreenMenu.open(serverPlayer, location, returnState);
+                    return true;
+                }
+            } else if (stack.getItem() instanceof ItemAccessory accessory) {
+                AccessoryScreenMenu.open(serverPlayer, accessory.getAccessoryId(), returnState);
                 return true;
             }
             return false;
@@ -204,29 +248,33 @@ public class TitanManagerMenu extends AbstractContainerMenu {
 
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
+        if (index < 0 || index >= slots.size()) {
+            return ItemStack.EMPTY;
+        }
+
         Slot sourceSlot = slots.get(index);
-        if (sourceSlot == null || !sourceSlot.hasItem()) {
+        if (!sourceSlot.hasItem()) {
             return ItemStack.EMPTY;
         }
 
         ItemStack sourceStack = sourceSlot.getItem();
         ItemStack copy = sourceStack.copy();
+        boolean moved;
 
-        if (index < PLAYER_INVENTORY_START) {
-            if (!moveItemStackTo(sourceStack, PLAYER_INVENTORY_START, PLAYER_INVENTORY_END, true)) {
-                return ItemStack.EMPTY;
-            }
+        if (index >= TEAM_SLOT_START && index < TEAM_SLOT_END) {
+            moved = moveToStorage(sourceStack, TitanManagerStorageSection.FIGURES);
+        } else if (index == EQUIPPED_ACCESSORY_SLOT) {
+            moved = moveToStorage(sourceStack, TitanManagerStorageSection.ACCESSORIES);
+        } else if (index >= STORAGE_SLOT_START && index < STORAGE_SLOT_END) {
+            moved = quickMoveFromStorage(sourceStack);
+        } else if (index >= PLAYER_INVENTORY_START && index < PLAYER_INVENTORY_END) {
+            moved = quickMoveFromPlayerInventory(sourceStack);
         } else {
-            TitanManagerStorageSection section = getSectionForStack(sourceStack);
-            if (section == null) {
-                return ItemStack.EMPTY;
-            }
+            moved = false;
+        }
 
-            ItemStack remaining = titanManager.insertIntoStorage(section, sourceStack.copy(), false);
-            if (remaining.getCount() == sourceStack.getCount()) {
-                return ItemStack.EMPTY;
-            }
-            sourceStack.setCount(remaining.getCount());
+        if (!moved || sourceStack.getCount() == copy.getCount()) {
+            return ItemStack.EMPTY;
         }
 
         if (sourceStack.isEmpty()) {
@@ -238,6 +286,23 @@ public class TitanManagerMenu extends AbstractContainerMenu {
         sourceSlot.onTake(player, sourceStack);
         broadcastChanges();
         return copy;
+    }
+
+    public boolean depositCarriedStack() {
+        ItemStack carried = getCarried();
+        TitanManagerStorageSection section = getSectionForStack(carried);
+        if (carried.isEmpty() || section == null) {
+            return false;
+        }
+
+        ItemStack remaining = titanManager.insertIntoStorage(section, carried.copy(), false);
+        if (remaining.getCount() == carried.getCount()) {
+            player.displayClientMessage(Component.literal("That Titan Manager storage section is full."), true);
+            return false;
+        }
+
+        setCarried(remaining);
+        return true;
     }
 
     @Override
@@ -268,6 +333,59 @@ public class TitanManagerMenu extends AbstractContainerMenu {
             return TitanManagerStorageSection.ACCESSORIES;
         }
         return null;
+    }
+
+    private FigureItemLocation getFigureLocation(int menuSlotIndex) {
+        if (menuSlotIndex >= TEAM_SLOT_START && menuSlotIndex < TEAM_SLOT_END) {
+            return FigureItemLocation.titanTeam(menuSlotIndex - TEAM_SLOT_START);
+        }
+        if (menuSlotIndex >= STORAGE_SLOT_START && menuSlotIndex < STORAGE_SLOT_END) {
+            TitanManagerStorageSlot ref = viewState.getVisibleSlot(menuSlotIndex - STORAGE_SLOT_START);
+            return ref != null && ref.section() == TitanManagerStorageSection.FIGURES
+                    ? FigureItemLocation.titanStorage(ref.slot())
+                    : null;
+        }
+        if (menuSlotIndex >= PLAYER_INVENTORY_START && menuSlotIndex < PLAYER_INVENTORY_END) {
+            return FigureItemLocation.playerInventory(slots.get(menuSlotIndex).getContainerSlot());
+        }
+        return null;
+    }
+
+    private boolean quickMoveFromStorage(ItemStack sourceStack) {
+        if (sourceStack.getItem() instanceof ItemFigure) {
+            return moveItemStackTo(sourceStack, TEAM_SLOT_START, TEAM_SLOT_END, false)
+                    || moveItemStackTo(sourceStack, PLAYER_INVENTORY_START, PLAYER_INVENTORY_END, true);
+        }
+        if (sourceStack.getItem() instanceof ItemAccessory) {
+            return moveItemStackTo(sourceStack, EQUIPPED_ACCESSORY_SLOT, EQUIPPED_ACCESSORY_SLOT + 1, false)
+                    || moveItemStackTo(sourceStack, PLAYER_INVENTORY_START, PLAYER_INVENTORY_END, true);
+        }
+        return sourceStack.getItem() instanceof ItemChip
+                && moveItemStackTo(sourceStack, PLAYER_INVENTORY_START, PLAYER_INVENTORY_END, true);
+    }
+
+    private boolean quickMoveFromPlayerInventory(ItemStack sourceStack) {
+        if (sourceStack.getItem() instanceof ItemFigure) {
+            if (moveItemStackTo(sourceStack, TEAM_SLOT_START, TEAM_SLOT_END, false)) {
+                return true;
+            }
+            return moveToStorage(sourceStack, TitanManagerStorageSection.FIGURES);
+        }
+        if (sourceStack.getItem() instanceof ItemAccessory) {
+            if (moveItemStackTo(sourceStack, EQUIPPED_ACCESSORY_SLOT, EQUIPPED_ACCESSORY_SLOT + 1, false)) {
+                return true;
+            }
+            return moveToStorage(sourceStack, TitanManagerStorageSection.ACCESSORIES);
+        }
+        return sourceStack.getItem() instanceof ItemChip
+                && moveToStorage(sourceStack, TitanManagerStorageSection.CHIPS);
+    }
+
+    private boolean moveToStorage(ItemStack sourceStack, TitanManagerStorageSection section) {
+        int originalCount = sourceStack.getCount();
+        ItemStack remaining = titanManager.insertIntoStorage(section, sourceStack.copy(), false);
+        sourceStack.setCount(remaining.getCount());
+        return remaining.getCount() < originalCount;
     }
 
     private void rebuildComboState() {

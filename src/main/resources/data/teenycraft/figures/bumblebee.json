@@ -16,6 +16,9 @@
                       "plasma_shot_bee",
                       "super_dash"
                   ],
+    "ability_icon_variants":  {
+                                  "super_dash":  "black"
+                              },
     "ability_cost_tiers":  [
                                "c",
                                "d",

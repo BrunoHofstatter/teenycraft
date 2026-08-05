@@ -5,6 +5,7 @@ import bruhof.teenycraft.capability.TeenyCoinsProvider;
 import bruhof.teenycraft.item.ModItems;
 import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.item.custom.battle.ItemAbility;
+import bruhof.teenycraft.util.FigureLoader;
 import bruhof.teenycraft.util.FigurePreviewHelper;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -39,6 +40,7 @@ public class FigureScreen extends AbstractContainerScreen<FigureScreenMenu> {
     private final List<Button> moveDownButtons = new ArrayList<>();
     private Button installChipButton;
     private Button applyOrderButton;
+    private Button backButton;
 
     private List<String> draftOrder = new ArrayList<>();
     private String lastServerOrderCode = "";
@@ -107,6 +109,13 @@ public class FigureScreen extends AbstractContainerScreen<FigureScreenMenu> {
                 .bounds(baseX + 210, baseY + 134, 62, 20)
                 .build());
 
+        this.backButton = this.addRenderableWidget(Button.builder(Component.literal("BACK"),
+                        b -> submitMenuButton(FigureScreenMenu.BUTTON_BACK_TO_MANAGER))
+                .bounds(baseX + 210, baseY + 168, 62, 16)
+                .build());
+        this.backButton.visible = this.menu.canReturnToTitanManager();
+        this.backButton.setTooltip(Tooltip.create(Component.literal("Back to Titan Manager")));
+
         updateButtonState();
     }
 
@@ -150,7 +159,7 @@ public class FigureScreen extends AbstractContainerScreen<FigureScreenMenu> {
         if (figureStack.getItem() instanceof ItemFigure) {
             List<FigurePreviewHelper.AbilityPreview> abilityPreviews = FigurePreviewHelper.buildAbilityPreviews(figureStack, draftOrder);
             for (int i = 0; i < abilityPreviews.size(); i++) {
-                ItemStack abilityIcon = createAbilityIconStack(abilityPreviews.get(i), i);
+                ItemStack abilityIcon = createAbilityIconStack(figureStack, abilityPreviews.get(i), i);
                 guiGraphics.renderItem(abilityIcon, x + 12, y + ABILITY_START_Y + i * ABILITY_ROW_HEIGHT + 1);
             }
         }
@@ -442,13 +451,14 @@ public class FigureScreen extends AbstractContainerScreen<FigureScreenMenu> {
         return lines;
     }
 
-    private ItemStack createAbilityIconStack(FigurePreviewHelper.AbilityPreview preview, int slotIndex) {
+    private ItemStack createAbilityIconStack(ItemStack figureStack, FigurePreviewHelper.AbilityPreview preview, int slotIndex) {
         ItemStack abilityStack = new ItemStack(switch (slotIndex) {
             case 1 -> ModItems.ABILITY_2.get();
             case 2 -> ModItems.ABILITY_3.get();
             default -> ModItems.ABILITY_1.get();
         });
-        ItemAbility.initializeAbility(abilityStack, preview.abilityId(), preview.name(), preview.damage(), preview.golden());
+        String iconVariant = FigureLoader.getAbilityIconVariant(figureStack, preview.abilityId());
+        ItemAbility.initializeAbility(abilityStack, preview.abilityId(), preview.name(), preview.damage(), preview.golden(), iconVariant);
         return abilityStack;
     }
 

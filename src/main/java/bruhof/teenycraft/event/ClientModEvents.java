@@ -76,6 +76,15 @@ public class ClientModEvents {
             return 0.0f;
         });
 
+        ItemProperties.register(item, new ResourceLocation(TeenyCraft.MOD_ID, "icon_variant"), (stack, level, entity, seed) -> {
+            if (!stack.hasTag()) {
+                return 0.0f;
+            }
+            String abilityId = stack.getTag().getString(ItemAbility.TAG_ID);
+            String iconVariant = stack.getTag().getString(ItemAbility.TAG_ICON_VARIANT);
+            return (float) AbilityIconManager.getIconVariantIndex(abilityId, iconVariant);
+        });
+
         ItemProperties.register(item, new ResourceLocation(TeenyCraft.MOD_ID, "is_button"), (stack, level, entity, seed) -> {
             int slot = -1;
             if (item == ModItems.ABILITY_1.get()) slot = 0;

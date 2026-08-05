@@ -1,8 +1,11 @@
 package bruhof.teenycraft.client;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -10,10 +13,13 @@ import net.minecraft.world.item.Items;
 public class AbilityIconManager {
     private static final String ICON_TEXTURE_PREFIX = "textures/item/ability_";
     private static final String ICON_TEXTURE_SUFFIX = ".png";
+    private static final String ICON_VARIANT_MARKER = "__variant_";
     private static volatile Set<String> availableIconModels = Set.of();
+    private static volatile Map<String, Integer> iconVariantIndexes = Map.of();
 
     public static void refreshAvailableIconModels(ResourceManager resourceManager) {
         Set<String> discovered = new HashSet<>();
+        Map<String, Set<String>> variantsByAbility = new TreeMap<>();
         resourceManager.listResources("textures/item", location ->
                         location.getNamespace().equals("teenycraft")
                                 && location.getPath().startsWith(ICON_TEXTURE_PREFIX)
@@ -22,16 +28,44 @@ public class AbilityIconManager {
                 .keySet()
                 .forEach(location -> {
                     String path = location.getPath();
-                    discovered.add(path.substring(
+                    String modelId = path.substring(
                             ICON_TEXTURE_PREFIX.length(),
                             path.length() - ICON_TEXTURE_SUFFIX.length()
-                    ));
+                    );
+                    discovered.add(modelId);
+
+                    int markerIndex = modelId.indexOf(ICON_VARIANT_MARKER);
+                    if (markerIndex > 0 && markerIndex + ICON_VARIANT_MARKER.length() < modelId.length()) {
+                        String abilityId = modelId.substring(0, markerIndex);
+                        String variant = modelId.substring(markerIndex + ICON_VARIANT_MARKER.length());
+                        variantsByAbility.computeIfAbsent(abilityId, ignored -> new TreeSet<>()).add(variant);
+                    }
                 });
+
+        Map<String, Integer> variantIndexes = new HashMap<>();
+        variantsByAbility.forEach((abilityId, variants) -> {
+            int index = 1;
+            for (String variant : variants) {
+                variantIndexes.put(getVariantModelId(abilityId, variant), index++);
+            }
+        });
         availableIconModels = Set.copyOf(discovered);
+        iconVariantIndexes = Map.copyOf(variantIndexes);
     }
 
     public static boolean hasIconModel(String abilityModelId) {
         return availableIconModels.contains(abilityModelId);
+    }
+
+    public static int getIconVariantIndex(String abilityId, String variant) {
+        if (abilityId == null || abilityId.isBlank() || variant == null || variant.isBlank()) {
+            return 0;
+        }
+        return iconVariantIndexes.getOrDefault(getVariantModelId(abilityId, variant), 0);
+    }
+
+    private static String getVariantModelId(String abilityId, String variant) {
+        return abilityId + ICON_VARIANT_MARKER + variant;
     }
 
     // Vanilla-item placeholders from the Teeny Craft - Abilities sheet's icon_name column.

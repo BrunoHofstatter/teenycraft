@@ -16,24 +16,46 @@ import net.minecraftforge.network.NetworkHooks;
 
 public class AccessoryScreenMenu extends AbstractContainerMenu {
     public static final int BUTTON_PURCHASE_NEXT_TIER = 0;
+    public static final int BUTTON_BACK_TO_MANAGER = 1;
 
     private final String accessoryId;
+    private final TitanManagerReturnState returnState;
 
     public AccessoryScreenMenu(int containerId, Inventory inventory, FriendlyByteBuf extraData) {
-        this(containerId, inventory, extraData.readUtf());
+        this(containerId,
+                inventory,
+                extraData.readUtf(),
+                TitanManagerReturnState.readOptional(extraData));
     }
 
     public AccessoryScreenMenu(int containerId, Inventory inventory, String accessoryId) {
+        this(containerId, inventory, accessoryId, null);
+    }
+
+    private AccessoryScreenMenu(int containerId,
+                                Inventory inventory,
+                                String accessoryId,
+                                TitanManagerReturnState returnState) {
         super(ModMenuTypes.ACCESSORY_SCREEN_MENU.get(), containerId);
         this.accessoryId = accessoryId;
+        this.returnState = returnState;
     }
 
     public String getAccessoryId() {
         return accessoryId;
     }
 
+    public boolean canReturnToTitanManager() {
+        return returnState != null;
+    }
+
     @Override
     public boolean clickMenuButton(Player player, int id) {
+        if (id == BUTTON_BACK_TO_MANAGER && returnState != null && player instanceof ServerPlayer serverPlayer) {
+            TitanManagerMenu.open(serverPlayer, returnState);
+            return true;
+        }
+
         if (id != BUTTON_PURCHASE_NEXT_TIER || !(player instanceof ServerPlayer serverPlayer)) {
             return false;
         }
@@ -68,6 +90,12 @@ public class AccessoryScreenMenu extends AbstractContainerMenu {
     }
 
     public static void open(ServerPlayer player, String accessoryId) {
+        open(player, accessoryId, null);
+    }
+
+    public static void open(ServerPlayer player,
+                            String accessoryId,
+                            TitanManagerReturnState returnState) {
         if (AccessoryRegistry.get(accessoryId) == null) {
             return;
         }
@@ -76,10 +104,13 @@ public class AccessoryScreenMenu extends AbstractContainerMenu {
         NetworkHooks.openScreen(player,
                 new SimpleMenuProvider(
                         (containerId, inventory, menuPlayer) ->
-                                new AccessoryScreenMenu(containerId, inventory, accessoryId),
+                                new AccessoryScreenMenu(containerId, inventory, accessoryId, returnState),
                         Component.translatable("item.teenycraft.accessory_" + accessoryId)
                 ),
-                buffer -> buffer.writeUtf(accessoryId));
+                buffer -> {
+                    buffer.writeUtf(accessoryId);
+                    TitanManagerReturnState.writeOptional(buffer, returnState);
+                });
     }
 
     private static Component purchaseFailure(AccessoryMasteryService.PurchaseResult result) {

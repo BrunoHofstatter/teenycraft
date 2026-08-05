@@ -16,6 +16,9 @@
                       "evil_laugh",
                       "black_hole"
                   ],
+    "ability_icon_variants":  {
+                                   "soul_punch":  "red"
+                               },
     "ability_cost_tiers":  [
                                "d",
                                "b",

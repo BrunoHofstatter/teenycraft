@@ -161,9 +161,31 @@ tasks.register('generateAbilityIconModels') {
         // Only figure-equipped definitions require unique icon indexes. Internal
         // effect/support records may share an index because they are never rendered.
         def equippedIds = [] as Set
+        def iconVariantAssignments = [:]
         figureData.files.sort().each { figureFile ->
             def figure = jsonSlurper.parse(figureFile)
-            (figure.abilities ?: []).each { equippedIds.add(it as String) }
+            def figureId = figure.id as String
+            def figureAbilities = (figure.abilities ?: []).collect { it as String }
+            figureAbilities.each { equippedIds.add(it) }
+
+            if (figure.containsKey('ability_icon_variants')) {
+                if (!(figure.ability_icon_variants instanceof Map)) {
+                    throw new GradleException("Figure '${figureId}' ability_icon_variants must be a JSON object")
+                }
+
+                figure.ability_icon_variants.each { rawAbilityId, rawVariant ->
+                    def abilityId = rawAbilityId as String
+                    if (!figureAbilities.contains(abilityId)) {
+                        throw new GradleException("Figure '${figureId}' assigns an icon variant to unequipped ability '${abilityId}'")
+                    }
+                    if (!(rawVariant instanceof String) || !(rawVariant ==~ /[a-z0-9_]+/)) {
+                        throw new GradleException("Figure '${figureId}' ability '${abilityId}' has invalid icon variant '${rawVariant}'")
+                    }
+
+                    def modelId = "${abilityId}__variant_${rawVariant}".toString()
+                    iconVariantAssignments.computeIfAbsent(modelId) { [] }.add(figureId)
+                }
+            }
         }
 
         def equippedIndexes = [:]
@@ -249,10 +271,33 @@ tasks.register('generateAbilityIconModels') {
 
         def texturePrefix = 'ability_'
         def textureSuffix = '.png'
-        def customIconIds = iconTextures.files
-                .findAll { !it.name.endsWith('_golden.png') && !it.name.endsWith('_button.png') }
-                .collect { it.name.substring(texturePrefix.length(), it.name.length() - textureSuffix.length()) }
-                .sort()
+        def variantMarker = '__variant_'
+        def customIconIds = []
+        def variantIcons = []
+        iconTextures.files.sort().each { textureFile ->
+            if (textureFile.name.endsWith('_golden.png') || textureFile.name == 'ability_bat_mine_button.png') {
+                return
+            }
+
+            def modelId = textureFile.name.substring(texturePrefix.length(), textureFile.name.length() - textureSuffix.length())
+            int markerIndex = modelId.indexOf(variantMarker)
+            if (markerIndex < 0) {
+                customIconIds.add(modelId)
+                return
+            }
+
+            def abilityId = modelId.substring(0, markerIndex)
+            def variant = modelId.substring(markerIndex + variantMarker.length())
+            if (!abilityId || !(variant ==~ /[a-z0-9_]+/) || modelId.indexOf(variantMarker, markerIndex + variantMarker.length()) >= 0) {
+                throw new GradleException("Invalid ability icon variant filename: '${textureFile.name}'")
+            }
+            variantIcons.add([abilityId: abilityId, variant: variant, modelId: modelId])
+        }
+        customIconIds.sort()
+
+        variantIcons.groupBy { it.abilityId }.each { abilityId, icons ->
+            icons.sort { it.variant }.eachWithIndex { icon, index -> icon.variantIndex = index + 1 }
+        }
 
         customIconIds.each { id ->
             if (!abilitiesById.containsKey(id)) {
@@ -263,6 +308,31 @@ tasks.register('generateAbilityIconModels') {
             }
             if (!displayCategoryByAbility.containsKey(id)) {
                 throw new GradleException("Custom ability texture '${id}' has no entry in ability_display_categories.json")
+            }
+        }
+
+        variantIcons.each { icon ->
+            if (!abilitiesById.containsKey(icon.abilityId)) {
+                throw new GradleException("Ability icon variant '${icon.modelId}' has no matching ability id '${icon.abilityId}'")
+            }
+            if (!equippedIds.contains(icon.abilityId)) {
+                throw new GradleException("Ability icon variant '${icon.modelId}' belongs to an ability not used by any figure")
+            }
+            if (!customIconIds.contains(icon.abilityId)) {
+                throw new GradleException("Ability icon variant '${icon.modelId}' has no base custom icon")
+            }
+            if (!displayCategoryByAbility.containsKey(icon.abilityId)) {
+                throw new GradleException("Ability icon variant '${icon.modelId}' has no base entry in ability_display_categories.json")
+            }
+            if (!iconVariantAssignments.containsKey(icon.modelId)) {
+                throw new GradleException("Ability icon variant '${icon.modelId}' is not assigned by any figure")
+            }
+        }
+
+        def variantModelIds = variantIcons.collect { it.modelId } as Set
+        iconVariantAssignments.each { modelId, figureIds ->
+            if (!variantModelIds.contains(modelId)) {
+                throw new GradleException("Figures ${figureIds.sort().join(', ')} assign missing ability icon variant '${modelId}'")
             }
         }
 
@@ -279,6 +349,13 @@ tasks.register('generateAbilityIconModels') {
             writeJson(new File(modelDirectory, "ability_${id}.json"), [
                     parent  : "teenycraft:item/ability_display/${displayCategoryByAbility[id]}",
                     textures: [layer0: "teenycraft:item/ability_${id}"]
+            ])
+        }
+
+        variantIcons.each { icon ->
+            writeJson(new File(modelDirectory, "ability_${icon.modelId}.json"), [
+                    parent  : "teenycraft:item/ability_display/${displayCategoryByAbility[icon.abilityId]}",
+                    textures: [layer0: "teenycraft:item/ability_${icon.modelId}"]
             ])
         }
 
@@ -299,25 +376,35 @@ tasks.register('generateAbilityIconModels') {
             ])
         }
 
-        def overrides = customIconIds
-                .sort { left, right ->
-                    (abilitiesById[left].texture_index as int) <=> (abilitiesById[right].texture_index as int)
-                }
-                .collect { id ->
-                    [
-                            predicate: ['teenycraft:ability_id': abilitiesById[id].texture_index as int],
-                            model    : "teenycraft:item/ability_${id}"
-                    ]
-                }
-
-        if (hasBatMineButton) {
+        def variantsByAbility = variantIcons.groupBy { it.abilityId }
+        def overrides = []
+        customIconIds.sort { left, right ->
+            (abilitiesById[left].texture_index as int) <=> (abilitiesById[right].texture_index as int)
+        }.each { id ->
             overrides.add([
-                    predicate: [
-                            'teenycraft:ability_id': abilitiesById.bat_mine.texture_index as int,
-                            'teenycraft:is_button' : 1
-                    ],
-                    model    : 'teenycraft:item/ability_bat_mine_button'
+                    predicate: ['teenycraft:ability_id': abilitiesById[id].texture_index as int],
+                    model    : "teenycraft:item/ability_${id}"
             ])
+
+            (variantsByAbility[id] ?: []).sort { it.variantIndex }.each { icon ->
+                overrides.add([
+                        predicate: [
+                                'teenycraft:ability_id': abilitiesById[id].texture_index as int,
+                                'teenycraft:icon_variant': icon.variantIndex as int
+                        ],
+                        model    : "teenycraft:item/ability_${icon.modelId}"
+                ])
+            }
+
+            if (id == 'bat_mine' && hasBatMineButton) {
+                overrides.add([
+                        predicate: [
+                                'teenycraft:ability_id': abilitiesById.bat_mine.texture_index as int,
+                                'teenycraft:is_button' : 1
+                        ],
+                        model    : 'teenycraft:item/ability_bat_mine_button'
+                ])
+            }
         }
 
         def wrapper = [
