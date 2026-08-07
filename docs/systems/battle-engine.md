@@ -8,7 +8,7 @@ The repo contains a working real-time battle foundation centered on a battle-sta
 Phase 1 of the refactor adds a safety harness around that runtime with Forge GameTests for key battle flows and reload-time validation for battle content references.
 Phase 2 now fixes the main active-figure HP-to-zero correctness hole without a broad architecture refactor: effect-driven direct HP changes that can kill the active figure now route back through `BattleState` so faint, swap, defeat, and cleanup resolve consistently.
 Phase 3 now adds explicit authoritative pairing for active battles: each battler stores its paired opponent identity in `BattleState`, paired battle bootstrap initializes both sides together, and the covered runtime paths no longer scrape the nearest battle-capable entity for correctness-critical opponent resolution.
-Phase 4 now separates participant-owned battle state from figure-owned combat state: per-figure temporary combat buckets live on `BattleFigure`, duplicate bench swaps use authoritative tagged team indices, and Phase 2 HP handling plus Phase 3 pairing remain intact.
+Phase 4 separated participant-owned battle state from figure-owned combat state. A later ownership correction keeps persistent effects on the participant by default while retaining genuinely figure-local cooldown, progress, cast, and Disable state on `BattleFigure`.
 Phase 5 now centralizes correctness-critical battle HP mutation on `BattleState`: standard hit damage, healing, periodic HP deltas, self-damage, and chip-driven battle HP changes all resolve through one combat-mutation flow for faint, kill, reset, defeat, and follow-up hooks.
 Phase 6 now splits executor responsibilities into smaller runtime helpers: `AbilityExecutor` stays as the public entry facade, `battle.executor.BattleAbilityExecution` handles validation, targeting, scheduling, and self or follow-up stages, `battle.executor.BattleTargeting` owns paired target resolution, and `battle.executor.BattleDamageResolver` owns hit mutation invocation plus post-hit ordering while still delegating authoritative HP outcomes to `BattleState`.
 Phase 7 now completes the refactor by parsing `golden_bonus` on load, aligning validation with explicit effect and trait contracts, and removing gameplay-critical generic fallback behavior from validated battle-content paths.
@@ -23,7 +23,7 @@ The battle HUD now also has a first-pass mirrored rail presentation layer on bot
 - The active battle team comes from the Titan Manager team slots, not the vanilla hotbar.
 - Active figures spend mana, respect cooldowns, and use virtual figure HP separate from normal item persistence.
 - During battle, the player inventory is replaced with battle controls: ability items, tofu when present, an accessory slot, and bench figure swap icons.
-- Participant resources such as mana, tofu, battery, accessory runtime, and arena linkage stay on `BattleState`, while temporary combat state such as effects, cooldown buckets, slot progress, and charge/channel state live on the owning `BattleFigure`.
+- Participant resources and persistent battle effects stay on `BattleState`. Cooldown buckets, slot progress, charge/channel state, and figure-scoped Disable effects live on the owning `BattleFigure`.
 - Team defeat occurs when all figures on that battle team have fainted.
 - Team slots 1 and 2 can receive one selected shared-group combo; slot 3 is outside the combo pair.
 
@@ -59,7 +59,7 @@ Current safety and correctness coverage now includes:
 - class-advantage GameTests for last-hit-only multi-hit behavior, minimum `+1` bonus handling, and per-victim matchup evaluation
 - delayed-projectile GameTests for mana spend on fire plus resolution-time flight cancellation through `resolveProjectile`
 - nearby-distractor GameTests for paired-opponent correctness in faint reset, accessory opponent hooks, and remote mine targeting
-- ownership GameTests for figure-local effects/progress cooldown buckets, duplicate bench targeting, and non-leaking charge state across active-figure changes
+- ownership GameTests for participant effects across swaps, figure-local Disable/progress/cooldown buckets, duplicate bench targeting, and non-leaking charge state across active-figure changes
 - reload-time validation for figure ability ids, NPC team figure ids, NPC team golden ability ids, explicit gameplay effect ids, explicit gameplay trait ids, and parsed golden-bonus contracts
 - explicit compatibility handling for legacy `trait:instant_cast` golden bonuses as a validated no-op alias rather than a warning-only contract exception
 - Phase 2 re-verification of the `ArenaBattleManager.finishBattleForPlayer` defeat cleanup path in runtime code; that exact packet-and-teleport path is not directly GameTested because Forge mock `ServerPlayer` instances do not have a full network channel
@@ -86,13 +86,13 @@ The battle engine is built around two layers:
 - snapshotted base stats from the source figure item
 - current virtual HP
 - ability cooldowns
-- figure-owned active effects and internal cooldowns
+- figure-scoped Disable effects and internal cooldowns
 - per-slot activate progress
 - slot lock and pending charge-up or blue-channel runtime
 - dodge and crit shuffle bags
 - temporary accessory HP bonus
 
-`reset_lock` remains a narrow participant-level exception because it gates the whole side during round reset rather than belonging to one specific figure.
+Persistent effects are participant-owned by default because they affect the battling side and follow its active figure. Disable is the explicit figure-scoped exception because it locks one team slot.
 
 The original figure `ItemStack` is still kept on the `BattleFigure`, so battle can keep reading persistent data such as ability order, cost tiers, and golden ability status.
 
@@ -154,7 +154,7 @@ Current tick responsibilities:
 - tick active accessory runtime and battery drain
 - tick each `BattleFigure` ability cooldown array and internal cooldown map
 - tick the active figure's charge-up state
-- tick participant reset-lock state and each figure's owned effect map
+- tick the participant effect map once and each figure's Disable/cooldown buckets
 - resolve delayed projectiles
 
 Additional event-driven runtime:
@@ -296,7 +296,8 @@ Current swap behavior:
 
 - swapping changes the active figure index
 - swapping cancels flight
-- swapping no longer drags the old active figure's effects, activate progress, or charge state onto the new active figure
+- swapping preserves participant effects while activate progress, cooldowns, and charge state remain on their original figures
+- flight is explicitly canceled when the active figure changes even though its stored effect is participant-owned
 - swapping applies a cooldown using `SWAP_COOLDOWN`
 - the player's battle inventory is immediately rebuilt
 
@@ -312,7 +313,7 @@ Virtual HP mutation outcomes are finalized through the `BattleState` combat-muta
 When the active figure faints and another team member is still alive:
 
 - the next alive figure becomes active
-- the fainted figure's active effects are cleared
+- the fainting side's participant effects and figure-scoped disables are cleared
 - a participant-level `reset_lock` effect is applied
 - both sides receive reset visuals
 - the player's battle inventory is rebuilt
@@ -351,7 +352,7 @@ Current synced data includes:
 - current ability ids, tiers, and golden flags
 - structured active-effect snapshot entries for compact icon-and-timer rendering
 - bench figure ids and HP summaries
-- remote mine state flags, including mines that stay on benched figures
+- participant-owned remote mine state flags that remain visible across target swaps
 
 This sync is display-oriented. Runtime authority remains server-side in `BattleState`, `AbilityExecutor`, and the related battle registries.
 The current synced HUD snapshot does not yet expose the separated class-bonus damage numbers; the runtime tracks them now so later UI work can surface them without redefining combat math.
@@ -389,7 +390,6 @@ The current overlay crosshair indicators now separate ranged target validity fro
 - how NPC or future PvP battles should choose and control opponents without relying on the current dummy-centric setup
 - whether the saved-battle-state NBT should remain minimal or grow into real reconnect support
 - whether more explicit battle phases are needed beyond the current state-plus-executor model
-- whether periodic damage and other delayed effects should eventually store original source-figure identity, instead of the current paired-participant plus current-active-figure fallback used when only the caster UUID is available
 - whether more indirect damage sources should opt into class advantage once their presentation and source-ownership rules are clearer
 - whether the debug-only proximity lookups in [`src/main/java/bruhof/teenycraft/command/CommandTeeny.java`](../../src/main/java/bruhof/teenycraft/command/CommandTeeny.java) should be folded into the same pairing helpers later; Phase 4 still leaves those dev-command paths unchanged because they are not live battle-runtime authority
 

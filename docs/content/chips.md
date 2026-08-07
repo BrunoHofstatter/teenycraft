@@ -85,7 +85,7 @@ Document the implemented chip customization layer: how chips are stored on figur
 - `Lucky Steal Duck`: hybrid chip that combines scaled `Luck` and `Mana Steal Duck` behavior.
 - `Healthy Dodge`: heals the owner when the chipped figure dodges.
 - `Dodgy Healthy Dodge`: hybrid chip that combines scaled `Smokescreen` and `Healthy Dodge` behavior.
-- `Second Chance`: once per battle, when the chipped figure would faint, it instead survives at authored HP, clears its own active effects like a normal faint reset, and if another ally can swap in, that next active ally is forced in and receives `speed_down` plus `curse`.
+- `Second Chance`: once per battle, when the chipped figure would faint, it instead survives at authored HP, clears its side's participant effects and disables like a normal faint reset, and if another ally can swap in, that next active ally is forced in while the participant receives `speed_down` plus `curse`.
 - `Speedy Dodge`: grants a short `speed_up` buff when the chipped figure dodges.
 - `Dodgy Speedy Dodge`: hybrid chip that combines scaled `Smokescreen` and `Speedy Dodge` behavior.
 - `Healthy Second Chance`: special `Health` hybrid with custom authored behavior, not inherited `Health` stats; it uses the same once-per-battle rescue flow as `Second Chance` but survives at more HP and applies stronger swap-in debuffs.

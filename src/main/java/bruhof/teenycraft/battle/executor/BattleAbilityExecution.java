@@ -641,13 +641,15 @@ public final class BattleAbilityExecution {
     private static void detonateMine(BattleAbilityContext context, LivingEntity target, @Nullable IBattleState targetState,
                                      BattleTargeting.ArmedMine armedMine) {
         context.state().consumeMana(context.actualManaCost());
-        if (detonateMineDamage(context, target, targetState, armedMine.figure(), armedMine.instance()) > 0) {
+        BattleFigure victimFigure = targetState != null ? targetState.getActiveFigure() : null;
+        if (detonateMineDamage(context, target, targetState, victimFigure, armedMine.instance()) > 0) {
             awardBatteryFromManaSpent(context.state(), context.actualManaCost());
         }
     }
 
     private static int detonateMineDamage(BattleAbilityContext context, LivingEntity target, @Nullable IBattleState victimState,
-                                          BattleFigure mineOwnerFigure, bruhof.teenycraft.battle.effect.EffectInstance mine) {
+                                          @Nullable BattleFigure victimFigure,
+                                          bruhof.teenycraft.battle.effect.EffectInstance mine) {
         float maxSnapshot = mine.power;
         int stages = mine.magnitude;
 
@@ -667,7 +669,7 @@ public final class BattleAbilityExecution {
                 context.attacker(),
                 target,
                 victimState,
-                mineOwnerFigure,
+                victimFigure,
                 result,
                 null,
                 0,
@@ -677,8 +679,8 @@ public final class BattleAbilityExecution {
                 AbilityExecutor.nextAccessoryReactionId(),
                 true
         );
-        if (mineOwnerFigure != null) {
-            mineOwnerFigure.getActiveEffects().remove("remote_mine_" + context.slotIndex());
+        if (victimState != null) {
+            victimState.removeEffect("remote_mine_" + context.slotIndex());
         }
         return damageDealt;
     }

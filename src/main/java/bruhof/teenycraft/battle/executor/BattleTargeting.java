@@ -1,7 +1,6 @@
 package bruhof.teenycraft.battle.executor;
 
 import bruhof.teenycraft.TeenyBalance;
-import bruhof.teenycraft.battle.BattleFigure;
 import bruhof.teenycraft.battle.effect.EffectInstance;
 import bruhof.teenycraft.capability.IBattleState;
 import net.minecraft.world.entity.LivingEntity;
@@ -12,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 public final class BattleTargeting {
-    public record ArmedMine(BattleFigure figure, EffectInstance instance) {
+    public record ArmedMine(EffectInstance instance) {
     }
 
     private BattleTargeting() {
@@ -86,11 +85,9 @@ public final class BattleTargeting {
         }
 
         String effectId = "remote_mine_" + slotIndex;
-        for (BattleFigure figure : targetState.getTeam()) {
-            EffectInstance mine = figure.getActiveEffects().get(effectId);
-            if (mine != null && casterId.equals(mine.casterUUID)) {
-                return new ArmedMine(figure, mine);
-            }
+        EffectInstance mine = targetState.getEffectInstance(effectId);
+        if (mine != null && casterId.equals(mine.casterUUID)) {
+            return new ArmedMine(mine);
         }
 
         return null;

@@ -337,7 +337,7 @@ Current non-example:
 - `trait:multi_hit:...` would validate, but there is no current generic golden pipeline override for `multi_hit`.
 
 ## Current Reapply Rules That Explain "Add" vs "Replace"
-These are the active rules in `BattleState.applyEffect(...)` for figure effects:
+These are the active rules in `BattleState.applyEffect(...)` for stored effects. Persistent effects use participant scope by default; Disable uses figure scope:
 
 - if the effect already exists and `BattleEffect.canStackMagnitude()` is `true`, `magnitude += newMagnitude`
 - otherwise `magnitude = newMagnitude`

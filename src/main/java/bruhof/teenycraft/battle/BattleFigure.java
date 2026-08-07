@@ -38,7 +38,7 @@ public class BattleFigure {
     private final int[] abilityCooldowns = new int[3];
     private boolean appearedThisBattle = false;
 
-    // Figure-owned runtime combat state
+    // Figure-owned runtime combat state. activeEffects is reserved for explicitly figure-scoped effects such as Disable.
     private final Map<String, EffectInstance> activeEffects = new HashMap<>();
     private final Map<String, Integer> internalCooldowns = new HashMap<>();
     private final int[] slotProgress = new int[3];

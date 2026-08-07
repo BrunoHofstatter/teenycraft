@@ -8,6 +8,7 @@ import bruhof.teenycraft.battle.BattleFigure;
 import bruhof.teenycraft.capability.IBattleState;
 import bruhof.teenycraft.battle.effect.BattleEffect.EffectType;
 import bruhof.teenycraft.battle.effect.BattleEffect.EffectCategory;
+import bruhof.teenycraft.battle.effect.BattleEffect.EffectScope;
 
 import bruhof.teenycraft.capability.BattleState;
 import net.minecraft.world.entity.LivingEntity;
@@ -72,6 +73,23 @@ public class EffectRegistry {
         register(new DisableEffect(2));
         register(new BattleEffect("flight", EffectType.DURATION, EffectCategory.BUFF) {
             @Override
+            public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
+                if (state instanceof BattleState bs && target == state.getActiveFigure()) {
+                    Player player = bs.getPlayer();
+                    if (player != null) {
+                        player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                                net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN,
+                                duration,
+                                7,
+                                false,
+                                false
+                        ));
+                    }
+                }
+                return true;
+            }
+
+            @Override
             public void onTick(bruhof.teenycraft.capability.IBattleState state, bruhof.teenycraft.battle.BattleFigure target, int remainingDuration) {
                 if (target != state.getActiveFigure()) {
                     return;
@@ -112,6 +130,7 @@ public class EffectRegistry {
                     Player player = bs.getPlayer();
                     if (player != null) {
                         player.setNoGravity(false);
+                        player.removeEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);
                     }
                 }
             }
@@ -228,7 +247,9 @@ public class EffectRegistry {
     }
 
     public static class DisableEffect extends BattleEffect {
-        public DisableEffect(int index) { super("disable_" + index, EffectType.DURATION, EffectCategory.DEBUFF); }
+        public DisableEffect(int index) {
+            super("disable_" + index, EffectType.DURATION, EffectCategory.DEBUFF, EffectScope.FIGURE);
+        }
         @Override
         public boolean onApply(IBattleState state, BattleFigure target, int duration, int magnitude) {
             if (state.hasEffect("cleanse_immunity")) return false;
@@ -571,7 +592,7 @@ public class EffectRegistry {
              // We apply a SEPARATE effect for immunity
              state.applyEffect("cleanse_immunity", duration, 0); 
              
-             return true; 
+             return false; // Instant; only cleanse_immunity persists.
         }
     }
     

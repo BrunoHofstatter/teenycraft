@@ -7,12 +7,15 @@ Document the current battle effect system: how ability JSON resolves into effect
 The mod has an implemented centralized effect system built around `EffectApplierRegistry`, `EffectRegistry`, `BattleState.applyEffect`, and `EffectInstance`. Effects already drive buffs, debuffs, control states, periodic damage or healing, resource changes, mines, pets, flight, and reset logic.
 Phase 1 of the battle refactor now validates effect references during reload so broken ability data fails early instead of falling through at runtime.
 Phase 7 now makes `EffectApplierRegistry` the explicit gameplay-content effect-input contract: validated ability data and golden self/opponent bonuses resolve through registered applier ids, while generic fallback behavior is separated from core validated runtime paths.
+The current ownership model makes persistent effects participant-owned by default. Disable is the explicit figure-scoped exception because it locks a specific team slot.
 
 ## Player-Facing Behavior
 - Effects can buff, debuff, damage over time, heal over time, lock actions, alter mana flow, summon pets, place mines, or modify dodge, reflect, and flight behavior.
 - Effects live in battle runtime state, not on the figure item.
 - Most effects are shown to the client overlay as either a remaining duration in seconds or a magnitude value for infinite stack effects.
-- Effects are usually cleared on faint and round reset, but they are not persistent figure progression data.
+- Manual swaps preserve participant effects, so buffs, debuffs, control, periodic effects, pets, and mines continue against the newly active figure.
+- A faint round reset clears the fainting side's participant effects and figure-scoped disables before applying `reset_lock`.
+- Effects are not persistent figure progression data and are cleared when the battle ends.
 
 ## Source Of Truth
 - [`src/main/java/bruhof/teenycraft/battle/effect/EffectApplierRegistry.java`](../../src/main/java/bruhof/teenycraft/battle/effect/EffectApplierRegistry.java)
@@ -37,16 +40,16 @@ The current effect pipeline is:
 `AbilityLoader` now parses golden bonuses on reload. Golden effect bonuses such as `self:power_up:0.3` or `opponent:stun:1.2` reuse this same applier path through their parsed scope/id/param records instead of reparsing raw strings at cast time.
 
 ## Effect Storage Model
-Active effects are stored in `BattleState.activeEffects`, keyed by effect id.
+Persistent participant effects are stored in `BattleState.participantEffects`, keyed by effect id. Figure-scoped effects are stored on the targeted `BattleFigure`.
 
-Important current consequence:
+Ownership is explicit on `BattleEffect` through `EffectScope`:
 
-- effects are participant-level runtime state, not separate per-bench-figure state
-- applying an effect always targets the current active figure on that participant's `BattleState`
-- manual swaps do not automatically clear the effect map
-- faint and round reset do clear the effect map
+- `PARTICIPANT` is the default for registered effects and for internal unregistered battle locks
+- `FIGURE` is reserved for effects that truly belong to one team figure; the current examples are `disable_0`, `disable_1`, and `disable_2`
+- instant effects are executed against their resolved target but are not stored
+- source attribution is independent of target ownership, so a participant-owned periodic effect can still remember the original caster figure
 
-In practice, effects currently follow the battling participant state rather than living as long-term data on a specific `BattleFigure`.
+Participant effects tick once per participant and use the current active figure as their target for lifecycle hooks. Figure-scoped disables keep ticking on their targeted slots while those figures are benched.
 
 ## EffectInstance Fields
 Each active effect is stored as an `EffectInstance`.
@@ -96,6 +99,7 @@ Categories are not cosmetic. They are used by cleanse, kiss, and dispel logic:
 `BattleState.applyEffect` uses the following rules:
 
 - `onApply` runs first and may cancel the effect entirely
+- the effect's declared scope chooses the participant map or the explicitly targeted figure map
 - if the effect already exists and `canStackMagnitude()` is true, new magnitude is added
 - otherwise, reapplying the effect overwrites `magnitude`
 - `power` keeps the larger of the old and new values
@@ -126,6 +130,7 @@ Current behavior:
 - `getSmartSplitValue` can evenly split a stored total value across the remaining pulses by consuming from `power`
 - delayed effects that carry a caster now also persist the original source figure identity needed for later combat-source hooks
 - chip-applied runtime effects now preserve that same source-figure attribution when they are authored through chip hook actions instead of normal ability JSON
+- periodic participant effects act on the active figure at each pulse, so swapping changes the current poison, shock, or radio target without duplicating or resetting its timer
 
 Implemented periodic effects:
 
@@ -154,7 +159,7 @@ Common current composite patterns:
 - `freeze` immediately burns mana, then applies `freeze_movement`
 - `reflect` applies a reflect state and also applies self `stun` and `freeze_movement`
 - `disable` targets the current active figure slot and converts into `disable_0`, `disable_1`, or `disable_2`
-- `remote_mine` applier converts into `remote_mine_0`, `remote_mine_1`, or `remote_mine_2`
+- `remote_mine` converts into `remote_mine_0`, `remote_mine_1`, or `remote_mine_2`; the mine belongs to the target participant and detonates against that participant's current active figure
 - `pets` chooses `pet_slot_1` or `pet_slot_2` rather than storing a generic `pets` effect id
 
 ## Implemented Effect Glossary
@@ -184,9 +189,9 @@ Common current composite patterns:
 ### Debuff And Control Effects
 - `power_down`: infinite stackable flat damage penalty, consumed on attack.
 - `defense_down`: duration-based increased incoming damage percent.
-- `root`: duration-based swap lock.
+- `root`: participant-owned duration-based swap lock.
 - `speed_down`: duration-based movement-speed penalty debuff, currently used by `Second Chance` rescue swaps.
-- `disable_0`, `disable_1`, `disable_2`: duration-based figure slot locks.
+- `disable_0`, `disable_1`, `disable_2`: figure-scoped duration-based slot locks. Cleanse and faint reset can remove disables across the affected team.
 - `stun`: duration-based action lock.
 - direct `stun` applications can now have their duration reduced by chip-authored direct-stun resistance, but `shock` still applies its periodic mini-stuns at full authored duration because it bypasses the direct `stun` applier path.
 - `freeze`: instant mana burn plus application of `freeze_movement`.
@@ -196,7 +201,7 @@ Common current composite patterns:
 - `curse`: duration-based reduced mana regeneration.
 - `waffle`: duration-based random blocked ability slot.
 - `kiss`: duration-based positive-effect blocker that also strips buffs on apply.
-- `remote_mine_0`, `remote_mine_1`, `remote_mine_2`: infinite staged mines tied to an ability slot and caster.
+- `remote_mine_0`, `remote_mine_1`, `remote_mine_2`: infinite participant-owned staged mines tied to an ability slot and caster.
 
 ### Special And Internal Effects
 - `cleanse`: instant purge of debuffs and control plus application of `cleanse_immunity`.
@@ -248,10 +253,10 @@ The client overlay therefore shows duration cleanly, but not every effect's hidd
 - Shared effect concepts should become reusable registry entries rather than custom branches per ability.
 - Effect docs need to distinguish applier ids from stored effect ids.
 - Lockout-style effects must stay explicit about what they block: movement, casting, swapping, buffs, or incoming damage handling.
-- Because effects currently live on `BattleState`, any future change to make effects truly per-figure would be a battle-engine behavior change, not just a doc cleanup.
+- New persistent effects should remain participant-scoped unless their mechanic explicitly targets one team slot like Disable.
+- Target ownership and caster attribution are separate concerns and should not be coupled when adding delayed effects.
 
 ## Open Questions
-- whether effects should eventually belong to individual figures instead of the participant-wide battle state
 - whether the current `magnitude` and `power` overloading should be formalized into stronger typed payloads
 - whether instant helper effects such as `cleanse` should keep their current registry shape or be split into clearer runtime-only helpers
 - whether effect categories need stronger validation beyond the current enum
@@ -259,4 +264,3 @@ The client overlay therefore shows duration cleanly, but not every effect's hidd
 ## Planned Additions
 - add JSON examples for common effect parameter patterns
 - document the exact UI wording and icon treatment once battle presentation is more stable
-- revisit the page if the engine moves effects from participant state to per-figure state

@@ -242,6 +242,8 @@ Separate participant-owned battle state from figure-owned combat state without w
 - Forge GameTests now cover figure-owned effect and progress ownership across swaps, duplicate bench targeting, and non-leaking charge state across active-figure changes.
 - At the end of Phase 4, direct combat mutation paths were still intentionally unchanged and the small Phase 2 HP seam was still in place.
 
+Superseded ownership note: the later battle-effect ownership correction restored persistent effects to participant scope by default. Disable remains figure-scoped, while cooldowns, slot progress, and active cast state remain figure-owned. The bullets above describe the historical Phase 4 result, not the current effect model.
+
 ## Phase 5
 ### Goal
 Centralize correctness-critical combat mutation on one authoritative `BattleState` path without widening into the later executor split or content-contract cleanup phases.

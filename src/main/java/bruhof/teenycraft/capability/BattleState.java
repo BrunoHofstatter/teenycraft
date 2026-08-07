@@ -42,7 +42,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -55,7 +54,6 @@ public class BattleState implements IBattleState {
     private static final UUID KRYPTONITE_SLOW_UUID = UUID.fromString("52dd6be4-3175-48f5-925b-dbc9994fbb6e");
     static final int BATTLE_ACCESSORY_SLOT = 5;
     public static final String TAG_BATTLE_FIGURE_INDEX = "BattleFigureIndex";
-    private static final Set<String> PARTICIPANT_EFFECT_IDS = Set.of("reset_lock", "arena_speed", "arena_launch_lock", "arena_launch_movement_lock");
 
     private boolean isBattling = false;
     private final List<BattleFigure> team = new ArrayList<>();
@@ -126,6 +124,7 @@ public class BattleState implements IBattleState {
 
     @Override
     public void initializeBattle(List<ItemStack> teamStacks, LivingEntity ownerEntity, LivingEntity opponentEntity) {
+        clearAllEffects();
         this.ownerEntity = ownerEntity;
         this.player = ownerEntity instanceof Player ownerPlayer ? ownerPlayer : null;
         this.opponentEntityId = opponentEntity != null ? opponentEntity.getUUID() : null;
@@ -151,7 +150,6 @@ public class BattleState implements IBattleState {
         this.currentTofuMana = 0;
         this.currentTofuPreviewEffectId = "";
         this.currentTofuPreviewSelfTarget = true;
-        this.participantEffects.clear();
         this.effectContextFigure = null;
         
         this.batteryCharge = 0;
@@ -234,7 +232,9 @@ public class BattleState implements IBattleState {
     }
 
     private boolean isParticipantEffect(String effectId) {
-        return PARTICIPANT_EFFECT_IDS.contains(effectId);
+        bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(effectId);
+        return effect == null
+                || effect.getScope() == bruhof.teenycraft.battle.effect.BattleEffect.EffectScope.PARTICIPANT;
     }
 
     private BattleFigure getScopedFigure() {
@@ -800,7 +800,7 @@ public class BattleState implements IBattleState {
             syncOwnerPresentation();
         }
 
-        clearFigureEffects(figure);
+        clearAllEffects();
 
         if (figure != getActiveFigure()) {
             return true;
@@ -900,10 +900,10 @@ public class BattleState implements IBattleState {
 
         if (nextIndex != -1) {
             // SWAP CASE (Round Reset)
-            // 1. Clear the fainted figure's temporary effects (fresh start)
+            // 1. Clear the fainting side's temporary effects (fresh round)
             entity.removeEffect(net.minecraft.world.effect.MobEffects.LEVITATION);
             entity.removeEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);
-            clearFigureEffects(active);
+            clearAllEffects();
             
             // 2. Apply Reset Lock to self
             applyEffect("reset_lock", TeenyBalance.DEATH_SWAP_RESET_TICKS, 1);
@@ -1323,12 +1323,12 @@ public class BattleState implements IBattleState {
     @Override
     public void applyEffect(String effectId, int duration, int magnitude, float power, UUID caster, @Nullable BattleFigure casterFigure) {
         int casterFigureIndex = resolveAppliedEffectSourceFigureIndex(caster, casterFigure);
+        BattleFigure targetFigure = getScopedFigure();
         if (isParticipantEffect(effectId)) {
-            applyParticipantEffect(effectId, duration, magnitude, power, caster, casterFigureIndex);
+            applyParticipantEffect(targetFigure, effectId, duration, magnitude, power, caster, casterFigureIndex);
             return;
         }
 
-        BattleFigure targetFigure = getScopedFigure();
         if (targetFigure != null) {
             applyEffectToFigure(targetFigure, effectId, duration, magnitude, power, caster, casterFigureIndex);
         }
@@ -1339,13 +1339,12 @@ public class BattleState implements IBattleState {
         if (accessoryId == null || accessoryId.isBlank()) {
             return false;
         }
+        BattleFigure targetFigure = getScopedFigure();
         if (isParticipantEffect(effectId)) {
-            applyParticipantEffect(effectId, duration, magnitude, 0, null, EffectInstance.NO_CASTER_FIGURE_INDEX,
-                    accessoryId);
-            return true;
+            return applyParticipantEffect(targetFigure, effectId, duration, magnitude, 0, null,
+                    EffectInstance.NO_CASTER_FIGURE_INDEX, accessoryId);
         }
 
-        BattleFigure targetFigure = getScopedFigure();
         return targetFigure != null && applyEffectToFigure(targetFigure, effectId, duration, magnitude, 0, null,
                 EffectInstance.NO_CASTER_FIGURE_INDEX, accessoryId);
     }
@@ -1355,7 +1354,7 @@ public class BattleState implements IBattleState {
                             @Nullable BattleFigure casterFigure) {
         int casterFigureIndex = resolveAppliedEffectSourceFigureIndex(caster, casterFigure);
         if (isParticipantEffect(effectId)) {
-            applyParticipantEffect(effectId, duration, magnitude, power, caster, casterFigureIndex);
+            applyParticipantEffect(targetFigure, effectId, duration, magnitude, power, caster, casterFigureIndex);
             return;
         }
 
@@ -1433,37 +1432,62 @@ public class BattleState implements IBattleState {
     
     @Override
     public void removeEffectsByCategory(bruhof.teenycraft.battle.effect.BattleEffect.EffectCategory category) {
-        BattleFigure targetFigure = getScopedFigure();
-        if (targetFigure == null) {
-            return;
-        }
-
-        List<String> removals = new ArrayList<>();
-        for (Map.Entry<String, EffectInstance> entry : targetFigure.getActiveEffects().entrySet()) {
+        List<String> participantRemovals = new ArrayList<>();
+        for (Map.Entry<String, EffectInstance> entry : participantEffects.entrySet()) {
             bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(entry.getKey());
             if (effect != null && effect.getCategory() == category) {
-                removals.add(entry.getKey());
+                participantRemovals.add(entry.getKey());
             }
         }
+        for (String effectId : participantRemovals) {
+            removeParticipantEffect(effectId);
+        }
 
-        for (String effectId : removals) {
-            removeEffectFromFigure(targetFigure, effectId);
+        for (BattleFigure figure : team) {
+            List<String> figureRemovals = new ArrayList<>();
+            for (Map.Entry<String, EffectInstance> entry : figure.getActiveEffects().entrySet()) {
+                bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(entry.getKey());
+                if (effect != null && effect.getCategory() == category) {
+                    figureRemovals.add(entry.getKey());
+                }
+            }
+            for (String effectId : figureRemovals) {
+                removeEffectFromFigure(figure, effectId);
+            }
         }
     }
     
-    private void applyParticipantEffect(String effectId, int duration, int magnitude, float power, UUID caster, int casterFigureIndex) {
-        applyParticipantEffect(effectId, duration, magnitude, power, caster, casterFigureIndex, "");
+    private boolean applyParticipantEffect(BattleFigure targetFigure, String effectId, int duration, int magnitude,
+                                           float power, UUID caster, int casterFigureIndex) {
+        return applyParticipantEffect(targetFigure, effectId, duration, magnitude, power, caster, casterFigureIndex, "");
     }
 
-    private void applyParticipantEffect(String effectId, int duration, int magnitude, float power, UUID caster,
-                                        int casterFigureIndex, String sourceAccessoryId) {
+    private boolean applyParticipantEffect(BattleFigure targetFigure, String effectId, int duration, int magnitude,
+                                           float power, UUID caster, int casterFigureIndex, String sourceAccessoryId) {
+        bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(effectId);
+        if (effect != null && targetFigure != null
+                && !withFigureContext(targetFigure, () -> effect.onApply(this, targetFigure, duration, magnitude))) {
+            return false;
+        }
+
         if (participantEffects.containsKey(effectId)) {
             EffectInstance existing = participantEffects.get(effectId);
-            existing.magnitude = magnitude;
+            if (effect != null && effect.canStackMagnitude()) {
+                existing.magnitude += magnitude;
+                if (!sourceAccessoryId.isEmpty()) {
+                    existing.addAccessoryMagnitude(sourceAccessoryId, magnitude);
+                }
+            } else {
+                existing.magnitude = magnitude;
+                if (sourceAccessoryId.isEmpty()) {
+                    existing.clearAccessoryMagnitudes();
+                } else {
+                    existing.replaceAccessoryMagnitude(sourceAccessoryId, magnitude);
+                }
+            }
             existing.power = Math.max(existing.power, power);
             existing.casterUUID = caster;
             existing.casterFigureIndex = casterFigureIndex;
-            existing.replaceAccessoryMagnitude(sourceAccessoryId, magnitude);
             if (duration == -1) {
                 existing.duration = -1;
             } else if (duration > existing.duration && existing.duration != -1) {
@@ -1474,9 +1498,8 @@ public class BattleState implements IBattleState {
                     sourceAccessoryId));
         }
 
-        if ("arena_speed".equals(effectId)) {
-            updateOwnerSpeedInternal();
-        }
+        updateOwnerSpeedInternal();
+        return true;
     }
 
     private void applyEffectToFigure(BattleFigure figure, String effectId, int duration, int magnitude, float power, UUID caster, int casterFigureIndex) {
@@ -1524,10 +1547,6 @@ public class BattleState implements IBattleState {
                         sourceAccessoryId));
             }
 
-            if (player != null && figure == getActiveFigure() && "flight".equals(effectId)) {
-                player.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, duration, 7, false, false));
-            }
-
             if (figure == getActiveFigure()) {
                 updateOwnerSpeedInternal();
             }
@@ -1536,10 +1555,18 @@ public class BattleState implements IBattleState {
     }
 
     private void removeParticipantEffect(String effectId) {
-        participantEffects.remove(effectId);
-        if ("arena_speed".equals(effectId)) {
-            updateOwnerSpeedInternal();
+        EffectInstance instance = participantEffects.remove(effectId);
+        if (instance == null) {
+            return;
         }
+
+        BattleFigure active = getActiveFigure();
+        bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(effectId);
+        if (effect != null && active != null) {
+            withFigureContext(active, () -> effect.onRemove(this, active));
+        }
+
+        updateOwnerSpeedInternal();
     }
 
     private void removeEffectFromFigure(BattleFigure figure, String effectId) {
@@ -1569,10 +1596,6 @@ public class BattleState implements IBattleState {
                 figure.setRemovingEffect(false);
             }
 
-            if (player != null && figure == getActiveFigure() && "flight".equals(effectId)) {
-                player.removeEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);
-            }
-
             if (figure == getActiveFigure()) {
                 updateOwnerSpeedInternal();
             }
@@ -1590,7 +1613,7 @@ public class BattleState implements IBattleState {
             bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(id);
             BattleFigure active = getActiveFigure();
             if (effect != null && active != null) {
-                effect.onTick(this, active, instance.duration);
+                withFigureContext(active, () -> effect.onTick(this, active, instance.duration));
             }
 
             if (instance.duration > 0) {
@@ -1640,6 +1663,20 @@ public class BattleState implements IBattleState {
         List<String> removals = new ArrayList<>(figure.getActiveEffects().keySet());
         for (String effectId : removals) {
             removeEffectFromFigure(figure, effectId);
+        }
+    }
+
+    private void clearParticipantEffects() {
+        List<String> removals = new ArrayList<>(participantEffects.keySet());
+        for (String effectId : removals) {
+            removeParticipantEffect(effectId);
+        }
+    }
+
+    private void clearAllEffects() {
+        clearParticipantEffects();
+        for (BattleFigure figure : team) {
+            clearFigureEffects(figure);
         }
     }
 
@@ -1715,13 +1752,13 @@ public class BattleState implements IBattleState {
 
     @Override
     public void triggerOnAttack(BattleFigure attacker) {
-        BattleFigure targetFigure = getScopedFigure();
-        if (targetFigure == null) {
+        BattleFigure active = getScopedFigure();
+        if (active == null) {
             return;
         }
 
         int retainedRedPowerUp = 0;
-        EffectInstance powerUp = targetFigure.getActiveEffects().get("power_up");
+        EffectInstance powerUp = participantEffects.get("power_up");
         if (powerUp != null && player != null
                 && AccessoryTierResolver.getTier(player, "red_lantern_battery") >= 5) {
             retainedRedPowerUp = Math.round(powerUp.getAccessoryMagnitude("red_lantern_battery")
@@ -1729,15 +1766,15 @@ public class BattleState implements IBattleState {
         }
 
         List<String> removals = new ArrayList<>();
-        for (Map.Entry<String, EffectInstance> entry : targetFigure.getActiveEffects().entrySet()) {
+        for (Map.Entry<String, EffectInstance> entry : participantEffects.entrySet()) {
             bruhof.teenycraft.battle.effect.BattleEffect effect = EffectRegistry.get(entry.getKey());
-            if (effect != null && withFigureContext(targetFigure, () -> effect.onAttack(this, attacker))) {
+            if (effect != null && withFigureContext(active, () -> effect.onAttack(this, attacker))) {
                 removals.add(entry.getKey());
             }
         }
 
         for (String effectId : removals) {
-            removeEffectFromFigure(targetFigure, effectId);
+            removeParticipantEffect(effectId);
         }
         if (retainedRedPowerUp > 0 && removals.contains("power_up")) {
             applyAccessoryEffect("red_lantern_battery", "power_up", -1, retainedRedPowerUp);
@@ -1909,13 +1946,8 @@ public class BattleState implements IBattleState {
         
         return living.getCapability(BattleStateProvider.BATTLE_STATE).map(s -> {
             String effectId = "remote_mine_" + slot;
-            for (BattleFigure figure : s.getTeam()) {
-                EffectInstance inst = figure.getActiveEffects().get(effectId);
-                if (inst != null && sourceEntity.getUUID().equals(inst.casterUUID)) {
-                    return true;
-                }
-            }
-            return false;
+            EffectInstance inst = s.getEffectInstance(effectId);
+            return inst != null && sourceEntity.getUUID().equals(inst.casterUUID);
         }).orElse(false);
     }
 
@@ -1937,6 +1969,7 @@ public class BattleState implements IBattleState {
     public void endBattle() {
         LivingEntity battleEntity = getBattleEntity();
         this.isBattling = false;
+        clearAllEffects();
         this.team.clear();
         this.activeChipTickCounters.clear();
         this.activeFigureIndex = 0;
@@ -1960,8 +1993,6 @@ public class BattleState implements IBattleState {
         this.currentTofuMana = 0;
         this.currentTofuPreviewEffectId = "";
         this.currentTofuPreviewSelfTarget = true;
-        this.participantEffects.clear();
-        
         this.batteryCharge = 0;
         this.batterySpawnPct = -1.0f;
         this.batterySpawnTimer = TeenyBalance.BATTERY_SPAWN_MIN_TICKS;
@@ -2050,8 +2081,8 @@ public class BattleState implements IBattleState {
         BattleFigure previousActive = getActiveFigure();
         BattleFigure nextActive = team.get(index);
         if (previousActive != null && previousActive != nextActive) {
-            if (hasFigureEffect(previousActive, "flight")) {
-                removeEffectFromFigure(previousActive, "flight");
+            if (hasEffect("flight")) {
+                removeEffect("flight");
             }
             previousActive.cancelActiveOnlyRuntime();
         }

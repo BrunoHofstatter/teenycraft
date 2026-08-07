@@ -8,6 +8,7 @@ public abstract class BattleEffect {
     private final String id;
     private final EffectType type;
     private final EffectCategory category;
+    private final EffectScope scope;
 
     public enum EffectType {
         INSTANT, DURATION, INFINITE
@@ -17,15 +18,26 @@ public abstract class BattleEffect {
         BUFF, DEBUFF, CONTROL, SPECIAL
     }
 
+    public enum EffectScope {
+        PARTICIPANT,
+        FIGURE
+    }
+
     public BattleEffect(String id, EffectType type, EffectCategory category) {
+        this(id, type, category, EffectScope.PARTICIPANT);
+    }
+
+    public BattleEffect(String id, EffectType type, EffectCategory category, EffectScope scope) {
         this.id = id;
         this.type = type;
         this.category = category;
+        this.scope = scope;
     }
 
     public String getId() { return id; }
     public EffectType getType() { return type; }
     public EffectCategory getCategory() { return category; }
+    public EffectScope getScope() { return scope; }
     public boolean isBeneficial() { return category == EffectCategory.BUFF || category == EffectCategory.SPECIAL; }
 
     public boolean canStackMagnitude() {

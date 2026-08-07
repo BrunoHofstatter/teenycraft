@@ -83,7 +83,7 @@ public final class BattleGameTests {
     }
 
     @GameTest(template = "arenas/arena1", timeoutTicks = 200)
-    public static void figureOwnedEffectsAndProgressStayWithOriginalFigureAcrossSwap(GameTestHelper helper) {
+    public static void participantEffectsFollowSwapWhileFigureProgressStaysLocal(GameTestHelper helper) {
         BattleHarness battle = startBattle(helper, List.of(figure("robin"), figure("batman")), List.of(figure("joker")), ItemStack.EMPTY);
 
         battle.playerState.applyEffect("power_up", 120, 5);
@@ -93,14 +93,14 @@ public final class BattleGameTests {
         battle.playerState.swapFigure(1, battle.player);
 
         helper.assertTrue("batman".equals(battle.playerState.getActiveFigureId()), "swap should move to the second figure");
-        helper.assertFalse(battle.playerState.hasEffect("power_up"), "the new active figure should not inherit the previous figure's effect bucket");
+        helper.assertTrue(battle.playerState.hasEffect("power_up"), "participant effects should remain active after a manual swap");
         helper.assertTrue(battle.playerState.getSlotProgress(0) == 0, "activate progress should not leak to the new active figure");
         helper.assertTrue(battle.playerState.getInternalCooldown("pet_fire_1") == 0, "figure-owned internal cooldowns should not leak to the new active figure");
 
         battle.playerState.setActiveFigure(0);
 
         helper.assertTrue("robin".equals(battle.playerState.getActiveFigureId()), "reactivating the original figure should restore its state");
-        helper.assertTrue(battle.playerState.hasEffect("power_up"), "the original figure should keep its effect bucket");
+        helper.assertTrue(battle.playerState.hasEffect("power_up"), "participant effects should remain active when swapping back");
         helper.assertTrue(battle.playerState.getSlotProgress(0) == 2, "activate progress should stay with the original figure");
         helper.assertTrue(battle.playerState.getInternalCooldown("pet_fire_1") == 40, "internal cooldowns should stay with the original figure");
         helper.succeed();
@@ -116,11 +116,79 @@ public final class BattleGameTests {
         helper.assertTrue(benchIcon.getOrCreateTag().getInt(BattleState.TAG_BATTLE_FIGURE_INDEX) == 1, "bench icon should carry the authoritative duplicate figure index");
         helper.assertTrue(battle.playerState.trySwapFigureFromItem(benchIcon, battle.player), "duplicate bench item should resolve through its tagged figure index");
         helper.assertTrue(battle.playerState.getActiveFigureIndex() == 1, "duplicate bench targeting should swap to the tagged duplicate figure");
-        helper.assertFalse(battle.playerState.hasEffect("power_up"), "the second duplicate figure should not inherit the first duplicate's effects");
+        helper.assertTrue(battle.playerState.hasEffect("power_up"), "participant effects should remain active across duplicate-figure swaps");
 
         battle.playerState.setActiveFigure(0);
 
-        helper.assertTrue(battle.playerState.hasEffect("power_up"), "swapping back should restore the original duplicate's effect state");
+        helper.assertTrue(battle.playerState.hasEffect("power_up"), "the participant effect should still be active after swapping back");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arenas/arena1", timeoutTicks = 200)
+    public static void powerDownFollowsOpponentSwapAndIsConsumedByNextAttack(GameTestHelper helper) {
+        BattleHarness battle = startBattle(
+                helper,
+                List.of(figure("robin")),
+                List.of(figure("joker"), figure("batman")),
+                ItemStack.EMPTY
+        );
+
+        battle.opponentState.applyEffect("power_down", -1, 5);
+        battle.opponentState.swapFigure(1, null);
+
+        helper.assertTrue("batman".equals(battle.opponentState.getActiveFigureId()), "the opponent should swap to its bench figure");
+        helper.assertTrue(battle.opponentState.getEffectMagnitude("power_down") == 5,
+                "Power Down should remain on the opponent participant after swapping");
+
+        battle.opponentState.triggerOnAttack(battle.opponentState.getActiveFigure());
+
+        helper.assertFalse(battle.opponentState.hasEffect("power_down"),
+                "the swapped-in figure's attack should consume participant-owned Power Down");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arenas/arena1", timeoutTicks = 200)
+    public static void disableStaysOnTargetSlotAndCleanseRemovesIt(GameTestHelper helper) {
+        BattleHarness battle = startBattle(
+                helper,
+                List.of(figure("robin"), figure("batman")),
+                List.of(figure("joker")),
+                ItemStack.EMPTY
+        );
+
+        BattleFigure active = battle.playerState.getTeam().get(0);
+        BattleFigure disabledBench = battle.playerState.getTeam().get(1);
+        battle.playerState.disableFigure(1, 100, battle.player);
+
+        helper.assertTrue(battle.playerState.hasEffect(disabledBench, "disable_1"),
+                "Disable should be stored on its targeted figure slot");
+        helper.assertFalse(battle.playerState.hasEffect(active, "disable_1"),
+                "Disable should not follow the participant's active figure");
+
+        battle.playerState.applyEffect("cleanse", 60, 1);
+
+        helper.assertFalse(battle.playerState.hasEffect(disabledBench, "disable_1"),
+                "Cleanse should remove figure-scoped disables across the participant team");
+        helper.assertTrue(battle.playerState.hasEffect("cleanse_immunity"),
+                "Cleanse should still grant participant-owned immunity");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arenas/arena1", timeoutTicks = 200)
+    public static void rootRemainsParticipantOwnedAndBlocksSwap(GameTestHelper helper) {
+        BattleHarness battle = startBattle(
+                helper,
+                List.of(figure("robin"), figure("batman")),
+                List.of(figure("joker")),
+                ItemStack.EMPTY
+        );
+
+        battle.playerState.applyEffect("root", 100, 1);
+        battle.playerState.swapFigure(1, battle.player);
+
+        helper.assertTrue(battle.playerState.getActiveFigureIndex() == 0,
+                "participant-owned Root should prevent the side from swapping figures");
+        helper.assertTrue(battle.playerState.hasEffect("root"), "the blocked swap should not remove Root");
         helper.succeed();
     }
 
@@ -172,11 +240,15 @@ public final class BattleGameTests {
         NearbyBattler distractor = spawnNearbyBattler(helper, DISTRACTOR_POS, figure("superman"));
 
         battle.playerState.applyEffect("power_up", -1, 5);
+        BattleFigure disabledBench = battle.playerState.getTeam().get(1);
+        battle.playerState.disableFigure(1, 100, battle.player);
         battle.playerState.applyResolvedCombatFigureDelta(battle.playerState.getActiveFigure(), -battle.playerState.getActiveFigure().getMaxHp());
 
         helper.assertTrue("batman".equals(battle.playerState.getActiveFigureId()), "faint should swap to the next living figure");
         helper.assertTrue(battle.playerState.hasEffect("reset_lock"), "round reset should apply reset_lock to the fainted side");
         helper.assertFalse(battle.playerState.hasEffect("power_up"), "round reset should clear previous effects");
+        helper.assertFalse(battle.playerState.hasEffect(disabledBench, "disable_1"),
+                "round reset should clear remaining figure-scoped disables on the fainting side");
         helper.assertTrue(battle.opponentState.hasEffect("reset_lock"), "round reset should apply reset_lock to the paired opponent");
         helper.assertFalse(distractor.state.hasEffect("reset_lock"), "round reset should not touch an unpaired nearby battler");
         helper.assertTrue("bat_mine".equals(battle.player.getInventory().getItem(0).getOrCreateTag().getString(ItemAbility.TAG_ID)), "inventory should refresh after a faint swap");
@@ -380,7 +452,8 @@ public final class BattleGameTests {
         EffectInstance curse = battle.playerState.getEffectInstance("curse");
         helper.assertTrue("batman".equals(battle.playerState.getActiveFigureId()), "second chance should force a swap to the next living figure");
         helper.assertTrue(rescuedFigure.getCurrentHp() == TeenyBalance.CHIP_SECOND_CHANCE_SURVIVE_HP_BY_RANK[0], "second chance should leave the rescued figure at its configured survive HP");
-        helper.assertTrue(rescuedFigure.getActiveEffects().isEmpty(), "second chance should clear the rescued figure's active effects like a normal faint reset");
+        helper.assertFalse(battle.playerState.hasEffect("power_up"),
+                "second chance should clear the participant's previous effects like a normal faint reset");
         helper.assertTrue(slowDown != null
                         && slowDown.magnitude == TeenyBalance.CHIP_SECOND_CHANCE_SLOW_MAGNITUDE_BY_RANK[0]
                         && slowDown.duration == TeenyBalance.CHIP_SECOND_CHANCE_DEBUFF_DURATION_BY_RANK[0],
@@ -575,6 +648,32 @@ public final class BattleGameTests {
     }
 
     @GameTest(template = "arenas/arena1", timeoutTicks = 200)
+    public static void poisonTickTargetsCurrentFigureAfterVictimSwap(GameTestHelper helper) {
+        BattleHarness battle = startBattle(
+                helper,
+                List.of(figure("robin")),
+                List.of(figure("joker"), figure("batman")),
+                ItemStack.EMPTY
+        );
+
+        BattleFigure originallyPoisonedActive = battle.opponentState.getActiveFigure();
+        BattleFigure swappedIn = battle.opponentState.getTeam().get(1);
+        int originalHp = originallyPoisonedActive.getCurrentHp();
+        int swappedHp = swappedIn.getCurrentHp();
+
+        battle.opponentState.applyEffect("poison", 1, 1, swappedIn.getMaxHp() + swappedIn.getDodgeStat(),
+                battle.player.getUUID(), battle.playerState.getActiveFigure());
+        battle.opponentState.swapFigure(1, null);
+        battle.opponentState.tick();
+
+        helper.assertTrue(originallyPoisonedActive.getCurrentHp() == originalHp,
+                "participant-owned Poison should stop targeting the figure that swapped out");
+        helper.assertTrue(swappedIn.getCurrentHp() < swappedHp,
+                "participant-owned Poison should tick against the currently active figure");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arenas/arena1", timeoutTicks = 200)
     public static void poisonKillAfterSourceSwapCreditsOriginalFigure(GameTestHelper helper) {
         BattleHarness battle = startBattle(
                 helper,
@@ -605,7 +704,7 @@ public final class BattleGameTests {
     }
 
     @GameTest(template = "arenas/arena1", timeoutTicks = 200)
-    public static void poisonKillAfterSourceSwapAppliesVictoryDanceToOriginalSourceFigure(GameTestHelper helper) {
+    public static void poisonKillAfterSourceSwapAppliesParticipantVictoryDance(GameTestHelper helper) {
         BattleHarness battle = startBattle(
                 helper,
                 List.of(figureWithChip("robin", chip(ModItems.CHIP_VICTORY_DANCE.get())), figure("batman")),
@@ -625,15 +724,15 @@ public final class BattleGameTests {
             helper.assertTrue("batman".equals(battle.playerState.getActiveFigureId()), "the player should remain swapped after the poison is applied");
             helper.assertTrue(victimFigure.getCurrentHp() == 0, "poison tick should still reduce the victim to 0 HP");
             helper.assertTrue(battle.playerState.hasEffect(originalSourceFigure, "dance"),
-                    "victory dance should apply to the figure that earned the kill credit");
-            helper.assertFalse(battle.playerState.hasEffect(swappedFigure, "dance"),
-                    "the later active figure should not receive the original source figure's kill buff");
+                    "victory dance should apply to the credited source participant");
+            helper.assertTrue(battle.playerState.hasEffect(swappedFigure, "dance"),
+                    "the participant-owned dance should benefit the currently active figure");
             helper.succeed();
         });
     }
 
     @GameTest(template = "arenas/arena1", timeoutTicks = 200)
-    public static void poisonKillAfterSourceSwapSummonsNecromancerPetOnOriginalSourceFigure(GameTestHelper helper) {
+    public static void poisonKillAfterSourceSwapSummonsParticipantNecromancerPet(GameTestHelper helper) {
         BattleHarness battle = startBattle(
                 helper,
                 List.of(figureWithChip("robin", chip(ModItems.CHIP_NECROMANCER.get())), figure("batman")),
@@ -654,11 +753,11 @@ public final class BattleGameTests {
             helper.assertTrue(
                     battle.playerState.hasEffect(originalSourceFigure, "pet_slot_1")
                             || battle.playerState.hasEffect(originalSourceFigure, "pet_slot_2"),
-                    "necromancer should summon onto the figure that earned the kill credit"
+                    "necromancer should summon for the credited source participant"
             );
-            helper.assertFalse(battle.playerState.hasEffect(swappedFigure, "pet_slot_1")
+            helper.assertTrue(battle.playerState.hasEffect(swappedFigure, "pet_slot_1")
                             || battle.playerState.hasEffect(swappedFigure, "pet_slot_2"),
-                    "the swapped-in figure should not inherit the original source figure's summoned pet");
+                    "the participant-owned pet should follow the currently active figure");
             helper.succeed();
         });
     }
@@ -1497,6 +1596,39 @@ public final class BattleGameTests {
         helper.assertFalse(battle.opponentState.hasEffect("remote_mine_0"), "second bat_mine use should detonate and remove the existing mine from the paired opponent");
         helper.assertTrue(battle.opponentState.getActiveFigure().getCurrentHp() <= hpBeforeDetonation, "detonation should not increase paired opponent HP");
         helper.assertTrue(distractor.state.getActiveFigure().getCurrentHp() == distractorHpBeforeDetonation, "detonation should not hit an unpaired nearby battler");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arenas/arena1", timeoutTicks = 200)
+    public static void remoteMineFollowsVictimSwapAndDetonatesOnCurrentFigure(GameTestHelper helper) {
+        BattleHarness battle = startBattle(
+                helper,
+                List.of(figure("batman")),
+                List.of(figure("joker"), figure("robin")),
+                ItemStack.EMPTY
+        );
+
+        battle.playerState.addMana(100);
+        AbilityExecutor.executeAction(battle.player, battle.playerState.getActiveFigure(), 0);
+        BattleFigure originalVictim = battle.opponentState.getActiveFigure();
+        int originalHp = originalVictim.getCurrentHp();
+
+        battle.opponentState.swapFigure(1, null);
+        BattleFigure currentVictim = battle.opponentState.getActiveFigure();
+        int currentHp = currentVictim.getCurrentHp();
+
+        helper.assertTrue(battle.opponentState.hasEffect("remote_mine_0"),
+                "the mine should remain armed on the target participant after a swap");
+
+        battle.playerState.addMana(100);
+        AbilityExecutor.executeAction(battle.player, battle.playerState.getActiveFigure(), 0);
+
+        helper.assertFalse(battle.opponentState.hasEffect("remote_mine_0"),
+                "detonation should remove the participant-owned mine");
+        helper.assertTrue(originalVictim.getCurrentHp() == originalHp,
+                "detonation should not damage the figure that previously swapped out");
+        helper.assertTrue(currentVictim.getCurrentHp() < currentHp,
+                "detonation should damage the target participant's current active figure");
         helper.succeed();
     }
 
