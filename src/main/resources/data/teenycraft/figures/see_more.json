@@ -16,6 +16,9 @@
                       "nuh_uh",
                       "plasma_shot"
                   ],
+    "ability_icon_variants":  {
+                                  "plasma_shot":  "pink"
+                              },
     "ability_cost_tiers":  [
                                "b",
                                "b",

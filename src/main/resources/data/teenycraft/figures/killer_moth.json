@@ -16,6 +16,9 @@
                       "plasma_shot",
                       "cat_scratch"
                   ],
+    "ability_icon_variants":  {
+                                  "plasma_shot":  "gun"
+                              },
     "ability_cost_tiers":  [
                                "c",
                                "c",

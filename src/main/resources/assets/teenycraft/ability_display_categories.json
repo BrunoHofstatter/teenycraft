@@ -55,6 +55,7 @@
     "shockwave_stomp",
     "smoke_bomb",
     "super_dash",
+    "telekinesis",
     "the_heal"
   ],
   "fist": [
@@ -71,11 +72,13 @@
   "throwable": [
     "bat_mine",
     "birdarang",
+    "boulder_toss",
     "darwin",
     "hooded_barrage",
     "journalism",
     "poison_pellet",
     "shuriken",
+    "slime_ball",
     "starfish_chuck",
     "stinky_fish",
     "tea_toss",
@@ -90,13 +93,16 @@
     "energy_cannon",
     "grappling_hook",
     "kryptonite_beam",
+    "laser_eyes_drlight",
     "lightning_shot",
     "missile_barrage",
     "plasma_shot",
     "plasma_shot_jinx",
     "skeets",
     "sonic_cannon",
-    "trident_throw"
+    "soopah_laser",
+    "trident_throw",
+    "umbrella_shot"
   ],
   "state_overrides": {
     "bat_mine_button": "action"
