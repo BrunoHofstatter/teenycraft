@@ -214,6 +214,7 @@ These ids are currently accepted by reload validation because they are registere
 | `self_damage`  | `1`: `[recoil_mult]`                                | Recoil as a fraction of this ability's raw damage.                                                    |
 | `tofu_spawn`   | `1`: `[power_mult]`                                 | Tofu power multiplier.                                                                                |
 | `flight`       | `1`: `[duration_mult]`                              | Flight duration multiplier.                                                                           |
+| `transform`    | `0`                                                 | Instantly enters or exits a battle form by matching the executing ability to form enter/exit data.    |
 
 ### Helper ids that are valid but not current main stored effect ids
 | Effect id       | Params used now                     | Meaning                                                                                            |
@@ -229,6 +230,7 @@ These ids are currently accepted by reload validation because they are registere
 - Some current JSON files still pass extra params that runtime ignores. Current examples: `defense_up`, `dodge_smoke`, and `poison`.
 - Helper ids such as `disable` and `remote_mine` do not store exactly that id in runtime state. They convert into figure-specific runtime ids like `disable_0` or `remote_mine_2`.
 - Opponent effects are applied after hit resolution. If the hit is dodged, opponent effects do not apply.
+- `transform` must be authored as a parameterless self effect. It changes `BattleFigure.activeFormId` immediately and is not stored as a persistent effect. See [figure-forms.md](figure-forms.md).
 
 ## Supported Trait Ids
 These ids are currently accepted by reload validation because they are registered in `TraitRegistry`.
@@ -245,12 +247,14 @@ These ids are currently accepted by reload validation because they are registere
 | `tofu_chance`         | `2`: `[chance_mult, tofu_power_mult]` | Used by `rollTofu(...)`, not by the normal trait registry hooks.                    |
 | `undodgeable`         | `0`                                   | Makes the hit skip dodge.                                                           |
 | `activate`            | `1`: `[required_casts]`               | Cast counter before the ability actually fires. Extra params are currently ignored. |
+| `reduced_mana_cost`   | `0`                                   | Pre-cast marker consumed by `AbilityCostResolver`; currently used by golden transform abilities.      |
 
 ### Important trait authoring notes
 - `multi_hit`, `group_damage`, and `undodgeable` are pipeline-level traits.
 - `blue`, `charge_up`, and `activate` are execution-time traits.
 - `surprise` and `instant_cast_chance` are marker traits.
 - `tofu_chance` is valid and live, but it is handled manually in `BattleAbilityExecution.rollTofu(...)`.
+- `reduced_mana_cost` is registered as a no-op execution trait because its behavior must run before the ordinary trait hooks, when the actual and effective mana costs are resolved. Its percentage comes from `TeenyBalance`.
 - Current validation only checks the trait id, not the param count.
 
 ## `golden_bonus` String Format

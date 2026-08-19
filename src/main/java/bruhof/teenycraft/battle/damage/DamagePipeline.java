@@ -2,9 +2,9 @@ package bruhof.teenycraft.battle.damage;
 
 import bruhof.teenycraft.capability.IBattleState;
 import bruhof.teenycraft.battle.BattleFigure;
+import bruhof.teenycraft.battle.BattleAbilitySlot;
 import bruhof.teenycraft.battle.FigureClassType;
 import bruhof.teenycraft.battle.StatType;
-import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.util.AbilityLoader;
 import bruhof.teenycraft.util.AbilityLoader.AbilityData;
 import bruhof.teenycraft.util.AbilityLoader.TraitData;
@@ -114,20 +114,9 @@ public class DamagePipeline {
     }
 
     public static DamageResult calculateOutput(IBattleState attackerState, BattleFigure attacker, int slotIndex, boolean isGolden) {
-        // 1. Get Ability Data
-        java.util.ArrayList<String> order = ItemFigure.getAbilityOrder(attacker.getOriginalStack());
-        if (slotIndex >= order.size()) return new DamageResult(0);
-        
-        String abilityId = order.get(slotIndex);
-        AbilityData data = AbilityLoader.getAbility(abilityId);
-        if (data == null) return new DamageResult(0);
-
-        // Get Mana Cost
-        java.util.ArrayList<String> tiers = ItemFigure.getAbilityTiers(attacker.getOriginalStack());
-        String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
-        int manaCost = TeenyBalance.getEffectiveManaCost(slotIndex + 1, tierLetter);
-        
-        return calculateOutput(attackerState, attacker, data, manaCost, isGolden);
+        BattleAbilitySlot slot = BattleAbilitySlot.resolve(attacker, slotIndex);
+        if (slot == null) return new DamageResult(0);
+        return calculateOutput(attackerState, attacker, slot.data(), slot.effectiveManaCost(), isGolden);
     }
 
     public static DamageResult calculateOutput(IBattleState attackerState, BattleFigure attacker, AbilityData data, int manaCost) {

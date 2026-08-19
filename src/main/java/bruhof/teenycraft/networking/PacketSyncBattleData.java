@@ -42,6 +42,7 @@ public class PacketSyncBattleData {
         buf.writeInt(participant.entityId());
         buf.writeUtf(participant.name());
         buf.writeUtf(participant.activeFigureId());
+        buf.writeUtf(participant.activeSkinId());
         buf.writeUtf(participant.activeFigureModelType());
         buf.writeInt(participant.activeFigureIndex());
         buf.writeInt(participant.currentHp());
@@ -84,6 +85,7 @@ public class PacketSyncBattleData {
         int entityId = buf.readInt();
         String name = buf.readUtf();
         String activeFigureId = buf.readUtf();
+        String activeSkinId = buf.readUtf();
         String activeFigureModelType = buf.readUtf();
         int activeFigureIndex = buf.readInt();
         int currentHp = buf.readInt();
@@ -125,6 +127,7 @@ public class PacketSyncBattleData {
                 entityId,
                 name,
                 activeFigureId,
+                activeSkinId,
                 activeFigureModelType,
                 activeFigureIndex,
                 currentHp,

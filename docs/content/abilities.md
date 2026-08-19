@@ -8,6 +8,7 @@ Abilities are already data-driven and split across multiple categories in resour
 Phase 1 of the battle refactor now validates ability references during reload instead of leaving bad ids to fail later at runtime.
 Phase 7 now parses `golden_bonus` entries into structured loader records on reload, and validated battle runtime consumes that parsed contract instead of reparsing raw strings at execution time.
 Figure-selected color variants are implemented as presentation metadata without duplicating gameplay ability definitions. The initial set covers Whale Drop, Soul Punch, and Construct Beam.
+Parameterless `transform` self effects now enter or exit data-defined battle forms according to the executing ability id. Golden transform abilities can use the pre-cast `reduced_mana_cost` trait contract; the current Gorilla transitions pay about 30% of normal mana cost.
 
 ## Player-Facing Behavior
 - Figures use abilities in real time.
@@ -30,6 +31,7 @@ Battle content reload now validates:
 - ability effect ids against the explicit gameplay-content input ids exposed by `EffectApplierRegistry`
 - ability trait ids against the explicit runtime trait contract exposed by `TraitRegistry`
 - `golden_bonus` entries through the same parsed-on-load scope/id/param contract used by runtime
+- figure-form enter/exit abilities, transform-effect shape, counterpart mappings, and effective cost tiers
 
 Current compatibility note:
 
@@ -58,6 +60,7 @@ When a figure needs a new ability id, update these together:
 - For a figure-specific color treatment of that same gameplay ability, keep the ability JSON unchanged. Add `ability_<id>__variant_<variant>.png` and set the optional figure JSON `ability_icon_variants` entry from the ability id to the lowercase variant id. Variants inherit the base display category and do not receive another `texture_index`.
 - For a special visual state, add the state texture and extend the generator and item property contract. Bat Mine currently uses `ability_bat_mine_button.png` with `teenycraft:is_button`.
 - If the JSON introduces a brand-new effect id or trait id, implement and register it in the runtime registries before reload validation will accept the content.
+- Transform abilities use a parameterless `{ "id": "transform", "params": [] }` self effect. The matching form definition owns the enter/exit relationship rather than repeating a form id in the effect.
 
 Important current icon behavior:
 

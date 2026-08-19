@@ -17,7 +17,7 @@ public abstract class AbstractClientPlayerMixin {
     private void teenycraft$getSkinTextureLocation(CallbackInfoReturnable<ResourceLocation> cir) {
         AbstractClientPlayer player = (AbstractClientPlayer) (Object) this;
         if (ClientBattleData.isBattling() && player.getUUID().equals(Minecraft.getInstance().getUser().getProfileId())) {
-            String figureId = ClientBattleData.getActiveFigureId();
+            String figureId = ClientBattleData.getActiveSkinId();
             if (figureId != null && !figureId.equals("none")) {
                 cir.setReturnValue(new ResourceLocation(TeenyCraft.MOD_ID, "textures/entity/figure/" + figureId + ".png"));
             }

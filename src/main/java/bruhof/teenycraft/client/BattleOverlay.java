@@ -3,6 +3,7 @@ package bruhof.teenycraft.client;
 import bruhof.teenycraft.TeenyBalance;
 import bruhof.teenycraft.TeenyCraft;
 import bruhof.teenycraft.battle.FigureClassType;
+import bruhof.teenycraft.battle.AbilityCostResolver;
 import bruhof.teenycraft.battle.effect.BattleEffect;
 import bruhof.teenycraft.battle.effect.EffectRegistry;
 import bruhof.teenycraft.battle.presentation.BattleHudEffectSnapshot;
@@ -107,7 +108,10 @@ public class BattleOverlay implements IGuiOverlay {
         int y = rail.y();
         int barX = x + 40;
         int barY = y + 12;
-        if (!activeStack.isEmpty()) {
+        if (!side.activeSkinId().equals(side.activeFigureId())) {
+            ResourceLocation formIcon = new ResourceLocation(TeenyCraft.MOD_ID, "textures/item/" + side.activeSkinId() + ".png");
+            guiGraphics.blit(formIcon, x, y, 32, 32, 0.0f, 0.0f, 64, 64, 64, 64);
+        } else if (!activeStack.isEmpty()) {
             guiGraphics.pose().pushPose();
             guiGraphics.pose().translate(x, y, 0);
             guiGraphics.pose().scale(2.0f, 2.0f, 1.0f);
@@ -150,9 +154,9 @@ public class BattleOverlay implements IGuiOverlay {
             }
 
             String tier = i < abilityTiers.size() ? abilityTiers.get(i) : "a";
-            int actualCost = TeenyBalance.getManaCost(i + 1, tier);
-            int effectiveCost = TeenyBalance.getEffectiveManaCost(i + 1, tier);
             boolean isGolden = i < goldenStatus.size() && goldenStatus.get(i);
+            int actualCost = AbilityCostResolver.resolveActualCost(i, tier, abilityData, isGolden);
+            int effectiveCost = AbilityCostResolver.resolveEffectiveCost(i, actualCost);
             int cooldown = i < cooldowns.length ? cooldowns[i] : 0;
             boolean available = side.currentMana() >= actualCost && cooldown <= 0 && side.waffleBlockedSlot() != i;
             float scale = available ? 1.15f : 0.85f;
@@ -234,7 +238,10 @@ public class BattleOverlay implements IGuiOverlay {
         List<String> abilityTiers = side.abilityTiers();
         int slot = side.chargeSlot();
         String tier = slot < abilityTiers.size() ? abilityTiers.get(slot) : "a";
-        int cost = TeenyBalance.getManaCost(slot + 1, tier);
+        AbilityLoader.AbilityData data = slot < side.abilityIds().size()
+                ? AbilityLoader.getAbility(side.abilityIds().get(slot)) : null;
+        boolean golden = slot < side.abilityGolden().size() && side.abilityGolden().get(slot);
+        int cost = AbilityCostResolver.resolveActualCost(slot, tier, data, golden);
         float progress = 1.0f - (side.chargeTicksRemaining() / (float) side.chargeTotalTicks());
         int reserveEnd = rail.x() + (int) (rail.width() * (cost / 100.0f) * Mth.clamp(progress, 0.0f, 1.0f));
         guiGraphics.fill(rail.x(), manaY, reserveEnd, manaY + MANA_BAR_HEIGHT, 0xCC8E45FF);
@@ -328,7 +335,9 @@ public class BattleOverlay implements IGuiOverlay {
         String tier = itemAbility.getSlotIndex() < playerSide.abilityTiers().size()
                 ? playerSide.abilityTiers().get(itemAbility.getSlotIndex())
                 : "a";
-        int requiredMana = TeenyBalance.getManaCost(itemAbility.getSlotIndex() + 1, tier);
+        boolean golden = itemAbility.getSlotIndex() < playerSide.abilityGolden().size()
+                && playerSide.abilityGolden().get(itemAbility.getSlotIndex());
+        int requiredMana = AbilityCostResolver.resolveActualCost(itemAbility.getSlotIndex(), tier, data, golden);
         boolean hasEnoughMana = playerSide.currentMana() >= requiredMana;
         int manaY = y + CROSSHAIR_INDICATOR_SIZE + CROSSHAIR_INDICATOR_GAP;
         guiGraphics.fill(x, manaY, x + CROSSHAIR_INDICATOR_SIZE, manaY + CROSSHAIR_INDICATOR_SIZE,

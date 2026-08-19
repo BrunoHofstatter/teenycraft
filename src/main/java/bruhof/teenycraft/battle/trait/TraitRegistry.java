@@ -149,6 +149,11 @@ public class TraitRegistry {
             @Override public String getId() { return "instant_cast"; }
         });
 
+        // Golden-only metadata consumed by AbilityCostResolver before cast validation.
+        register(new ITrait() {
+            @Override public String getId() { return bruhof.teenycraft.battle.AbilityCostResolver.REDUCED_MANA_COST_TRAIT; }
+        });
+
         register(new ITrait() {
             @Override public String getId() { return "surprise"; }
         });

@@ -35,13 +35,21 @@ public final class BattleContentValidation {
     public static ValidationReport validate(Map<String, JsonObject> abilityFiles,
                                             Map<String, JsonObject> figureFiles,
                                             Map<String, JsonObject> npcTeamFiles) {
-        return validate(abilityFiles, figureFiles, npcTeamFiles, Map.of());
+        return validate(abilityFiles, figureFiles, npcTeamFiles, Map.of(), Map.of());
     }
 
     public static ValidationReport validate(Map<String, JsonObject> abilityFiles,
                                             Map<String, JsonObject> figureFiles,
                                             Map<String, JsonObject> npcTeamFiles,
                                             Map<String, JsonObject> figureGroupFiles) {
+        return validate(abilityFiles, figureFiles, npcTeamFiles, figureGroupFiles, Map.of());
+    }
+
+    public static ValidationReport validate(Map<String, JsonObject> abilityFiles,
+                                            Map<String, JsonObject> figureFiles,
+                                            Map<String, JsonObject> npcTeamFiles,
+                                            Map<String, JsonObject> figureGroupFiles,
+                                            Map<String, JsonObject> figureFormFiles) {
         List<Issue> errors = new ArrayList<>();
         List<Issue> warnings = new ArrayList<>();
 
@@ -50,6 +58,7 @@ public final class BattleContentValidation {
 
         Set<String> abilityIds = collectIds(abilityFiles, "ability", errors);
         Set<String> figureIds = collectIds(figureFiles, "figure", errors);
+        collectIds(figureFormFiles, "figure form", errors);
 
         for (Map.Entry<String, JsonObject> entry : abilityFiles.entrySet()) {
             validateAbility(entry.getKey(), entry.getValue(), supportedEffects, supportedTraits, errors, warnings);
@@ -68,7 +77,164 @@ public final class BattleContentValidation {
                     GroupComboEffectRegistry.getSupportedIds(), errors);
         }
 
+        validateFigureForms(figureFormFiles, abilityFiles, figureFiles, abilityIds, errors);
+
         return new ValidationReport(List.copyOf(errors), List.copyOf(warnings));
+    }
+
+    private static void validateFigureForms(Map<String, JsonObject> formFiles,
+                                            Map<String, JsonObject> abilityFiles,
+                                            Map<String, JsonObject> figureFiles,
+                                            Set<String> abilityIds,
+                                            List<Issue> errors) {
+        Map<String, JsonObject> abilitiesById = new java.util.HashMap<>();
+        abilityFiles.values().forEach(ability -> {
+            if (ability.has("id") && ability.get("id").isJsonPrimitive()) {
+                abilitiesById.put(ability.get("id").getAsString(), ability);
+            }
+        });
+
+        Set<String> transitionAbilities = new LinkedHashSet<>();
+        Set<String> enterAbilities = new LinkedHashSet<>();
+        Map<String, JsonObject> formsByEnterAbility = new java.util.HashMap<>();
+
+        for (Map.Entry<String, JsonObject> entry : formFiles.entrySet()) {
+            String path = entry.getKey();
+            JsonObject form = entry.getValue();
+            String id = getRequiredString(form, "id", path, errors);
+            String skin = getRequiredString(form, "skin", path, errors);
+            String enterAbility = getRequiredString(form, "enter_ability", path, errors);
+            String exitAbility = getRequiredString(form, "exit_ability", path, errors);
+
+            if (id != null && !id.equals(resourceFileId(path))) {
+                errors.add(new Issue(path, "id '" + id + "' must match resource filename '" + resourceFileId(path) + "'"));
+            }
+            if (skin != null && skin.isBlank()) {
+                errors.add(new Issue(path, "skin must not be blank"));
+            }
+            if (enterAbility != null) {
+                if (!enterAbilities.add(enterAbility)) {
+                    errors.add(new Issue(path, "enter_ability '" + enterAbility + "' is already owned by another form"));
+                }
+                formsByEnterAbility.put(enterAbility, form);
+                transitionAbilities.add(enterAbility);
+                validateTransitionAbility(path, "enter_ability", enterAbility, abilitiesById, errors);
+            }
+            if (exitAbility != null) {
+                transitionAbilities.add(exitAbility);
+                validateTransitionAbility(path, "exit_ability", exitAbility, abilitiesById, errors);
+            }
+
+            JsonObject counterparts = form.getAsJsonObject("ability_counterparts");
+            JsonObject tiers = form.getAsJsonObject("ability_cost_tiers");
+            if (counterparts == null || counterparts.size() == 0) {
+                errors.add(new Issue(path, "ability_counterparts must be a non-empty object"));
+                continue;
+            }
+            if (tiers == null || tiers.size() == 0) {
+                errors.add(new Issue(path, "ability_cost_tiers must be a non-empty object"));
+                continue;
+            }
+
+            for (Map.Entry<String, JsonElement> counterpart : counterparts.entrySet()) {
+                String sourceAbility = counterpart.getKey();
+                if (!abilityIds.contains(sourceAbility)) {
+                    errors.add(new Issue(path, "ability_counterparts references unknown source ability '" + sourceAbility + "'"));
+                }
+                if (!counterpart.getValue().isJsonPrimitive()) {
+                    errors.add(new Issue(path, "ability_counterparts['" + sourceAbility + "'] must be a string"));
+                    continue;
+                }
+                String effectiveAbility = counterpart.getValue().getAsString();
+                if (!abilityIds.contains(effectiveAbility)) {
+                    errors.add(new Issue(path, "ability_counterparts['" + sourceAbility + "'] references unknown ability '" + effectiveAbility + "'"));
+                }
+                if (!tiers.has(effectiveAbility)) {
+                    errors.add(new Issue(path, "effective ability '" + effectiveAbility + "' has no ability_cost_tiers entry"));
+                }
+            }
+
+            if (enterAbility != null && exitAbility != null
+                    && (!counterparts.has(enterAbility) || !exitAbility.equals(counterparts.get(enterAbility).getAsString()))) {
+                errors.add(new Issue(path, "enter_ability must map to exit_ability in ability_counterparts"));
+            }
+
+            for (Map.Entry<String, JsonElement> tier : tiers.entrySet()) {
+                if (!abilityIds.contains(tier.getKey())) {
+                    errors.add(new Issue(path, "ability_cost_tiers references unknown ability '" + tier.getKey() + "'"));
+                }
+                if (!tier.getValue().isJsonPrimitive() || !tier.getValue().getAsJsonPrimitive().isString()
+                        || !tier.getValue().getAsString().matches("[a-eA-E]")) {
+                    errors.add(new Issue(path, "ability_cost_tiers['" + tier.getKey() + "'] must be one of a, b, c, d, or e"));
+                }
+            }
+
+            if (form.has("model_type")) {
+                String modelType = form.get("model_type").getAsString();
+                if (!"default".equals(modelType) && !"slim".equals(modelType)) {
+                    errors.add(new Issue(path, "model_type must be 'default' or 'slim'"));
+                }
+            }
+        }
+
+        for (Map.Entry<String, JsonObject> abilityEntry : abilitiesById.entrySet()) {
+            if (hasSelfEffect(abilityEntry.getValue(), "transform") && !transitionAbilities.contains(abilityEntry.getKey())) {
+                errors.add(new Issue(abilityEntry.getKey(), "transform ability is not declared as a figure form enter_ability or exit_ability"));
+            }
+        }
+
+        for (Map.Entry<String, JsonObject> figureEntry : figureFiles.entrySet()) {
+            JsonArray abilities = figureEntry.getValue().getAsJsonArray("abilities");
+            if (abilities == null) continue;
+            for (JsonElement ability : abilities) {
+                JsonObject form = formsByEnterAbility.get(ability.getAsString());
+                if (form == null) continue;
+                JsonObject counterparts = form.getAsJsonObject("ability_counterparts");
+                for (JsonElement sourceAbility : abilities) {
+                    if (!counterparts.has(sourceAbility.getAsString())) {
+                        errors.add(new Issue(figureEntry.getKey(), "transforming loadout ability '"
+                                + sourceAbility.getAsString() + "' has no counterpart in form '" + form.get("id").getAsString() + "'"));
+                    }
+                }
+            }
+        }
+    }
+
+    private static void validateTransitionAbility(String path,
+                                                  String field,
+                                                  String abilityId,
+                                                  Map<String, JsonObject> abilitiesById,
+                                                  List<Issue> errors) {
+        JsonObject ability = abilitiesById.get(abilityId);
+        if (ability == null) {
+            errors.add(new Issue(path, field + " references unknown ability id '" + abilityId + "'"));
+            return;
+        }
+
+        JsonObject transformEffect = findSelfEffect(ability, "transform");
+        if (transformEffect == null) {
+            errors.add(new Issue(path, field + " ability '" + abilityId + "' must apply the transform self effect"));
+        } else if (transformEffect.has("params")
+                && (!transformEffect.get("params").isJsonArray()
+                || transformEffect.getAsJsonArray("params").size() != 0)) {
+            errors.add(new Issue(path, field + " ability '" + abilityId + "' must use a parameterless transform effect"));
+        }
+    }
+
+    private static boolean hasSelfEffect(JsonObject ability, String effectId) {
+        return findSelfEffect(ability, effectId) != null;
+    }
+
+    private static JsonObject findSelfEffect(JsonObject ability, String effectId) {
+        JsonArray effects = ability.getAsJsonArray("effects_on_self");
+        if (effects == null) return null;
+        for (JsonElement element : effects) {
+            if (element.isJsonObject() && element.getAsJsonObject().has("id")
+                    && effectId.equals(element.getAsJsonObject().get("id").getAsString())) {
+                return element.getAsJsonObject();
+            }
+        }
+        return null;
     }
 
     private static Set<String> collectIds(Map<String, JsonObject> files, String type, List<Issue> errors) {

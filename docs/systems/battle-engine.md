@@ -17,6 +17,7 @@ Post-refactor cleanup now separates more of the presentation plumbing without ch
 Class advantage is now implemented in the live damage pipeline with explicit per-hit bonus tracking so presentation can later show the class bonus separately instead of only as part of final total damage.
 Non-player battlers now also use more of that same runtime correctly: `BattleState` updates owner speed and delayed projectiles against the owning entity, and dummy presentation now follows active-figure damage and swaps so arena opponents can run the new first-pass battle AI on top of the normal combat model.
 The battle HUD now also has a first-pass mirrored rail presentation layer on both sides of the screen: active figure card, HP, mana with embedded ability icons and `activate` counters, accessory battery bar with exact `0/200` readout plus a distinct ready state before activation, bench summaries, larger effect badges across up to three rows, dynamic rail height based on visible effect rows, tofu preview rendering, and transient client-side combat feedback packets for large damage or heal numbers plus ability, resource, tofu, and pickup popups.
+Battle-only figure forms are now data-driven. `BattleFigure` owns the active form, effective slot resolution is centralized, and the server syncs effective skin presentation separately from the original collectible identity. Beast Boy's Gorilla form is the first implementation.
 
 ## Player-Facing Behavior
 - Battles are real-time, not turn-based.
@@ -33,6 +34,9 @@ The battle HUD now also has a first-pass mirrored rail presentation layer on bot
 - [`src/main/java/bruhof/teenycraft/battle/executor/BattleTargeting.java`](../../src/main/java/bruhof/teenycraft/battle/executor/BattleTargeting.java)
 - [`src/main/java/bruhof/teenycraft/battle/executor/BattleDamageResolver.java`](../../src/main/java/bruhof/teenycraft/battle/executor/BattleDamageResolver.java)
 - [`src/main/java/bruhof/teenycraft/battle/BattleFigure.java`](../../src/main/java/bruhof/teenycraft/battle/BattleFigure.java)
+- [`src/main/java/bruhof/teenycraft/battle/BattleAbilitySlot.java`](../../src/main/java/bruhof/teenycraft/battle/BattleAbilitySlot.java)
+- [`src/main/java/bruhof/teenycraft/battle/AbilityCostResolver.java`](../../src/main/java/bruhof/teenycraft/battle/AbilityCostResolver.java)
+- [`src/main/java/bruhof/teenycraft/util/FigureFormLoader.java`](../../src/main/java/bruhof/teenycraft/util/FigureFormLoader.java)
 - [`src/main/java/bruhof/teenycraft/battle/FigureClassType.java`](../../src/main/java/bruhof/teenycraft/battle/FigureClassType.java)
 - [`src/main/java/bruhof/teenycraft/battle/damage/DamagePipeline.java`](../../src/main/java/bruhof/teenycraft/battle/damage/DamagePipeline.java)
 - [`src/main/java/bruhof/teenycraft/capability/IBattleState.java`](../../src/main/java/bruhof/teenycraft/capability/IBattleState.java)
@@ -91,10 +95,13 @@ The battle engine is built around two layers:
 - slot lock and pending charge-up or blue-channel runtime
 - dodge and crit shuffle bags
 - temporary accessory HP bonus
+- active battle form id and effective form presentation
 
 Persistent effects are participant-owned by default because they affect the battling side and follow its active figure. Disable is the explicit figure-scoped exception because it locks one team slot.
 
 The original figure `ItemStack` is still kept on the `BattleFigure`, so battle can keep reading persistent data such as ability order, cost tiers, and golden ability status.
+
+`BattleAbilitySlot` resolves the currently usable slot from that persistent source data. In base form, its effective ability and cost are unchanged. With a form active, the source ability is mapped to a form counterpart, the form supplies the effective tier, and golden status remains inherited from the source ability. This one contract is used by execution, damage, hotbar construction, and HUD state so transformation does not reset slot-owned cooldown, progress, locks, or pending cast state.
 
 ## Battle Entry And Participants
 Current implemented entry is command-driven through `/teeny battle start`.
@@ -139,7 +146,7 @@ Current interaction model:
 - right-clicking a bench `ItemFigure` during battle swaps to that tagged team slot if valid, so duplicate species are authoritative instead of first-match ambiguous
 - some states lock the selected slot, and the server forces the player's held slot to stay aligned
 
-The battle inventory is not the persistent figure inventory. It is a temporary control surface rebuilt from the active battle state, with the loadout-building logic isolated from the state authority that decides when rebuilds happen.
+The battle inventory is not the persistent figure inventory. It is a temporary control surface rebuilt from the active battle state's effective slots, with the loadout-building logic isolated from the state authority that decides when rebuilds happen. A successful player form transition immediately refreshes it.
 
 ## Core Tick Loop
 `BattleState.tick` runs every server tick for living entities that have the battle capability.
@@ -172,6 +179,7 @@ Additional event-driven runtime:
 - Curse reduces mana regen.
 - Dance increases mana regen.
 - Ability execution can now separate actual mana cost from hidden effective mana cost: the player only pays and sees the actual slot cost, while scaling-heavy formulas can read a different effective value for slot-based efficiency tuning.
+- Golden Gorilla transitions use the `reduced_mana_cost` marker before cast validation and spending. The centralized 70% reduction/refund percentage means both entering and exiting cost approximately 30% of their authored form cost, rounded to whole mana with a minimum of one.
 - `charge_up` abilities now reserve their cost visually during the purple charge-up bar and only spend actual mana when the charged cast resolves.
 
 ### Battery
@@ -233,6 +241,7 @@ Important runtime behaviors:
 - remote mine casts can detonate an existing mine instead of placing or firing normally
 - some traits can cancel or redirect execution through `TraitRegistry.triggerExecutionHooks`
 - self effects and opponent effects are applied through `EffectApplierRegistry`
+- the parameterless `transform` self effect treats the executing ability as a transition key: a matching form `enter_ability` sets `BattleFigure.activeFormId`, while the active form's `exit_ability` clears it
 - `AbilityLoader` now parses `golden_bonus` into structured self, opponent, and trait contracts on reload, and the executor, damage, and trait runtime consumes those parsed records instead of reparsing raw strings
 - validated gameplay content now uses explicit effect-input ids from `EffectApplierRegistry` and explicit trait ids from `TraitRegistry`, so bad battle content fails validation instead of generic-applying in core battle paths
 
@@ -345,7 +354,7 @@ Current opponent-facing sync now resolves against the authoritative paired oppon
 
 Current synced data includes:
 
-- active and enemy figure ids, names, model types, and slot indices
+- active and enemy figure ids, effective skin ids, names, model types, and slot indices
 - owning participant entity ids for rail-anchored transient feedback
 - HP, mana, battery, cooldowns, and slot progress
 - tofu state, equipped accessory id and active state, waffle lock data, and charge or blue-channel bar state
@@ -364,6 +373,8 @@ Current battle feedback now uses two channels:
 
 Normal battle readability no longer depends only on chat spam for core action feedback, although many legacy system messages still exist alongside the new overlay layer.
 The current overlay crosshair indicators now separate ranged target validity from mana readiness: one square shows whether the held ranged ability has a valid paired target in cone and line of sight, and a second square below it shows whether current mana meets that held ability's actual mana cost.
+
+Form presentation keeps gameplay identity separate from appearance: figure ids remain the original collectibles, while effective skin ids drive the local player skin, opponent dummy skin, and transformed HUD portrait. Opponent AI transformation selection is intentionally deferred; this feature does not modify the existing AI and NPC teams that depend on choosing a transform may behave incorrectly until the broader AI overhaul.
 
 ## Design Notes
 - Player and opponent battle participants should stay as symmetric as possible by sharing the same capability and runtime model.

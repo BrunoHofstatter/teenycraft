@@ -1883,25 +1883,34 @@ public class BattleState implements IBattleState {
     public List<String> getAbilityIds() {
         BattleFigure active = getActiveFigure();
         if (active == null) return new ArrayList<>();
-        return ItemFigure.getAbilityOrder(active.getOriginalStack());
+        List<String> ids = new ArrayList<>();
+        for (int slotIndex = 0; slotIndex < 3; slotIndex++) {
+            bruhof.teenycraft.battle.BattleAbilitySlot slot = bruhof.teenycraft.battle.BattleAbilitySlot.resolve(active, slotIndex);
+            if (slot != null) ids.add(slot.effectiveAbilityId());
+        }
+        return ids;
     }
 
     @Override
     public List<String> getAbilityTiers() {
         BattleFigure active = getActiveFigure();
         if (active == null) return new ArrayList<>();
-        return ItemFigure.getAbilityTiers(active.getOriginalStack());
+        List<String> tiers = new ArrayList<>();
+        for (int slotIndex = 0; slotIndex < 3; slotIndex++) {
+            bruhof.teenycraft.battle.BattleAbilitySlot slot = bruhof.teenycraft.battle.BattleAbilitySlot.resolve(active, slotIndex);
+            if (slot != null) tiers.add(slot.costTier());
+        }
+        return tiers;
     }
 
     @Override
     public List<Boolean> getAbilityGoldenStatus() {
         BattleFigure active = getActiveFigure();
         if (active == null) return new ArrayList<>();
-        ItemStack stack = active.getOriginalStack();
-        List<String> ids = getAbilityIds();
         List<Boolean> golden = new ArrayList<>();
-        for (String id : ids) {
-            golden.add(ItemFigure.isAbilityGolden(stack, id));
+        for (int slotIndex = 0; slotIndex < 3; slotIndex++) {
+            bruhof.teenycraft.battle.BattleAbilitySlot slot = bruhof.teenycraft.battle.BattleAbilitySlot.resolve(active, slotIndex);
+            if (slot != null) golden.add(slot.golden());
         }
         return golden;
     }

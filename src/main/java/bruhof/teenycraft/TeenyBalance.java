@@ -100,6 +100,7 @@ public class TeenyBalance {
     // ==========================================
     public static final int BATTLE_MANA_MAX = 100;
     public static final int BATTLE_MANA_REGEN_PER_SEC = 5;
+    public static final float GOLDEN_TRANSFORM_MANA_REFUND_PERCENT = 0.70f;
     public static final int SWAP_COOLDOWN = 5;
     public static final double ARENA_PICKUP_COLLECTION_RADIUS = 1.0d;
     public static final double AI_DUMMY_BASE_MOVE_SPEED = 0.15d;

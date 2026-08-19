@@ -58,6 +58,7 @@ public class TeenyCraft {
 
     private void onAddReloadListener(net.minecraftforge.event.AddReloadListenerEvent event) {
         event.addListener(new bruhof.teenycraft.util.FigureLoader());
+        event.addListener(new bruhof.teenycraft.util.FigureFormLoader());
         event.addListener(new bruhof.teenycraft.util.FigureGroupLoader());
         event.addListener(new bruhof.teenycraft.util.AbilityLoader());
         event.addListener(new bruhof.teenycraft.util.NPCTeamLoader());

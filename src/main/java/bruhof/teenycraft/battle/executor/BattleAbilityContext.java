@@ -1,39 +1,30 @@
 package bruhof.teenycraft.battle.executor;
 
-import bruhof.teenycraft.TeenyBalance;
+import bruhof.teenycraft.battle.BattleAbilitySlot;
 import bruhof.teenycraft.battle.BattleFigure;
 import bruhof.teenycraft.capability.IBattleState;
-import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.util.AbilityLoader;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
 
 public record BattleAbilityContext(IBattleState state, LivingEntity attacker, BattleFigure figure, int slotIndex,
                                    AbilityLoader.AbilityData data, int actualManaCost, int effectiveManaCost,
                                    boolean isGolden) {
     @Nullable
     public static BattleAbilityContext create(IBattleState state, LivingEntity attacker, BattleFigure figure, int slotIndex) {
-        AbilityLoader.AbilityData data = getAbilityData(figure, slotIndex);
-        if (data == null) {
+        BattleAbilitySlot slot = BattleAbilitySlot.resolve(figure, slotIndex);
+        if (slot == null) {
             return null;
         }
-        return create(state, attacker, figure, slotIndex, data);
-    }
-
-    public static BattleAbilityContext create(IBattleState state, LivingEntity attacker, BattleFigure figure, int slotIndex,
-                                              AbilityLoader.AbilityData data) {
         return createResolved(
                 state,
                 attacker,
                 figure,
                 slotIndex,
-                data,
-                resolveActualManaCost(figure, slotIndex),
-                resolveEffectiveManaCost(figure, slotIndex),
-                ItemFigure.isAbilityGolden(figure.getOriginalStack(), data.id)
+                slot.data(),
+                slot.actualManaCost(),
+                slot.effectiveManaCost(),
+                slot.golden()
         );
     }
 
@@ -70,23 +61,17 @@ public record BattleAbilityContext(IBattleState state, LivingEntity attacker, Ba
 
     @Nullable
     public static AbilityLoader.AbilityData getAbilityData(BattleFigure figure, int slotIndex) {
-        ItemStack stack = figure.getOriginalStack();
-        ArrayList<String> order = ItemFigure.getAbilityOrder(stack);
-        if (slotIndex >= order.size()) {
-            return null;
-        }
-        return AbilityLoader.getAbility(order.get(slotIndex));
+        BattleAbilitySlot slot = BattleAbilitySlot.resolve(figure, slotIndex);
+        return slot != null ? slot.data() : null;
     }
 
     public static int resolveActualManaCost(BattleFigure figure, int slotIndex) {
-        ArrayList<String> tiers = ItemFigure.getAbilityTiers(figure.getOriginalStack());
-        String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
-        return TeenyBalance.getManaCost(slotIndex + 1, tierLetter);
+        BattleAbilitySlot slot = BattleAbilitySlot.resolve(figure, slotIndex);
+        return slot != null ? slot.actualManaCost() : 0;
     }
 
     public static int resolveEffectiveManaCost(BattleFigure figure, int slotIndex) {
-        ArrayList<String> tiers = ItemFigure.getAbilityTiers(figure.getOriginalStack());
-        String tierLetter = (slotIndex < tiers.size()) ? tiers.get(slotIndex) : "a";
-        return TeenyBalance.getEffectiveManaCost(slotIndex + 1, tierLetter);
+        BattleAbilitySlot slot = BattleAbilitySlot.resolve(figure, slotIndex);
+        return slot != null ? slot.effectiveManaCost() : 0;
     }
 }

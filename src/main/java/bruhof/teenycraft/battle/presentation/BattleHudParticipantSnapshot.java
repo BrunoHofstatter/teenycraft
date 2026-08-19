@@ -6,6 +6,7 @@ public record BattleHudParticipantSnapshot(
         int entityId,
         String name,
         String activeFigureId,
+        String activeSkinId,
         String activeFigureModelType,
         int activeFigureIndex,
         int currentHp,
@@ -45,6 +46,7 @@ public record BattleHudParticipantSnapshot(
     public BattleHudParticipantSnapshot {
         name = name != null ? name : "";
         activeFigureId = activeFigureId != null ? activeFigureId : "none";
+        activeSkinId = activeSkinId != null ? activeSkinId : activeFigureId;
         activeFigureModelType = activeFigureModelType != null ? activeFigureModelType : "default";
         tofuPreviewEffectId = tofuPreviewEffectId != null ? tofuPreviewEffectId : "";
         equippedAccessoryId = equippedAccessoryId != null ? equippedAccessoryId : "";
@@ -64,6 +66,7 @@ public record BattleHudParticipantSnapshot(
         return new BattleHudParticipantSnapshot(
                 0,
                 "",
+                "none",
                 "none",
                 "default",
                 0,

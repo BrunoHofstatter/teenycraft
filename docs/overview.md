@@ -26,6 +26,7 @@ The player-facing loop is:
 - Command-driven arena battle startup in the Teenyverse with JSON arena metadata, structure templates, multipart arena support, first-pass arena pickups, and first-pass opponent battle AI
 - Trait/effect registries
 - JSON loading for figures, abilities, and NPC teams
+- Data-driven battle-only figure forms with effective loadouts, costs, and skin presentation; currently used by Beast Boy's Gorilla transformation
 - Starter chip runtime with item-backed figure installation and NPC chip support
 - Client overlay and debug/dev commands
 - Teenyverse dimension registration foundation
@@ -51,6 +52,7 @@ The player-facing loop is:
   - [systems/player-vault.md](systems/player-vault.md)
 - Content:
   - [content/figures.md](content/figures.md)
+  - [content/figure-forms.md](content/figure-forms.md)
   - [content/figure-groups.md](content/figure-groups.md)
   - [content/attributes.md](content/attributes.md)
   - [content/abilities.md](content/abilities.md)

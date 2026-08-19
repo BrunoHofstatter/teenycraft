@@ -11,7 +11,8 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import org.slf4j.Logger;
 
 import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.PushbackReader;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -25,8 +26,10 @@ public class BattleContentValidator extends SimplePreparableReloadListener<Battl
         Map<String, JsonObject> figures = loadJsonObjects(resourceManager, "figures");
         Map<String, JsonObject> npcTeams = loadJsonObjects(resourceManager, "npc_teams");
         Map<String, JsonObject> figureGroups = loadJsonObjects(resourceManager, "figure_groups");
+        Map<String, JsonObject> figureForms = loadJsonObjects(resourceManager, "figure_forms");
 
-        BattleContentValidation.ValidationReport report = BattleContentValidation.validate(abilities, figures, npcTeams, figureGroups);
+        BattleContentValidation.ValidationReport report = BattleContentValidation.validate(
+                abilities, figures, npcTeams, figureGroups, figureForms);
         if (report.hasErrors()) {
             StringBuilder builder = new StringBuilder("Battle content validation failed:\n");
             for (BattleContentValidation.Issue error : report.errors()) {
@@ -54,7 +57,7 @@ public class BattleContentValidator extends SimplePreparableReloadListener<Battl
                 rl -> rl.getNamespace().equals("teenycraft") && rl.getPath().endsWith(".json"));
 
         for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
-            try (Reader reader = new InputStreamReader(entry.getValue().open())) {
+            try (PushbackReader reader = openUtf8Json(entry.getValue())) {
                 result.put(entry.getKey().toString(), GSON.fromJson(reader, JsonObject.class));
             } catch (Exception e) {
                 throw new IllegalStateException("Failed to read JSON resource " + entry.getKey(), e);
@@ -62,5 +65,15 @@ public class BattleContentValidator extends SimplePreparableReloadListener<Battl
         }
 
         return result;
+    }
+
+    private static PushbackReader openUtf8Json(Resource resource) throws java.io.IOException {
+        PushbackReader reader = new PushbackReader(
+                new InputStreamReader(resource.open(), StandardCharsets.UTF_8), 1);
+        int first = reader.read();
+        if (first != -1 && first != '\uFEFF') {
+            reader.unread(first);
+        }
+        return reader;
     }
 }

@@ -1,7 +1,6 @@
 package bruhof.teenycraft.item.custom.battle;
 
 import bruhof.teenycraft.util.AbilityLoader;
-import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.battle.AbilityExecutor;
 import bruhof.teenycraft.capability.BattleStateProvider;
 import bruhof.teenycraft.battle.BattleFigure;
@@ -72,12 +71,11 @@ public class ItemAbility extends Item {
                 if (battle.isBattling()) {
                     BattleFigure active = battle.getActiveFigure();
                     if (active != null) {
-                        java.util.ArrayList<String> order = ItemFigure.getAbilityOrder(active.getOriginalStack());
-                        if (slotIndex < order.size()) {
-                            AbilityLoader.AbilityData data = AbilityLoader.getAbility(order.get(slotIndex));
+                        AbilityLoader.AbilityData data = bruhof.teenycraft.battle.executor.BattleAbilityContext.getAbilityData(active, slotIndex);
+                        if (data != null) {
                             
                             // Melee Check (Don't execute on Right-Click)
-                            if (data != null && "melee".equalsIgnoreCase(data.hitType)) {
+                            if ("melee".equalsIgnoreCase(data.hitType)) {
                                 pPlayer.sendSystemMessage(Component.literal("§eLeft-Click to use Melee Attacks!"));
                                 return;
                             }

@@ -1,6 +1,8 @@
 package bruhof.teenycraft.capability;
 
 import bruhof.teenycraft.battle.BattleFigure;
+import bruhof.teenycraft.battle.BattleAbilitySlot;
+import bruhof.teenycraft.battle.damage.DamagePipeline;
 import bruhof.teenycraft.item.ModItems;
 import bruhof.teenycraft.item.custom.ItemAccessory;
 import bruhof.teenycraft.item.custom.ItemFigure;
@@ -11,7 +13,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.ArrayList;
 import java.util.List;
 
 final class BattleInventoryLoadoutBuilder {
@@ -32,7 +33,7 @@ final class BattleInventoryLoadoutBuilder {
             return;
         }
 
-        populateAbilitySlots(player, activeFigure.getOriginalStack());
+        populateAbilitySlots(state, player, activeFigure);
         populateBenchSlots(state, player);
         populateTofuSlot(state, player);
         populateAccessorySlot(state, player);
@@ -42,24 +43,23 @@ final class BattleInventoryLoadoutBuilder {
         }
     }
 
-    private static void populateAbilitySlots(Player player, ItemStack figureStack) {
-        ArrayList<String> abilityOrder = ItemFigure.getAbilityOrder(figureStack);
+    private static void populateAbilitySlots(BattleState state, Player player, BattleFigure figure) {
         for (int i = 0; i < ABILITY_SLOT_COUNT; i++) {
-            if (i >= abilityOrder.size()) {
-                continue;
-            }
-
-            String abilityId = abilityOrder.get(i);
-            var data = bruhof.teenycraft.util.AbilityLoader.getAbility(abilityId);
-            if (data == null) {
+            BattleAbilitySlot slot = BattleAbilitySlot.resolve(figure, i);
+            if (slot == null) {
                 continue;
             }
 
             ItemStack stack = new ItemStack(ABILITY_ITEMS[i]);
-            int damage = ItemFigure.calculateAbilityDamage(figureStack, i);
-            boolean golden = ItemFigure.isAbilityGolden(figureStack, abilityId);
-            String iconVariant = bruhof.teenycraft.util.FigureLoader.getAbilityIconVariant(figureStack, abilityId);
-            bruhof.teenycraft.item.custom.battle.ItemAbility.initializeAbility(stack, abilityId, data.name, damage, golden, iconVariant);
+            int damage = DamagePipeline.calculateOutput(state, figure, slot.data(), slot.effectiveManaCost(), slot.golden()).baseDamagePerHit;
+            bruhof.teenycraft.item.custom.battle.ItemAbility.initializeAbility(
+                    stack,
+                    slot.effectiveAbilityId(),
+                    slot.data().name,
+                    damage,
+                    slot.golden(),
+                    slot.iconVariant()
+            );
             player.getInventory().setItem(i, stack);
         }
     }

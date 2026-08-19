@@ -40,6 +40,10 @@ public class ClientBattleData {
         return snapshot.player().activeFigureId();
     }
 
+    public static String getActiveSkinId() {
+        return snapshot.player().activeSkinId();
+    }
+
     public static String getActiveFigureModelType() {
         return snapshot.player().activeFigureModelType();
     }
@@ -130,6 +134,10 @@ public class ClientBattleData {
 
     public static String getEnemyActiveId() {
         return snapshot.enemy().activeFigureId();
+    }
+
+    public static String getEnemyActiveSkinId() {
+        return snapshot.enemy().activeSkinId();
     }
 
     public static String getEnemyActiveModelType() {

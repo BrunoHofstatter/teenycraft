@@ -1,0 +1,19 @@
+{
+  "id": "gorilla",
+  "skin": "gorilla",
+  "enter_ability": "gorilla_transform",
+  "exit_ability": "transform_back",
+  "ability_counterparts": {
+    "gorilla_transform": "transform_back",
+    "tofu": "mighty_punch",
+    "whale_drop": "trash_can_toss",
+    "cat_scratch": "mighty_punch",
+    "mind_control": "trash_can_toss",
+    "dance": "trash_can_toss"
+  },
+  "ability_cost_tiers": {
+    "transform_back": "c",
+    "mighty_punch": "e",
+    "trash_can_toss": "e"
+  }
+}

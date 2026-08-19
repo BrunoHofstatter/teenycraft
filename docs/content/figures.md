@@ -4,7 +4,7 @@
 Document what a figure is in the current codebase, how figure content is loaded from JSON, what state is stored on the item itself, and how that state is converted into battle runtime data.
 
 ## Current Status
-Figures are implemented as item-backed collectibles with JSON-authored defaults, persistent NBT state, Titan Manager storage, and battle-time snapshots. Figure class is no longer metadata-only: battle damage now uses the authored class field for class-advantage bonus damage. Progression data exists on the item, but some progression loops are still partial.
+Figures are implemented as item-backed collectibles with JSON-authored defaults, persistent NBT state, Titan Manager storage, and battle-time snapshots. Figure class is no longer metadata-only: battle damage now uses the authored class field for class-advantage bonus damage. Battle-only forms can temporarily override a snapshot's effective abilities, costs, and skin without mutating the collectible. Progression data exists on the item, but some progression loops are still partial.
 
 ## Player-Facing Behavior
 - Figures are collectible `ItemFigure` items with identity, stats, progression state, and an ability loadout.
@@ -18,6 +18,7 @@ Figures are implemented as item-backed collectibles with JSON-authored defaults,
 - [`src/main/java/bruhof/teenycraft/battle/BattleFigure.java`](../../src/main/java/bruhof/teenycraft/battle/BattleFigure.java)
 - [`src/main/java/bruhof/teenycraft/battle/FigureClassType.java`](../../src/main/java/bruhof/teenycraft/battle/FigureClassType.java)
 - [`src/main/java/bruhof/teenycraft/util/FigureLoader.java`](../../src/main/java/bruhof/teenycraft/util/FigureLoader.java)
+- [`src/main/java/bruhof/teenycraft/util/FigureFormLoader.java`](../../src/main/java/bruhof/teenycraft/util/FigureFormLoader.java)
 - [`src/main/java/bruhof/teenycraft/capability/TitanManager.java`](../../src/main/java/bruhof/teenycraft/capability/TitanManager.java)
 - [`src/main/java/bruhof/teenycraft/capability/BattleState.java`](../../src/main/java/bruhof/teenycraft/capability/BattleState.java)
 - [`src/main/java/bruhof/teenycraft/util/NPCFigureBuilder.java`](../../src/main/java/bruhof/teenycraft/util/NPCFigureBuilder.java)
@@ -126,6 +127,11 @@ Figure JSON may optionally select color variants for equipped ability icons:
 
 The keys must be ability ids in that figure's `abilities` list. Values are lowercase variant ids matching `ability_<ability_id>__variant_<variant>.png`. An omitted entry uses the normal `ability_<ability_id>.png`. This is presentation metadata only: it does not create a new gameplay ability, change golden progress, or add another `texture_index`. Runtime resolves the mapping from the figure id and copies the selected variant onto temporary ability items used in battle and UI previews.
 
+## Battle-Only Forms
+Forms are runtime state on `BattleFigure`, not persistent figure-item data. An active form can replace each current reordered source ability with a data-authored effective counterpart, give that counterpart a form-specific cost tier, and use a different presentation skin. Golden state remains owned by and inherited from the source normal ability.
+
+The original collectible identity, class, stats, and `ItemStack` remain unchanged. Form state survives bench swaps, fainting, and revival, then disappears when the battle snapshot is discarded. See [figure-forms.md](figure-forms.md) for the schema, Gorilla content, transform effect, validation, and current AI limitation.
+
 ## Golden Ability State
 Golden is currently tracked per ability, not as a whole-figure rarity flag.
 
@@ -160,6 +166,7 @@ Runtime-only battle state stored on `BattleFigure`:
 - ability cooldowns
 - dodge and crit shuffle bags
 - temporary accessory HP bonus
+- active battle form id
 
 The original `ItemStack` is still kept on the `BattleFigure`, so battle systems can keep reading persistent figure data such as ability order, cost tiers, and golden ability status.
 

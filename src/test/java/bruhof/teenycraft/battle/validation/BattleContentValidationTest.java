@@ -3,7 +3,9 @@ package bruhof.teenycraft.battle.validation;
 import bruhof.teenycraft.battle.effect.EffectApplierRegistry;
 import bruhof.teenycraft.battle.effect.EffectRegistry;
 import bruhof.teenycraft.battle.trait.TraitRegistry;
+import bruhof.teenycraft.battle.AbilityCostResolver;
 import bruhof.teenycraft.util.AbilityLoader;
+import bruhof.teenycraft.util.FigureFormLoader;
 import bruhof.teenycraft.group.GroupComboEffectRegistry;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -216,6 +218,118 @@ class BattleContentValidationTest {
 
         assertTrue(report.errors().stream().anyMatch(issue -> issue.message().contains("legacy field 'groups'")));
         assertTrue(report.errors().stream().anyMatch(issue -> issue.message().contains("unknown combo effect id 'not_registered'")));
+    }
+
+    @Test
+    void acceptsCompleteParameterlessFigureFormContract() {
+        JsonObject enter = json("""
+                {"id":"gorilla_transform","effects_on_self":[{"id":"transform","params":[]}],"effects_on_opponent":[],"traits":[]}
+                """);
+        JsonObject exit = json("""
+                {"id":"transform_back","effects_on_self":[{"id":"transform","params":[]}],"effects_on_opponent":[],"traits":[]}
+                """);
+        JsonObject punch = json("""
+                {"id":"mighty_punch","effects_on_self":[],"effects_on_opponent":[],"traits":[]}
+                """);
+        JsonObject tofu = json("""
+                {"id":"tofu","effects_on_self":[],"effects_on_opponent":[],"traits":[]}
+                """);
+        JsonObject figure = json("""
+                {"id":"beast_boy","abilities":["gorilla_transform","tofu"]}
+                """);
+        JsonObject form = json("""
+                {
+                  "id":"gorilla",
+                  "skin":"gorilla",
+                  "enter_ability":"gorilla_transform",
+                  "exit_ability":"transform_back",
+                  "ability_counterparts":{"gorilla_transform":"transform_back","tofu":"mighty_punch"},
+                  "ability_cost_tiers":{"transform_back":"c","mighty_punch":"e"}
+                }
+                """);
+
+        BattleContentValidation.ValidationReport report = BattleContentValidation.validate(
+                Map.of("enter", enter, "exit", exit, "punch", punch, "tofu", tofu),
+                Map.of("figure", figure),
+                Map.of(),
+                Map.of(),
+                Map.of("teenycraft:figure_forms/gorilla.json", form)
+        );
+
+        assertFalse(report.hasErrors());
+        FigureFormLoader.FigureFormData parsed = FigureFormLoader.parse(form);
+        assertEquals("transform_back", parsed.resolveAbility("gorilla_transform"));
+        assertEquals("e", parsed.resolveCostTier("mighty_punch"));
+    }
+
+    @Test
+    void rejectsTransformingFigureWithMissingCounterpart() {
+        JsonObject enter = json("""
+                {"id":"gorilla_transform","effects_on_self":[{"id":"transform"}],"effects_on_opponent":[],"traits":[]}
+                """);
+        JsonObject exit = json("""
+                {"id":"transform_back","effects_on_self":[{"id":"transform"}],"effects_on_opponent":[],"traits":[]}
+                """);
+        JsonObject tofu = json("""
+                {"id":"tofu","effects_on_self":[],"effects_on_opponent":[],"traits":[]}
+                """);
+        JsonObject figure = json("""
+                {"id":"beast_boy","abilities":["gorilla_transform","tofu"]}
+                """);
+        JsonObject form = json("""
+                {
+                  "id":"gorilla","skin":"gorilla","enter_ability":"gorilla_transform","exit_ability":"transform_back",
+                  "ability_counterparts":{"gorilla_transform":"transform_back"},
+                  "ability_cost_tiers":{"transform_back":"c"}
+                }
+                """);
+
+        BattleContentValidation.ValidationReport report = BattleContentValidation.validate(
+                Map.of("enter", enter, "exit", exit, "tofu", tofu),
+                Map.of("figure", figure), Map.of(), Map.of(),
+                Map.of("teenycraft:figure_forms/gorilla.json", form)
+        );
+
+        assertTrue(report.errors().stream().anyMatch(issue -> issue.message().contains("tofu")
+                && issue.message().contains("no counterpart")));
+    }
+
+    @Test
+    void rejectsTransformEffectWithFormParameter() {
+        JsonObject enter = json("""
+                {"id":"gorilla_transform","effects_on_self":[{"id":"transform","params":["gorilla"]}],"effects_on_opponent":[],"traits":[]}
+                """);
+        JsonObject exit = json("""
+                {"id":"transform_back","effects_on_self":[{"id":"transform","params":[]}],"effects_on_opponent":[],"traits":[]}
+                """);
+        JsonObject figure = json("""
+                {"id":"beast_boy","abilities":["gorilla_transform"]}
+                """);
+        JsonObject form = json("""
+                {
+                  "id":"gorilla","skin":"gorilla","enter_ability":"gorilla_transform","exit_ability":"transform_back",
+                  "ability_counterparts":{"gorilla_transform":"transform_back"},
+                  "ability_cost_tiers":{"transform_back":"c"}
+                }
+                """);
+
+        BattleContentValidation.ValidationReport report = BattleContentValidation.validate(
+                Map.of("enter", enter, "exit", exit),
+                Map.of("figure", figure), Map.of(), Map.of(),
+                Map.of("teenycraft:figure_forms/gorilla.json", form)
+        );
+
+        assertTrue(report.errors().stream().anyMatch(issue -> issue.message().contains("parameterless transform effect")));
+    }
+
+    @Test
+    void goldenReducedManaCostPaysThirtyPercentAfterRounding() {
+        AbilityLoader.AbilityData data = new AbilityLoader.AbilityData();
+        data.parsedGoldenBonus.add(AbilityLoader.parseGoldenBonus("trait:reduced_mana_cost"));
+
+        assertEquals(6, AbilityCostResolver.resolveActualCost(0, "a", data, false));
+        assertEquals(2, AbilityCostResolver.resolveActualCost(0, "a", data, true));
+        assertEquals(3, AbilityCostResolver.resolveActualCost(0, "c", data, true));
     }
 
     private static JsonObject json(String json) {

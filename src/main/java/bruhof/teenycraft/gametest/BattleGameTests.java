@@ -7,6 +7,7 @@ import bruhof.teenycraft.accessory.AccessoryRegistry;
 import bruhof.teenycraft.accessory.AccessorySpec;
 import bruhof.teenycraft.battle.AbilityExecutor;
 import bruhof.teenycraft.battle.BattleFigure;
+import bruhof.teenycraft.battle.BattleAbilitySlot;
 import bruhof.teenycraft.chip.ChipExecutor;
 import bruhof.teenycraft.battle.damage.DamagePipeline;
 import bruhof.teenycraft.battle.effect.EffectCalculator;
@@ -65,6 +66,70 @@ public final class BattleGameTests {
         helper.assertTrue(firstAbility.is(ModItems.ABILITY_1.get()), "slot 0 should contain the first battle ability item");
         helper.assertTrue("heroic_pose".equals(firstAbility.getOrCreateTag().getString(ItemAbility.TAG_ID)), "slot 0 should be Robin's first ability");
         helper.assertTrue(!battle.player.getInventory().getItem(6).isEmpty(), "slot 6 should contain a bench figure icon");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arenas/arena1", timeoutTicks = 200)
+    public static void beastBoyTransformsAndReturnsWithEffectiveLoadouts(GameTestHelper helper) {
+        ItemStack beastBoy = figure("beast_boy");
+        ItemFigure.setAbilityOrder(beastBoy, List.of("whale_drop", "gorilla_transform", "tofu"));
+        BattleHarness battle = startBattle(helper, List.of(beastBoy), List.of(figure("joker")), ItemStack.EMPTY);
+        battle.playerState.addMana(TeenyBalance.BATTLE_MANA_MAX);
+
+        AbilityExecutor.executeAction(battle.player, battle.playerState.getActiveFigure(), 1);
+
+        BattleFigure transformed = battle.playerState.getActiveFigure();
+        helper.assertTrue("gorilla".equals(transformed.getActiveFormId()), "Gorilla Form should set battle-only form state");
+        helper.assertTrue("gorilla".equals(transformed.getEffectiveSkinId()), "Gorilla Form should change effective presentation");
+        helper.assertTrue(List.of("trash_can_toss", "transform_back", "mighty_punch").equals(battle.playerState.getAbilityIds()),
+                "Gorilla counterparts should follow the reordered source slots");
+        helper.assertTrue(List.of("e", "c", "e").equals(battle.playerState.getAbilityTiers()),
+                "Gorilla cost tiers should follow effective ability ids");
+        helper.assertTrue("transform_back".equals(battle.player.getInventory().getItem(1).getOrCreateTag().getString(ItemAbility.TAG_ID)),
+                "battle inventory should immediately show Transform Back");
+
+        AbilityExecutor.executeAction(battle.player, transformed, 1);
+
+        helper.assertTrue(transformed.getActiveFormId() == null, "Transform Back should restore the base form");
+        helper.assertTrue(List.of("whale_drop", "gorilla_transform", "tofu").equals(battle.playerState.getAbilityIds()),
+                "Transform Back should restore the reordered source loadout");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arenas/arena1", timeoutTicks = 200)
+    public static void goldenTransformationUsesReducedCostInBothDirections(GameTestHelper helper) {
+        ItemStack beastBoy = figure("beast_boy");
+        ItemFigure.setGoldenProgress(beastBoy, "gorilla_transform", 1.0f);
+        BattleHarness battle = startBattle(helper, List.of(beastBoy), List.of(figure("joker")), ItemStack.EMPTY);
+        battle.playerState.addMana(TeenyBalance.BATTLE_MANA_MAX);
+        BattleFigure figure = battle.playerState.getActiveFigure();
+
+        BattleAbilitySlot enter = BattleAbilitySlot.resolve(figure, 0);
+        helper.assertTrue(enter != null && enter.actualManaCost() == 2,
+                "golden Gorilla Form should pay 30% of its six-mana base cost after rounding");
+        AbilityExecutor.executeAction(battle.player, figure, 0);
+        helper.assertTrue(battle.playerState.getCurrentMana() == 98.0f, "entering Gorilla should consume the reduced cost");
+
+        BattleAbilitySlot exit = BattleAbilitySlot.resolve(figure, 0);
+        helper.assertTrue(exit != null && exit.golden() && exit.actualManaCost() == 3,
+                "Transform Back should inherit golden state and reduce its ten-mana cost");
+        AbilityExecutor.executeAction(battle.player, figure, 0);
+        helper.assertTrue(battle.playerState.getCurrentMana() == 95.0f, "returning to base should also consume the reduced cost");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arenas/arena1", timeoutTicks = 200)
+    public static void transformedFormSurvivesBenchFaintAndReviveState(GameTestHelper helper) {
+        BattleHarness battle = startBattle(helper, List.of(figure("beast_boy"), figure("robin")), List.of(figure("joker")), ItemStack.EMPTY);
+        BattleFigure beastBoy = battle.playerState.getActiveFigure();
+        helper.assertTrue(beastBoy.transitionForm("gorilla_transform"), "test fixture should enter Gorilla form");
+
+        battle.playerState.setActiveFigure(1);
+        helper.assertTrue("gorilla".equals(beastBoy.getActiveFormId()), "benching should preserve the form");
+        beastBoy.modifyHp(-beastBoy.getCurrentHp());
+        helper.assertTrue("gorilla".equals(beastBoy.getActiveFormId()), "fainting should preserve the form");
+        beastBoy.modifyHp(1);
+        helper.assertTrue("gorilla".equals(beastBoy.getActiveFormId()), "revival should preserve the form");
         helper.succeed();
     }
 
@@ -1925,11 +1990,8 @@ public final class BattleGameTests {
     }
 
     private static AbilityLoader.AbilityData abilityData(BattleFigure figure, int slotIndex) {
-        List<String> order = ItemFigure.getAbilityOrder(figure.getOriginalStack());
-        if (slotIndex < 0 || slotIndex >= order.size()) {
-            return null;
-        }
-        return AbilityLoader.getAbility(order.get(slotIndex));
+        BattleAbilitySlot slot = BattleAbilitySlot.resolve(figure, slotIndex);
+        return slot != null ? slot.data() : null;
     }
 
     private static AbilityLoader.TraitData trait(String id) {

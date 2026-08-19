@@ -13,7 +13,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.PushbackReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,7 @@ public class FigureLoader extends SimplePreparableReloadListener<Map<String, Jso
             rl -> rl.getNamespace().equals("teenycraft") && rl.getPath().endsWith(".json"));
 
         for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
-            try (Reader reader = new InputStreamReader(entry.getValue().open())) {
+            try (PushbackReader reader = openUtf8Json(entry.getValue())) {
                 JsonObject json = GSON.fromJson(reader, JsonObject.class);
                 String id = json.get("id").getAsString();
                 figures.put(id, json);
@@ -46,6 +47,16 @@ public class FigureLoader extends SimplePreparableReloadListener<Map<String, Jso
             }
         }
         return figures;
+    }
+
+    private static PushbackReader openUtf8Json(Resource resource) throws java.io.IOException {
+        PushbackReader reader = new PushbackReader(
+                new InputStreamReader(resource.open(), StandardCharsets.UTF_8), 1);
+        int first = reader.read();
+        if (first != -1 && first != '\uFEFF') {
+            reader.unread(first);
+        }
+        return reader;
     }
 
     @Override

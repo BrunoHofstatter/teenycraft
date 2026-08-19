@@ -1,7 +1,16 @@
 # Figure Transformation Implementation Plan
 
 ## Status
-Planned. This document describes the intended implementation of a reusable battle-only figure transformation mechanic, with the shared Beast Boy Gorilla form as the first use case. It is an implementation plan, not documentation of currently shipped behavior.
+Implemented as a historical plan. The canonical shipped contract now lives in [figure forms](../content/figure-forms.md), [figures](../content/figures.md), [abilities](../content/abilities.md), and the [battle engine](../systems/battle-engine.md).
+
+Final implementation decisions that differ from early sections below:
+
+- Only regular `beast_boy` currently has `gorilla_transform`. `martian_beast_boy` and `80s_beast_boy` will join later through the same shared form; Cat Beast Boy intentionally does not transform.
+- `transform` is parameterless. Form data resolves transitions through `enter_ability` and `exit_ability`, so repeating `form=gorilla` or `form=base` in each effect is unnecessary.
+- Gorilla costs are `c`, `e`, and `e` for return, Mighty Punch, and Trash Can Toss.
+- Golden transformation does not become free. Both directions use a centralized 70% cost reduction/refund equivalent and therefore pay approximately 30%, rounded to whole mana with a minimum of one.
+- AI transformation support was deliberately deferred and no AI code was changed. An affected development NPC team may not use the mechanic correctly yet.
+- The current Gorilla entity and item textures are temporary Killer Croc duplicates pending final art.
 
 ## Goal
 Add a general, data-driven battle form system that allows an ability to transform the active `BattleFigure` into another form without replacing the underlying collectible figure.

@@ -35,7 +35,7 @@ public class DummyRenderer extends LivingEntityRenderer<EntityTeenyDummy, Player
 
     @Override
     public ResourceLocation getTextureLocation(EntityTeenyDummy pEntity) {
-        String figureId = ClientBattleData.getEnemyActiveId();
+        String figureId = ClientBattleData.getEnemyActiveSkinId();
         if (figureId != null && !figureId.equals("none")) {
             return new ResourceLocation(TeenyCraft.MOD_ID, "textures/entity/figure/" + figureId + ".png");
         }

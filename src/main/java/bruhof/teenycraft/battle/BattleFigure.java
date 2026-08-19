@@ -6,6 +6,8 @@ import bruhof.teenycraft.chip.ChipExecutor;
 import bruhof.teenycraft.item.custom.ItemFigure;
 import bruhof.teenycraft.group.GroupComboStatBonus;
 import bruhof.teenycraft.util.AbilityLoader;
+import bruhof.teenycraft.util.FigureFormLoader;
+import bruhof.teenycraft.util.FigureLoader;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.HashMap;
@@ -34,6 +36,7 @@ public class BattleFigure {
 
     // Volatile state
     private int currentHp;
+    private String activeFormId;
     private int accessoryMaxHpBonus = 0;
     private final int[] abilityCooldowns = new int[3];
     private boolean appearedThisBattle = false;
@@ -123,6 +126,68 @@ public class BattleFigure {
     public int getPowerStat() { return power; }
     public int getDodgeStat() { return dodge; }
     public int getLuckStat() { return luck; }
+
+    public String getActiveFormId() {
+        return activeFormId;
+    }
+
+    public FigureFormLoader.FigureFormData getActiveForm() {
+        return FigureFormLoader.get(activeFormId);
+    }
+
+    public String getEffectiveSkinId() {
+        FigureFormLoader.FigureFormData form = getActiveForm();
+        return form != null ? form.skin() : figureId;
+    }
+
+    public String getEffectiveModelType() {
+        FigureFormLoader.FigureFormData form = getActiveForm();
+        return form != null && form.modelType() != null ? form.modelType() : FigureLoader.getModelType(figureId);
+    }
+
+    /** Applies a data-driven enter/exit transition for a parameterless transform effect. */
+    public boolean transitionForm(String executingAbilityId) {
+        if (activeFormId == null) {
+            FigureFormLoader.FigureFormData target = FigureFormLoader.findByEnterAbility(executingAbilityId);
+            if (target == null || !canResolveForm(target)) {
+                return false;
+            }
+            activeFormId = target.id();
+            return true;
+        }
+
+        FigureFormLoader.FigureFormData activeForm = FigureFormLoader.get(activeFormId);
+        if (activeForm == null) {
+            activeFormId = null;
+            return false;
+        }
+        if (!activeForm.exitAbility().equals(executingAbilityId)) {
+            return false;
+        }
+        activeFormId = null;
+        return true;
+    }
+
+    private boolean canResolveForm(FigureFormLoader.FigureFormData form) {
+        for (String sourceAbilityId : ItemFigure.getAbilityOrder(originalStack)) {
+            String effectiveAbilityId = form.resolveAbility(sourceAbilityId);
+            if (effectiveAbilityId == null || AbilityLoader.getAbility(effectiveAbilityId) == null
+                    || form.resolveCostTier(effectiveAbilityId) == null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isEffectiveAbilityGolden(String effectiveAbilityId) {
+        for (int slotIndex = 0; slotIndex < 3; slotIndex++) {
+            BattleAbilitySlot slot = BattleAbilitySlot.resolve(this, slotIndex);
+            if (slot != null && slot.effectiveAbilityId().equals(effectiveAbilityId)) {
+                return slot.golden();
+            }
+        }
+        return false;
+    }
 
     public int getEffectiveStat(StatType type, bruhof.teenycraft.capability.IBattleState state) {
         if (state == null) {

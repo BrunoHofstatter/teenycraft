@@ -75,6 +75,15 @@ public class EffectApplierRegistry {
     }
 
     public static void init() {
+        register("transform", (state, attacker, figure, data, manaCost, params, target) -> {
+            if (figure == null || data == null || !figure.transitionForm(data.id)) {
+                return;
+            }
+            if (attacker instanceof net.minecraft.world.entity.player.Player player) {
+                state.refreshPlayerInventory(player);
+            }
+        });
+
         // HEAL
         EffectApplier healApplier = (state, attacker, figure, data, manaCost, params, target) -> {
             float paramMult = (!params.isEmpty()) ? params.get(0) : 1.0f;
@@ -621,7 +630,7 @@ public class EffectApplierRegistry {
             // 1. Calculate the Raw Base Damage of the ability
             int rawDamage = 0;
             if (data != null && data.damageTier > 0) {
-                boolean isGolden = bruhof.teenycraft.item.custom.ItemFigure.isAbilityGolden(figure.getOriginalStack(), data.id);
+                boolean isGolden = figure.isEffectiveAbilityGolden(data.id);
                 bruhof.teenycraft.battle.damage.DamagePipeline.DamageResult calc = 
                     bruhof.teenycraft.battle.damage.DamagePipeline.calculateOutput(state, figure, data, manaCost, isGolden);
                 rawDamage = calc.baseDamagePerHit;

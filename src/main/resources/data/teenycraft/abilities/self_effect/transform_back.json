@@ -1,0 +1,22 @@
+{
+  "id": "transform_back",
+  "name": "Transform Back",
+  "description": "Return to the figure's normal battle form",
+  "golden_description": "Refunds 70% of the transformation's mana cost",
+  "texture_index": 154,
+  "particle": "minecraft:poof",
+  "particle_count": 12,
+  "hit_type": "none",
+  "damage_tier": 0,
+  "effects_on_opponent": [],
+  "effects_on_self": [
+    {
+      "id": "transform",
+      "params": []
+    }
+  ],
+  "traits": [],
+  "golden_bonus": [
+    "trait:reduced_mana_cost"
+  ]
+}
